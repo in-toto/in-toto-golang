@@ -23,8 +23,8 @@ func LoadLinksForLayout(layout Layout, linkDir string) map[string]map[string]Met
     }
 
     if len(linksPerStep) < step.Threshold {
-      panic(fmt.Sprintf(`Step '%s' requires '%s' link metadata file(s),
-          found '%s'`, step.Name, step.Threshold, len(linksPerStep)))
+      panic(fmt.Sprintf(`Step '%s' requires '%d' link metadata file(s),
+          found '%d'`, step.Name, step.Threshold, len(linksPerStep)))
     }
 
     stepsMetadata[step.Name] = linksPerStep
