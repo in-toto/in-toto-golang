@@ -122,3 +122,21 @@ func (mb *Metablock) GetSignableRepresentation() []byte {
   return encode_canonical(mb.Signed)
 }
 
+
+func (mb *Metablock) VerifySignature(key Key) {
+  var sig Signature
+  for _, s := range mb.Signatures {
+    if s.KeyId == key.KeyId {
+      sig = s
+      break
+    }
+  }
+
+  if sig == (Signature{}) {
+    panic("No signature found for key " + key.KeyId)
+  }
+
+  dataCanonical := mb.GetSignableRepresentation()
+  VerifySignature(key, sig, dataCanonical)
+
+}
