@@ -1,116 +1,125 @@
-{"signed": {
-    "_type": "layout",
-    "inspect": [
-        {
-            "_type": "inspection",
-            "expected_materials": [
-                [
-                    "MATCH",
-                    "foo.tar.gz",
-                    "WITH",
-                    "PRODUCTS",
-                    "FROM",
-                    "package"
-                ]
-            ],
-            "expected_products": [
-                [
-                    "MATCH",
-                    "foo.py",
-                    "WITH",
-                    "PRODUCTS",
-                    "FROM",
-                    "write-code"
-                ]
-            ],
-            "name": "untar",
-            "run": [
-                "python",
-                "./scripts/tar",
-                "xfz",
-                "foo.tar.gz"
-            ]
-        }
+{
+ "signatures": [
+  {
+   "keyid": "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b588f3e9cc48b35",
+   "sig": "4e50c9b470dcbf7f4a29de576d776966469e22fc069d4fbef435e03a54b35e24713feb1f3598d6345f4080c3cb6a38d6081ddc794827c7b227b6d75ccf57bc89803015a0b061367ac92f150bfad96703a07f5b41a1f8de1521f017aa114768bceaf86d7581a79129e6f8c70a432f8c3d70f19b294868728cb6564af46b13f421b7f167bdb5595d22508b5341670adcbaf9c775b072700e8c7c900e07ac1b52aeb2380ee855f926f9d017858970c3e05c1d9e72ee41245746345002f18b9a0270874f8c9744d1a6a8b14d3bc21343517d2aaacdff13f3c8870ce00bf852f0806ef23805708090b855203ae9d4c846ff39131afc4ee962c2f0c19e0dfbb8a52e598e62487dc071dff8dbd88e5e9e857097c54716883b5d78d84d9541261b968d23348ca7ec56d769625ed0b368ef551e7df61835d3259f398dd6305eba2e4099f368dd5cc3a95335dccb18b8c17d3f44f925b40162f9664c6a6399511109c79253c86562cd27b2e48d5654d34576490e28dc422a4f174e0cf6d508c4fe99c42c1e"
+  }
+ ],
+ "signed": {
+  "_type": "layout",
+  "expires": "2018-11-18T16:06:36Z",
+  "inspect": [
+   {
+    "_type": "inspection",
+    "expected_materials": [
+     [
+      "MATCH",
+      "foo.tar.gz",
+      "WITH",
+      "PRODUCTS",
+      "FROM",
+      "package"
+     ]
     ],
-    "keys": {
-        "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498": {
-            "keyid": "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498",
-            "keyid_hash_algorithms": [
-                "sha256",
-                "sha512"
-            ],
-            "keytype": "rsa",
-            "keyval": {
-                "private": "",
-                "public": "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAzgLBsMFSgwBiWTBmVsyW\n5KbJwLFSodAzdUhU2Bq6SdRz/W6UOBGdojZXibxupjRtAaEQW/eXDe+1CbKg6ENZ\nGt2D9HGFCQZgQS8ONgNDQGiNxgApMA0T21AaUhru0vEofzdN1DfEF4CAGv5AkcgK\nsalhTyONervFIjFEdXGelFZ7dVMV3Pp5WkZPG0jFQWjnmDZhUrtSxEtqbVghc3kK\nAUj9Ll/3jyi2wS92Z1j5ueN8X62hWX2xBqQ6nViOMzdujkoiYCRSwuMLRqzW2CbT\nL8hF1+S5KWKFzxl5sCVfpPe7V5HkgEHjwCILXTbCn2fCMKlaSbJ/MG2lW7qSY2Ro\nwVXWkp1wDrsJ6Ii9f2dErv9vJeOVZeO9DsooQ5EuzLCfQLEU5mn7ul7bU7rFsb8J\nxYOeudkNBatnNCgVMAkmDPiNA7E33bmL5ARRwU0iZicsqLQR32pmwdap8PjofxqQ\nk7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=\n-----END PUBLIC KEY-----"
-            },
-            "scheme": "rsassa-pss-sha256"
-        },
-        "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5": {
-            "keyid": "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
-            "keyid_hash_algorithms": [
-                "sha256",
-                "sha512"
-            ],
-            "keytype": "rsa",
-            "keyval": {
-                "private": "",
-                "public": "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA0Zfzonp3/FScaIP+KKuz\nB+OZNFpjbVGWjm3leqnFqHYLqrLcCw5KhlXpycJqoSvZBpO+PFCksUx8U/ryklHG\nVoDiB84pRkvZtBoVaA4b4IHDIhz1K5NqkJgieya4fwReTxmCW0a9gH7AnDicHBCX\nlzMxqEdt6OKMV5g4yjKaxf8lW72O1gSI46GSIToo+Z7UUgs3ofaM5UFIcczgCpUa\n5kEKocB6cSZ9U8PKRLSs0xO0ROjrcOTsfxMs8eV4bsRCWY5mAq1WM9EHDSV9WO8g\nqrRmanC4enNqa8jU4O3zhgJVegP9A01r9AwNt6AqgPSikwhXN/P4v1FMYV+R6N3b\nS1lsVWRAnwBq5RFz5zVvcY88JEkHbrcBqP/A4909NXae1VMXmnoJb4EzGAkyUySB\na+fHXAVJgzwyv3I48d/OIjH8NWcVmM/DQL7FtcJk3tp0YUjY5wNpcbQTnLzURtlU\nsd+MtGuvdlDxUUvtUYCIVKRdS8UzYnTPjI2xzeoSHZ2ZAgMBAAE=\n-----END PUBLIC KEY-----"
-            },
-            "scheme": "rsassa-pss-sha256"
-        }
-    },
-    "readme": "",
-    "steps": [
-        {
-            "_type": "step",
-            "expected_command": [],
-            "expected_materials": [],
-            "expected_products": [
-                [
-                    "CREATE",
-                    "foo.py"
-                ]
-            ],
-            "name": "write-code",
-            "pubkeys": [
-                "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
-            ],
-            "threshold": 1
-        },
-        {
-            "_type": "step",
-            "expected_command": [
-                "tar",
-                "zcvf",
-                "foo.tar.gz",
-                "foo.py"
-            ],
-            "expected_materials": [
-                [
-                    "MATCH",
-                    "foo.py",
-                    "WITH",
-                    "PRODUCTS",
-                    "FROM",
-                    "write-code"
-                ]
-            ],
-            "expected_products": [
-                [
-                    "CREATE",
-                    "foo.tar.gz"
-                ],
-                [
-                    "ALLOW",
-                    "foo.py"
-                ]
-            ],
-            "name": "package",
-            "pubkeys": [
-                "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498"
-            ],
-            "threshold": 1
-        }
+    "expected_products": [
+     [
+      "MATCH",
+      "foo.py",
+      "WITH",
+      "PRODUCTS",
+      "FROM",
+      "write-code"
+     ]
+    ],
+    "name": "untar",
+    "run": [
+     "python",
+     "./scripts/tar",
+     "xfz",
+     "foo.tar.gz"
     ]
-}, "signatures": []}
+   }
+  ],
+  "keys": {
+   "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498": {
+    "keyid": "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498",
+    "keyid_hash_algorithms": [
+     "sha256",
+     "sha512"
+    ],
+    "keytype": "rsa",
+    "keyval": {
+     "private": "",
+     "public": "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAzgLBsMFSgwBiWTBmVsyW\n5KbJwLFSodAzdUhU2Bq6SdRz/W6UOBGdojZXibxupjRtAaEQW/eXDe+1CbKg6ENZ\nGt2D9HGFCQZgQS8ONgNDQGiNxgApMA0T21AaUhru0vEofzdN1DfEF4CAGv5AkcgK\nsalhTyONervFIjFEdXGelFZ7dVMV3Pp5WkZPG0jFQWjnmDZhUrtSxEtqbVghc3kK\nAUj9Ll/3jyi2wS92Z1j5ueN8X62hWX2xBqQ6nViOMzdujkoiYCRSwuMLRqzW2CbT\nL8hF1+S5KWKFzxl5sCVfpPe7V5HkgEHjwCILXTbCn2fCMKlaSbJ/MG2lW7qSY2Ro\nwVXWkp1wDrsJ6Ii9f2dErv9vJeOVZeO9DsooQ5EuzLCfQLEU5mn7ul7bU7rFsb8J\nxYOeudkNBatnNCgVMAkmDPiNA7E33bmL5ARRwU0iZicsqLQR32pmwdap8PjofxqQ\nk7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=\n-----END PUBLIC KEY-----"
+    },
+    "scheme": "rsassa-pss-sha256"
+   },
+   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5": {
+    "keyid": "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+    "keyid_hash_algorithms": [
+     "sha256",
+     "sha512"
+    ],
+    "keytype": "rsa",
+    "keyval": {
+     "private": "",
+     "public": "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA0Zfzonp3/FScaIP+KKuz\nB+OZNFpjbVGWjm3leqnFqHYLqrLcCw5KhlXpycJqoSvZBpO+PFCksUx8U/ryklHG\nVoDiB84pRkvZtBoVaA4b4IHDIhz1K5NqkJgieya4fwReTxmCW0a9gH7AnDicHBCX\nlzMxqEdt6OKMV5g4yjKaxf8lW72O1gSI46GSIToo+Z7UUgs3ofaM5UFIcczgCpUa\n5kEKocB6cSZ9U8PKRLSs0xO0ROjrcOTsfxMs8eV4bsRCWY5mAq1WM9EHDSV9WO8g\nqrRmanC4enNqa8jU4O3zhgJVegP9A01r9AwNt6AqgPSikwhXN/P4v1FMYV+R6N3b\nS1lsVWRAnwBq5RFz5zVvcY88JEkHbrcBqP/A4909NXae1VMXmnoJb4EzGAkyUySB\na+fHXAVJgzwyv3I48d/OIjH8NWcVmM/DQL7FtcJk3tp0YUjY5wNpcbQTnLzURtlU\nsd+MtGuvdlDxUUvtUYCIVKRdS8UzYnTPjI2xzeoSHZ2ZAgMBAAE=\n-----END PUBLIC KEY-----"
+    },
+    "scheme": "rsassa-pss-sha256"
+   }
+  },
+  "readme": "",
+  "steps": [
+   {
+    "_type": "step",
+    "expected_command": [],
+    "expected_materials": [],
+    "expected_products": [
+     [
+      "CREATE",
+      "foo.py"
+     ]
+    ],
+    "name": "write-code",
+    "pubkeys": [
+     "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
+    ],
+    "threshold": 1
+   },
+   {
+    "_type": "step",
+    "expected_command": [
+     "tar",
+     "zcvf",
+     "foo.tar.gz",
+     "foo.py"
+    ],
+    "expected_materials": [
+     [
+      "MATCH",
+      "foo.py",
+      "WITH",
+      "PRODUCTS",
+      "FROM",
+      "write-code"
+     ]
+    ],
+    "expected_products": [
+     [
+      "CREATE",
+      "foo.tar.gz"
+     ],
+     [
+      "ALLOW",
+      "foo.py"
+     ]
+    ],
+    "name": "package",
+    "pubkeys": [
+     "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498"
+    ],
+    "threshold": 1
+   }
+  ]
+ }
+}
