@@ -1,5 +1,11 @@
 package main
 
+import (
+  "os"
+  "io/ioutil"
+  "encoding/json"
+)
+
 type KeyVal struct {
   Private string `json:"private"`
   Public string `json:"public"`
@@ -72,3 +78,43 @@ type Metablock struct {
   Signed interface{} `json:"signed"`
   Signatures []Signature `json:"signatures"`
 }
+
+
+func (mb *Metablock) Load(path string) {
+  // Open File
+  jsonFile, _ := os.Open(path)
+
+  // Read entire file
+  jsonBytes, _ := ioutil.ReadAll(jsonFile)
+
+  var rawMb map[string]*json.RawMessage
+  json.Unmarshal(jsonBytes, &rawMb)
+
+  // Copy signatures to Metablock.Signatures
+  json.Unmarshal(*rawMb["signatures"], &mb.Signatures)
+
+  // Temporarily copy signed to opaque map to get signed type
+  var signed map[string]interface{}
+  json.Unmarshal(*rawMb["signed"], &signed)
+
+  if signed["_type"] == "link" {
+    var link Link
+    json.Unmarshal(*rawMb["signed"], &link)
+    mb.Signed = link
+
+  } else if signed["_type"] == "layout" {
+    var layout Layout
+    json.Unmarshal(*rawMb["signed"], &layout)
+    mb.Signed = layout
+
+
+  } else {
+    panic(`The '_type' of the 'signed' part of a metadata file must be one
+        of 'link' or 'layout'`)
+  }
+
+  // Always close (defer)
+  defer jsonFile.Close()
+}
+
+
