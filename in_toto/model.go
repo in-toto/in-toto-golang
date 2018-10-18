@@ -118,3 +118,7 @@ func (mb *Metablock) Load(path string) {
 }
 
 
+func (mb *Metablock) GetSignableRepresentation() []byte {
+  return encode_canonical(mb.Signed)
+}
+
