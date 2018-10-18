@@ -34,6 +34,9 @@ type Link struct {
   Environment map[string][]interface{} `json:"environment"`
 }
 
+const LinkNameFormat = "%s.%.8s.link"
+const LinkNameFormatShort = "%s.link"
+
 type Inspection struct {
   Type string `json:"_type"`
   Run []string `json:"run"`
