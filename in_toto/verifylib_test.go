@@ -11,7 +11,9 @@ func TestInTotoVerifyPass(t *testing.T) {
   linkDir := "../test/data"
 
   var pubKey Key
-  pubKey.LoadPublicKey(pubKeyPath)
+  if err := pubKey.LoadPublicKey(pubKeyPath); err != nil {
+    t.Error(err)
+  }
 
   var layouKeys = map[string]Key{
     pubKey.KeyId: pubKey,
@@ -19,7 +21,7 @@ func TestInTotoVerifyPass(t *testing.T) {
 
   // No error should occur
   if err := InTotoVerify(layoutPath, layouKeys, linkDir); err != nil {
-    t.Fail()
+    t.Error(err)
   }
 }
 

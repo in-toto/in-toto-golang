@@ -156,7 +156,8 @@ func (mb *Metablock) VerifySignature(key Key) error {
   }
 
   if sig == (Signature{}) {
-    panic("No signature found for key " + key.KeyId)
+    return fmt.Errorf("No signature found for key '%s'", key.KeyId)
+  }
 
   dataCanonical, err := mb.GetSignableRepresentation()
   if err != nil {

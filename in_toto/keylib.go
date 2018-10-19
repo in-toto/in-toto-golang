@@ -11,18 +11,34 @@ import (
   "crypto/x509"
   "crypto/sha256"
   "strings"
+  "reflect"
 )
 
-func (k *Key) LoadPublicKey(path string) {
-  keyFile, _ := os.Open(path)
+func (k *Key) LoadPublicKey(path string) error {
+  keyFile, err := os.Open(path)
   defer keyFile.Close()
+  if err != nil {
+    return err
+  }
 
   // Read key bytes and decode PEM
-  keyBytes, _ := ioutil.ReadAll(keyFile)
-  data, _ := pem.Decode([]byte(keyBytes))
+  keyBytes, err := ioutil.ReadAll(keyFile)
+  if err != nil {
+    return err
+  }
 
-  // Try if this is a indeed a public key
-  x509.ParsePKIXPublicKey(data.Bytes)
+  // TODO: There could be more key data in _, which we silently ignore here.
+  // Should we handle it / fail / say something about it?
+  data, _ := pem.Decode([]byte(keyBytes))
+  if data == nil {
+    return fmt.Errorf("No valid public rsa key found at '%s'", path)
+  }
+
+  // Try if this is a indeed a public key, just to see if the key is valid
+  _, err = x509.ParsePKIXPublicKey(data.Bytes)
+  if err != nil {
+    return err
+  }
 
   // Strip leading and trailing data from PEM file like securesystemslib does
   // TODO: Should we instead use the parsed public key to recontsruct the PEM?
@@ -30,18 +46,26 @@ func (k *Key) LoadPublicKey(path string) {
   keyFooter := "-----END PUBLIC KEY-----"
   keyStart := strings.Index(string(keyBytes), keyHeader)
   keyEnd := strings.Index(string(keyBytes), keyFooter) + len(keyFooter)
+
+  // Fail if header and footer are not present
+  // TODO: Is this necessary? pem.Decode or ParsePKIXPublicKey should already
+  // return an error if header and footer are not present
+  if keyStart == -1 || keyEnd == -1 {
+    return fmt.Errorf("No valid public rsa key found at '%s'", path)
+  }
   keyBytesStripped := keyBytes[keyStart:keyEnd]
 
   // Declare values for key
-  // FIXME: We sholud not hardcode these
+  // TODO: Do not hardcode here, but define defaults elsewhere and add support
+  // for parametrization
   keyType := "rsa"
   scheme := "rsassa-pss-sha256"
   keyIdHashAlgorithms := []string{"sha256", "sha512"}
 
   // Create partial key map used to create the keyid
-  // Unfortunately we can't use the Key object because this will also carry
+  // Unfortunately, we can't use the Key object because this also carries
   // yet unwanted fields, such as KeyId and KeyVal.Private and therefore
-  // produce a different hash
+  // produces a different hash
   var keyToBeHashed = map[string]interface{}{
     "keytype": keyType,
     "scheme": scheme,
@@ -52,13 +76,16 @@ func (k *Key) LoadPublicKey(path string) {
   }
 
   // Canonicalize key and get hex representation of hash
-  keyCanonical, _ := encode_canonical(keyToBeHashed)
+  keyCanonical, err := encode_canonical(keyToBeHashed)
+  if err != nil {
+    return err
+  }
   keyHashed := sha256.Sum256(keyCanonical)
 
   // Unmarshalling the canonicalized key into the Key object would seem natural
-  // Unfortunately our mandated canonicalization function produces a bytestream
-  // that cannot be unmarshalled by Golang's json decoder, hence we have to
-  // manually assign the values
+  // Unfortunately, our mandated canonicalization function produces a byte
+  // slice that cannot be unmarshalled by Golang's json decoder, hence we have
+  // to manually assign the values
   k.KeyType = keyType
   k.KeyVal = KeyVal{
       Public: string(keyBytesStripped),
@@ -66,29 +93,33 @@ func (k *Key) LoadPublicKey(path string) {
   k.Scheme = scheme
   k.KeyIdHashAlgorithms = keyIdHashAlgorithms
   k.KeyId = fmt.Sprintf("%x", keyHashed)
+
+  return nil
 }
 
 
-func VerifySignature(key Key, sig Signature, data []byte) {
+func VerifySignature(key Key, sig Signature, data []byte) error {
   // Create rsa.PublicKey object from DER encoded public key string as
   // found in the public part of the keyval part of a securesystemslib key dict
   keyReader := strings.NewReader(key.KeyVal.Public)
-  pemBytes, _ := ioutil.ReadAll(keyReader)
+  pemBytes, err := ioutil.ReadAll(keyReader)
+  if err != nil {
+    return err
+  }
 
   block, _ := pem.Decode(pemBytes)
   if block == nil {
-    panic("Failed to parse PEM block containing the public key")
+    return fmt.Errorf("Could not find a public key PEM block")
   }
 
   pub, err := x509.ParsePKIXPublicKey(block.Bytes)
   if err != nil {
-    panic("Failed to parse DER encoded public key: " + err.Error())
+    return err
   }
 
-  var rsaPub *rsa.PublicKey = pub.(*rsa.PublicKey)
   rsaPub, ok := pub.(*rsa.PublicKey)
   if !ok {
-    panic("Invalid value returned from ParsePKIXPublicKey")
+    return fmt.Errorf("Expected '*rsa.PublicKey' got '%s", reflect.TypeOf(pub))
   }
 
   hashed := sha256.Sum256(data)
@@ -97,12 +128,10 @@ func VerifySignature(key Key, sig Signature, data []byte) {
   sigHex, _ := hex.DecodeString(sig.Sig)
 
   // SecSysLib uses a SaltLength of `hashes.SHA256().digest_size`, i.e. 32
-  result := rsa.VerifyPSS(rsaPub, crypto.SHA256, hashed[:], sigHex,
-    &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
-
-  if result != nil {
-    panic("Signature verification failed")
-  } else {
-    fmt.Println("Signature verification passed")
+  if err := rsa.VerifyPSS(rsaPub, crypto.SHA256, hashed[:], sigHex,
+    &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256}); err != nil {
+    return err
   }
+
+  return nil
 }

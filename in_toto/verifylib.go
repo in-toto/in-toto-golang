@@ -6,7 +6,7 @@ import (
 )
 
 
-func LoadLinksForLayout(layout Layout, linkDir string) map[string]map[string]Metablock {
+func LoadLinksForLayout(layout Layout, linkDir string) (map[string]map[string]Metablock, error) {
   stepsMetadata := make(map[string]map[string]Metablock)
 
   for _, step := range layout.Steps {
@@ -17,31 +17,36 @@ func LoadLinksForLayout(layout Layout, linkDir string) map[string]map[string]Met
       linkPath := osPath.Join(linkDir, linkName)
 
       var linkMb Metablock
-      linkMb.Load(linkPath)
+      if err := linkMb.Load(linkPath); err != nil {
+        return nil, err
+      }
 
       linksPerStep[authorizedKeyId] = linkMb
     }
 
     if len(linksPerStep) < step.Threshold {
-      panic(fmt.Sprintf(`Step '%s' requires '%d' link metadata file(s),
-          found '%d'`, step.Name, step.Threshold, len(linksPerStep)))
+      return nil, fmt.Errorf(`Step '%s' requires '%d' link metadata file(s),
+          found '%d'`, step.Name, step.Threshold, len(linksPerStep))
     }
 
     stepsMetadata[step.Name] = linksPerStep
   }
 
-  return stepsMetadata
+  return stepsMetadata, nil
 }
 
 
-func VerifyLayoutSignatures(layoutMb Metablock, layoutKeys map[string]Key) {
+func VerifyLayoutSignatures(layoutMb Metablock, layoutKeys map[string]Key) error {
   if len(layoutKeys) < 1 {
-    panic("Layout signature verification requires at least one key.")
+    return fmt.Errorf("Layout verification requires at least one key.")
   }
 
   for _, key := range layoutKeys {
-    layoutMb.VerifySignature(key)
+    if err := layoutMb.VerifySignature(key); err != nil {
+      return err
+    }
   }
+  return nil
 }
 
 
@@ -55,7 +60,9 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) 
   }
 
   // Verify root signatures
-  VerifyLayoutSignatures(layoutMb, layoutKeys)
+  if err := VerifyLayoutSignatures(layoutMb, layoutKeys); err != nil {
+    return err
+  }
 
   // Extract the layout from its Metablock container (for further processing)
   layout := layoutMb.Signed.(Layout)
@@ -67,9 +74,11 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) 
   // TODO
 
   // Load links for layout
-  stepsMetadata := LoadLinksForLayout(layout, linkDir)
-
-  fmt.Println(stepsMetadata)
+  // stepsMetadata, err := LoadLinksForLayout(layout, linkDir)
+   _, err := LoadLinksForLayout(layout, linkDir)
+   if err != nil {
+    return err
+  }
 
   // Verify link signatures
 
