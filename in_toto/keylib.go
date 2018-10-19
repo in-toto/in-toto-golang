@@ -52,7 +52,7 @@ func (k *Key) LoadPublicKey(path string) {
   }
 
   // Canonicalize key and get hex representation of hash
-  keyCanonical := encode_canonical(keyToBeHashed)
+  keyCanonical, _ := encode_canonical(keyToBeHashed)
   keyHashed := sha256.Sum256(keyCanonical)
 
   // Unmarshalling the canonicalized key into the Key object would seem natural

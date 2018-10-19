@@ -141,12 +141,12 @@ func (mb *Metablock) Load(path string) error {
 }
 
 
-func (mb *Metablock) GetSignableRepresentation() []byte {
+func (mb *Metablock) GetSignableRepresentation() ([]byte, error) {
   return encode_canonical(mb.Signed)
 }
 
 
-func (mb *Metablock) VerifySignature(key Key) {
+func (mb *Metablock) VerifySignature(key Key) error {
   var sig Signature
   for _, s := range mb.Signatures {
     if s.KeyId == key.KeyId {
@@ -157,9 +157,13 @@ func (mb *Metablock) VerifySignature(key Key) {
 
   if sig == (Signature{}) {
     panic("No signature found for key " + key.KeyId)
+
+  dataCanonical, err := mb.GetSignableRepresentation()
+  if err != nil {
+    return err
   }
 
-  dataCanonical := mb.GetSignableRepresentation()
   VerifySignature(key, sig, dataCanonical)
+  return nil
 
 }

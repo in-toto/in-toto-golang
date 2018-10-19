@@ -8,6 +8,7 @@ import (
   "encoding/json"
   "reflect"
   "strconv"
+  "errors"
 )
 
 func _encode_canonical_string(s string) string  {
@@ -15,7 +16,16 @@ func _encode_canonical_string(s string) string  {
   return fmt.Sprintf("\"%s\"", re.ReplaceAllString(s, "\\$1"))
 }
 
-func _encode_canonical(obj interface{}, result *bytes.Buffer) {
+func _encode_canonical(obj interface{}, result *bytes.Buffer) (err error) {
+  // Since this function is called recursively, we use panic if an error occurs
+  // and recover in below function, which is always called before returning, to
+  // set the error that is returned eventually
+  defer func() {
+    if r := recover(); r != nil {
+        err = errors.New(r.(string))
+      }
+  }()
+
   switch objAsserted := obj.(type) {
     case string:
       result.WriteString(_encode_canonical_string(objAsserted))
@@ -48,7 +58,7 @@ func _encode_canonical(obj interface{}, result *bytes.Buffer) {
       }
       result.WriteString("]")
 
-    // Assume that the keys are always strings
+    // It should be safe to assume that the keys are always strings
     case map[string]interface{}:
       result.WriteString("{")
 
@@ -71,21 +81,31 @@ func _encode_canonical(obj interface{}, result *bytes.Buffer) {
         i++
       }
       result.WriteString("}")
+
     default:
-      fmt.Println("I don't handle", objAsserted, "of type", reflect.TypeOf(objAsserted))
+      panic(fmt.Sprintf("Can't canonicalize '%s' of type '%s'",
+          objAsserted, reflect.TypeOf(objAsserted)))
   }
+  return nil
 }
 
-func encode_canonical(obj interface{}) []byte {
+func encode_canonical(obj interface{}) ([]byte, error) {
   // FIXME: Terrible hack to turn the passed struct into a map, converting
   // the struct's variable names to the json key names defined in the struct
-  data, _ := json.Marshal(obj)
+  data, err := json.Marshal(obj)
+  if err != nil {
+    return nil, err
+  }
   var jsonMap interface{}
-  json.Unmarshal(data, &jsonMap)
+  if err := json.Unmarshal(data, &jsonMap); err != nil {
+    return nil, err
+  }
 
   // Create a buffer and write the canonicalized JSON bytes to it
   var result bytes.Buffer
-  _encode_canonical(jsonMap, &result)
+  if err := _encode_canonical(jsonMap, &result); err != nil {
+    return nil, err
+  }
 
-  return result.Bytes()
+  return result.Bytes(), nil
 }
