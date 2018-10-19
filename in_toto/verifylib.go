@@ -45,12 +45,14 @@ func VerifyLayoutSignatures(layoutMb Metablock, layoutKeys map[string]Key) {
 }
 
 
-func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) {
+func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) error {
 
   var layoutMb Metablock
 
   // Load layout
-  layoutMb.Load(layoutPath)
+  if err := layoutMb.Load(layoutPath); err != nil {
+    return err
+  }
 
   // Verify root signatures
   VerifyLayoutSignatures(layoutMb, layoutKeys)
@@ -73,6 +75,7 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) 
 
   // ...
   // TODO
+  return nil
 }
 
 
