@@ -2,6 +2,7 @@ package intoto
 
 import (
   "os"
+  "fmt"
   "io/ioutil"
   "encoding/json"
 )
@@ -83,41 +84,60 @@ type Metablock struct {
 }
 
 
-func (mb *Metablock) Load(path string) {
-  // Open File
-  jsonFile, _ := os.Open(path)
+func (mb *Metablock) Load(path string) error {
+  // Open file and close before returning
+  jsonFile, err := os.Open(path)
+  defer jsonFile.Close()
+  if err != nil {
+    return err
+  }
 
   // Read entire file
-  jsonBytes, _ := ioutil.ReadAll(jsonFile)
+  jsonBytes, err := ioutil.ReadAll(jsonFile)
+  if err != nil {
+    return err
+  }
 
+  // Unmarshal JSON into a map of raw messages (signed and signatures)
+  // We can't fully unmarshal immediately, because we need to inspect the
+  // type (link or layout) to decide which data structure to use
   var rawMb map[string]*json.RawMessage
-  json.Unmarshal(jsonBytes, &rawMb)
+  if err := json.Unmarshal(jsonBytes, &rawMb); err != nil {
+    return err
+  }
 
-  // Copy signatures to Metablock.Signatures
-  json.Unmarshal(*rawMb["signatures"], &mb.Signatures)
+  // Fully unmarshal signatures part
+  if err := json.Unmarshal(*rawMb["signatures"], &mb.Signatures); err != nil {
+    return err
+  }
 
-  // Temporarily copy signed to opaque map to get signed type
+  // Temporarily copy signed to opaque map to inspect the `_type` of signed
+  // and create link or layout accordingly
   var signed map[string]interface{}
-  json.Unmarshal(*rawMb["signed"], &signed)
+  if err := json.Unmarshal(*rawMb["signed"], &signed); err != nil {
+    return err
+  }
 
   if signed["_type"] == "link" {
     var link Link
-    json.Unmarshal(*rawMb["signed"], &link)
+    if err := json.Unmarshal(*rawMb["signed"], &link); err != nil {
+    return err
+  }
     mb.Signed = link
 
   } else if signed["_type"] == "layout" {
     var layout Layout
-    json.Unmarshal(*rawMb["signed"], &layout)
+    if err := json.Unmarshal(*rawMb["signed"], &layout); err != nil {
+    return err
+  }
     mb.Signed = layout
 
-
   } else {
-    panic(`The '_type' of the 'signed' part of a metadata file must be one
+    fmt.Errorf(`The '_type' of the 'signed' part of a metadata file must be one
         of 'link' or 'layout'`)
   }
 
-  // Always close (defer)
-  defer jsonFile.Close()
+  return nil
 }
 
 
