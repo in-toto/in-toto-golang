@@ -45,10 +45,13 @@ func VerifyLinkSignatureThesholds(layout Layout, stepsMetadata map[string]map[st
 
   // Verify threshold for each step
   for _, step := range layout.Steps {
-    linksPerStepVerified, _ := stepsMetadataVerified[step.Name];
+    linksPerStepVerified, _ := stepsMetadataVerified[step.Name]
     if len(linksPerStepVerified) < step.Threshold {
-      return nil, fmt.Errorf(`Step '%s' requires '%d' link metadata file(s),
-          found '%d'.`, step.Name, step.Threshold, len(linksPerStepVerified))
+      linksPerStep, _ := stepsMetadata[step.Name]
+      return nil, fmt.Errorf(`Step '%s' requires '%d' link metadata file(s).
+          '%d' out of '%d' available link(s) have a valid signature from an
+          authorized signer.`, step.Name,
+          step.Threshold, len(linksPerStepVerified), len(linksPerStep))
     }
   }
   return stepsMetadataVerified, nil
