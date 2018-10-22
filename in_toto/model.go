@@ -164,7 +164,9 @@ func (mb *Metablock) VerifySignature(key Key) error {
     return err
   }
 
-  VerifySignature(key, sig, dataCanonical)
+  if err := VerifySignature(key, sig, dataCanonical); err != nil {
+    return err
+  }
   return nil
 
 }
