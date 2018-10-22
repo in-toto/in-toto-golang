@@ -4,8 +4,59 @@ import (
   "fmt"
   "time"
   "strings"
+  "reflect"
   osPath "path"
 )
+
+
+func ReduceStepsMetadata(layout Layout, stepsMetadata map[string]map[string]Metablock) (map[string]Metablock, error){
+  stepsMetadataReduced := make(map[string]Metablock)
+
+  for _, step := range layout.Steps {
+    linksPerStep, ok := stepsMetadata[step.Name]
+    // We should never get here, layout verification must fail earlier
+    if !ok || len(linksPerStep) < 1 {
+      panic("Could not reduce metadata for step '" + step.Name +
+          "', no link metadata found.")
+    }
+
+    // Get the first link (could be any link) for the current step, which will
+    // serve as reference link for below comparisons
+    var referenceKeyID string
+    var referenceLinkMb Metablock
+    for keyID, linkMb := range linksPerStep {
+      referenceLinkMb = linkMb
+      referenceKeyID = keyID
+      break
+    }
+
+    // Only one link, nothing to reduce, take the reference link
+    if len(linksPerStep) == 1 {
+      stepsMetadataReduced[step.Name] = referenceLinkMb
+
+    // Multiple links, reduce but first check
+    } else {
+      // Artifact maps must be equal for each type among all links
+      // TODO: What should we do if there are more links, than the
+      // threshold requires, but not all of them are equal? Right now we would
+      // also error.
+      for keyID, linkMb := range linksPerStep {
+        if !reflect.DeepEqual(linkMb.Signed.(Link).Materials,
+            referenceLinkMb.Signed.(Link).Materials) ||
+            !reflect.DeepEqual(linkMb.Signed.(Link).Products,
+            referenceLinkMb.Signed.(Link).Products) {
+          return nil, fmt.Errorf("Link '%s' and '%s' have different artifacts.",
+              fmt.Sprintf(LinkNameFormat, step.Name, referenceKeyID),
+              fmt.Sprintf(LinkNameFormat, step.Name, keyID))
+        }
+      }
+      // We haven't errored out, so we can reduce
+      stepsMetadataReduced[step.Name] = referenceLinkMb
+    }
+  }
+  return stepsMetadataReduced, nil
+}
+
 
 func VerifyStepCommandAlignment(layout Layout, stepsMetadata map[string]map[string]Metablock) {
   for _, step := range layout.Steps {
@@ -182,6 +233,13 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) 
 
   // Verify command alignment (WARNING only)
   VerifyStepCommandAlignment(layout, stepsMetadataVerified)
+
+  // Given that signature thresholds have been checked above and the rest of
+  // the relevant link properties, i.e. materials and products, have to be
+  // exactly equal, we can reduce the map of steps metadata. However, we error
+  // if the relevant properties are not equal among links of a step.
+  // stepsMetadataReduced, err := ReduceStepsMetadata(layout, stepsMetadataVerified)
+  _, err = ReduceStepsMetadata(layout, stepsMetadataVerified)
 
   // ...
   // TODO
