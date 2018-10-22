@@ -3,8 +3,32 @@ package intoto
 import (
   "fmt"
   "time"
+  "strings"
   osPath "path"
 )
+
+func VerifyStepCommandAlignment(layout Layout, stepsMetadata map[string]map[string]Metablock) {
+  for _, step := range layout.Steps {
+    linksPerStep, ok := stepsMetadata[step.Name]
+    // We should never get here, layout verification must fail earlier
+    if !ok {
+      panic("Could not verify command alignment for step '" + step.Name +
+          "', no link metadata found.")
+    }
+
+    for signerKeyID, linkMb := range linksPerStep {
+      expectedCommandS := strings.Join(step.ExpectedCommand, " ")
+      executedCommandS := strings.Join(linkMb.Signed.(Link).Command, " ")
+
+      if expectedCommandS != executedCommandS {
+        linkName := fmt.Sprintf(LinkNameFormat, step.Name, signerKeyID)
+        fmt.Printf("WARNING: Expected command for step '%s' (%s) and command" +
+            " reported by '%s' (%s) differ.\n",
+            step.Name, expectedCommandS, linkName, executedCommandS)
+      }
+    }
+  }
+}
 
 
 func VerifyLinkSignatureThesholds(layout Layout, stepsMetadata map[string]map[string]Metablock) (map[string]map[string]Metablock, error) {
@@ -148,11 +172,16 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) 
   }
 
   // Verify link signatures
-  // stepsMetadataVerified, err := VerifyLinkSignatureThesholds(layout, stepsMetadata)
-  _, err = VerifyLinkSignatureThesholds(layout, stepsMetadata)
+  stepsMetadataVerified, err := VerifyLinkSignatureThesholds(layout, stepsMetadata)
   if err != nil {
     return err
   }
+
+  // Verify sublayouts
+  // TODO
+
+  // Verify command alignment (WARNING only)
+  VerifyStepCommandAlignment(layout, stepsMetadataVerified)
 
   // ...
   // TODO
