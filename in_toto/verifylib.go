@@ -62,7 +62,7 @@ func VerifyStepCommandAlignment(layout Layout, stepsMetadata map[string]map[stri
   for _, step := range layout.Steps {
     linksPerStep, ok := stepsMetadata[step.Name]
     // We should never get here, layout verification must fail earlier
-    if !ok {
+    if !ok || len(linksPerStep) < 1 {
       panic("Could not verify command alignment for step '" + step.Name +
           "', no link metadata found.")
     }
@@ -95,7 +95,7 @@ func VerifyLinkSignatureThesholds(layout Layout, stepsMetadata map[string]map[st
 
     // Check if there are any links at all for a given step
     linksPerStep, ok := stepsMetadata[step.Name]
-    if !ok {
+    if !ok || len(linksPerStep) < 1 {
       continue
     }
 
@@ -122,6 +122,7 @@ func VerifyLinkSignatureThesholds(layout Layout, stepsMetadata map[string]map[st
   // Verify threshold for each step
   for _, step := range layout.Steps {
     linksPerStepVerified, _ := stepsMetadataVerified[step.Name]
+
     if len(linksPerStepVerified) < step.Threshold {
       linksPerStep, _ := stepsMetadata[step.Name]
       return nil, fmt.Errorf(`Step '%s' requires '%d' link metadata file(s).
