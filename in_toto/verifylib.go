@@ -2,6 +2,7 @@ package intoto
 
 import (
   "fmt"
+  "time"
   osPath "path"
 )
 
@@ -88,6 +89,19 @@ func LoadLinksForLayout(layout Layout, linkDir string) (map[string]map[string]Me
 }
 
 
+func VerifyLayoutExpiration(layout Layout) error {
+  expires, err := time.Parse(time.RFC3339, layout.Expires)
+  if err != nil {
+    return err
+  }
+  // Uses timesone of expires, i.e. UTC
+  if time.Until(expires) < 0 {
+    return fmt.Errorf("Layout has expired on '%s'.", expires)
+  }
+  return nil
+}
+
+
 func VerifyLayoutSignatures(layoutMb Metablock, layoutKeys map[string]Key) error {
   if len(layoutKeys) < 1 {
     return fmt.Errorf("Layout verification requires at least one key.")
@@ -120,7 +134,9 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) 
   layout := layoutMb.Signed.(Layout)
 
   // Verify layout expiration
-  // TODO
+  if err := VerifyLayoutExpiration(layout); err != nil {
+    return err
+  }
 
   // Substitute parameters
   // TODO
