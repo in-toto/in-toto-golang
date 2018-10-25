@@ -6,7 +6,199 @@ import (
   "strings"
   "reflect"
   osPath "path"
+  "path/filepath"
 )
+
+func Subtract(a []string, b []string) []string {
+  var result []string
+  for _, valA := range a {
+    valInB := false
+    for _, valB := range b {
+      if valA == valB {
+        valInB = true
+        break
+      }
+    }
+    if !valInB {
+      result = append(result, valA)
+    }
+  }
+  return result
+}
+
+// Mimics Python's fnmatch.filter using Go's Match from path/filepath package
+func FnFilter (pattern string, names []string) []string {
+  var namesFiltered []string
+  for _, name := range names {
+    matched, err := filepath.Match(pattern, name)
+    if err != nil {
+      // The pattern was invalid. We treat it as no match.
+      // TODO: Maybe we should inform the caller at least with a warning?
+      continue
+    }
+    if matched {
+      namesFiltered = append(namesFiltered, name)
+    }
+  }
+  return namesFiltered
+}
+
+
+func VerifyArtifacts(items []interface{}, stepsMetadata map[string]Metablock) error {
+  // Verify artifact rules for each item in the layout
+  for _, itemI := range items {
+    // The layout item (interface) must be a Link or an Inspection
+    // we are only interested in the name and the expected materials and products
+    var itemName string
+    var expected_materials [][]string
+    var expected_products [][]string
+
+    switch item := itemI.(type) {
+      case Step:
+        itemName = item.Name
+        expected_materials = item.ExpectedMaterials
+        expected_products = item.ExpectedProducts
+
+      case Inspection:
+        itemName = item.Name
+        expected_materials = item.ExpectedMaterials
+        expected_products = item.ExpectedProducts
+
+      default: // Something's wrong
+        return fmt.Errorf("VerifyArtifact received an item of invalid type," +
+            " elements of passed slice 'items' must be one of 'Step' or" +
+            " 'Inspection', got: '%s'", reflect.TypeOf(item))
+    }
+    srcLinkMb := stepsMetadata[itemName]
+
+    verificationDataList := []map[string]interface{}{
+      map[string]interface{}{
+        "rules": expected_materials,
+        "artifacts": srcLinkMb.Signed.(Link).Materials,
+      },
+      map[string]interface{}{
+        "rules": expected_products,
+        "artifacts": srcLinkMb.Signed.(Link).Products,
+      },
+    }
+
+    // Process all material rules using the corresponding materials
+    // and all product rules using the corresponding products
+    for _, verificationData := range verificationDataList {
+
+      rules := verificationData["rules"].([][]string)
+      artifacts := verificationData["artifacts"].(map[string]interface{})
+
+      // Create a queue of artifact names (paths)
+      // Each rule only operates on artifacts in that queue
+      // If a rule consumes an artifact (can be applied successfully) it is
+      // removed from the queue.
+      // By applying a DISALLOW rule eventually, verification may return an
+      // error, if the rule matches any artifacts in the queue that should
+      // have been consumed earlier.
+      var queue []string
+      for name, _ := range artifacts {
+        queue = append(queue, name)
+      }
+
+      // Verify rules sequentially
+      for _, rule := range rules {
+        // Parse rule
+        ruleData, err := UnpackRule(rule)
+        if err != nil {
+          return err
+        }
+
+        // Process rules according to rule type
+        // TODO: Currently we only support "MATCH", "ALLOW" and "DISALLOW"
+        switch ruleData["type"] {
+          case "match":
+            // Get destination link metadata
+            dstLinkMb, exists := stepsMetadata[ruleData["dstName"]]
+            if !exists {
+              // Destination link does not exist, rule can't consume any artifacts
+              continue
+            }
+
+            // Get artifacts from destination link metadata
+            var dstArtifacts map[string]interface{}
+            switch ruleData["dstType"] {
+              case "materials":
+                dstArtifacts = dstLinkMb.Signed.(Link).Materials
+
+              case "products":
+                dstArtifacts = dstLinkMb.Signed.(Link).Products
+            }
+
+            // Normalize optional source and destination prefixes, i.e.
+            // if there is a prefix, then add a trailing slash if not there yet
+            for _, prefix := range []string{"srcPrefix", "dstPrefix"} {
+              if ruleData[prefix] != "" &&
+                  ! strings.HasSuffix(ruleData[prefix], "/") {
+                ruleData[prefix] += "/"
+              }
+            }
+
+            // Iterate over queue and add consumed artifacts
+            // consumed is subtracted from queue
+            var consumed []string
+            for _, srcPath := range queue {
+              // Remove optional source prefix from source artifact path
+              // Noop if prefix is empty, or artifact does not have it
+              srcBasePath := strings.TrimPrefix(srcPath, ruleData["srcPrefix"])
+
+              // Ignore artifacts not matched by rule pattern
+              matched, err := filepath.Match(ruleData["pattern"], srcBasePath)
+              if err != nil || !matched {
+                continue
+              }
+
+              // Construct corresponding destination artifact path, i.e.
+              // an optional destination prefix plus the source base path
+              dstPath := osPath.Join(ruleData["dstPrefix"], srcBasePath)
+
+              // Try to find the corresponding destination artifact
+              dstArtifact, exists := dstArtifacts[dstPath]
+              // Ignore artifacts without corresponding destination artifact
+              if !exists {
+                continue
+              }
+
+              // Ignore artifact pairs with no matching hashes
+              if !reflect.DeepEqual(artifacts[srcPath], dstArtifact) {
+                continue
+              }
+
+              // Only if a source and destination artifact pair was found
+              // and their hashes are equal, will we mark the source artifact
+              // as successfully consumed, i.e. it will be removed from thequeue
+              consumed = append(consumed, srcPath)
+            }
+            queue = Subtract(queue, consumed)
+
+          case "allow":
+            consumed := FnFilter(ruleData["pattern"], queue)
+            queue = Subtract(queue, consumed)
+
+          case "disallow":
+            disallowed := FnFilter(ruleData["pattern"], queue)
+            if len(disallowed) > 0 {
+              return fmt.Errorf("Artifact verification failed for %s '%s'." +
+                  " Artifact(s) %s disallowed by rule %s.",
+                  reflect.TypeOf(itemI), itemName, disallowed, rule)
+            }
+
+          // TODO: Support create, modify, delete rules
+          default:
+              return fmt.Errorf("Cannot process artifact rule '%s'. We" +
+                  " don't support rules of type '%s'", rule,
+                  strings.ToUpper(ruleData["type"]))
+        }
+      }
+    }
+  }
+  return nil
+}
 
 
 func ReduceStepsMetadata(layout Layout, stepsMetadata map[string]map[string]Metablock) (map[string]Metablock, error){
@@ -239,8 +431,19 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) 
   // the relevant link properties, i.e. materials and products, have to be
   // exactly equal, we can reduce the map of steps metadata. However, we error
   // if the relevant properties are not equal among links of a step.
-  // stepsMetadataReduced, err := ReduceStepsMetadata(layout, stepsMetadataVerified)
-  _, err = ReduceStepsMetadata(layout, stepsMetadataVerified)
+  stepsMetadataReduced, err := ReduceStepsMetadata(layout, stepsMetadataVerified)
+
+  // Go does not allow to pass pass []Step as []interface{}
+  // We have to manually copy first :(
+  // https://golang.org/doc/faq#convert_slice_of_interface
+  stepsI := make([]interface{}, len(layout.Steps))
+  for i, v := range layout.Steps {
+      stepsI[i] = v
+  }
+
+  if err := VerifyArtifacts(stepsI, stepsMetadataReduced); err != nil {
+    return err
+  }
 
   // ...
   // TODO
