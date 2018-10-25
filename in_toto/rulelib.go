@@ -16,7 +16,7 @@ var errorMsg string = "Wrong rule format, available formats are:\n\t" +
 
 
 
-func unpackRule(rule []string) (map[string]string, error) {
+func UnpackRule(rule []string) (map[string]string, error) {
   // Cache rule len
   ruleLen := len(rule)
 

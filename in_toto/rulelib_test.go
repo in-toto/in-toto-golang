@@ -7,7 +7,7 @@ import (
 func TestUnpackValidRules(t *testing.T) {
 
   // A list of valid rules (lists)
-  // Each will be passed to rulelib.unpackRule below
+  // Each will be passed to rulelib.UnpackRule below
   rules := [][]string {
     []string{"CREATE", "foo"},
     []string{"DELETE", "foo"},
@@ -23,7 +23,7 @@ func TestUnpackValidRules(t *testing.T) {
     []string {"MATCH", "foo", "WITH", "MATERIALS", "FROM", "step-name"},
   }
 
-  // These are the expected results from rulelib.unpackRule for above rules
+  // These are the expected results from rulelib.UnpackRule for above rules
   // (associated by index)
   expectedRuleMaps := []map[string]string {
      map[string]string{"type": "create", "pattern": "foo"},
@@ -47,7 +47,7 @@ func TestUnpackValidRules(t *testing.T) {
 
   for i := 0; i < len(rules); i++ {
     rule := rules[i]
-    returnedRuleMap, err := unpackRule(rule)
+    returnedRuleMap, err := UnpackRule(rule)
     if err != nil {
       t.Error(err)
     }
@@ -72,8 +72,8 @@ func TestUnpackInvalidRules(t *testing.T) {
     []string {"MATCH", "foo", "WITH", "GUMMY", "BEARS"},
   }
   for _, rule := range rules {
-    if _, err := unpackRule(rule); err == nil {
-      t.Errorf("Invalid rule %s should return error from unpackRule.", rule)
+    if _, err := UnpackRule(rule); err == nil {
+      t.Errorf("Invalid rule %s should return error from UnpackRule.", rule)
     }
   }
 
