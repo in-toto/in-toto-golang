@@ -165,7 +165,6 @@ func VerifyArtifacts(items []interface{}, stepsMetadata map[string]Metablock) er
                 ruleData[prefix] += "/"
               }
             }
-
             // Iterate over queue and add consumed artifacts
             // consumed is subtracted from queue
             var consumed []string
@@ -477,6 +476,22 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) 
 
   inspectionMetadata, err := RunInspections(layout)
   if err != nil {
+    return err
+  }
+
+  // Add steps metadata to inspection metadata, because inspection artifact
+  // rules may also refer to artifacts reported by step links
+  for k, v := range stepsMetadataReduced {
+    inspectionMetadata[k] = v
+  }
+
+  // Convert []Inspections to []interace{} (see `stepsI` above)
+  inspectionsI := make([]interface{}, len(layout.Inspect))
+  for i, v := range layout.Inspect {
+      inspectionsI[i] = v
+  }
+
+  if err := VerifyArtifacts(inspectionsI, inspectionMetadata); err != nil {
     return err
   }
 
