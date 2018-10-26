@@ -32,7 +32,7 @@ type Link struct {
   Products map[string]interface{} `json:"products"`
   ByProducts map[string]interface{} `json:"byproducts"`
   Command []string `json:"command"`
-  Environment map[string][]interface{} `json:"environment"`
+  Environment map[string]interface{} `json:"environment"`
 }
 
 const LinkNameFormat = "%s.%.8s.link"
