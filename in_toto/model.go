@@ -140,6 +140,22 @@ func (mb *Metablock) Load(path string) error {
   return nil
 }
 
+func (mb *Metablock) Dump(path string) error {
+  // JSON encode Metablock formatted with newlines and indentation
+  // TODO: parametrize format
+  jsonBytes, err := json.MarshalIndent(mb, "", "  ")
+  if err != nil {
+    return err
+  }
+
+  // Write JSON bytes to the passed path with permissions (-rw-r--r--)
+  err = ioutil.WriteFile(path, jsonBytes, 0644)
+  if err != nil {
+    return err
+  }
+
+  return nil
+}
 
 func (mb *Metablock) GetSignableRepresentation() ([]byte, error) {
   return encode_canonical(mb.Signed)
