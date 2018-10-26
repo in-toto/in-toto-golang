@@ -6,29 +6,39 @@ Basic Go implementation of in-toto supply chain verification, based on the
 
 ## Basic usage of `InTotoVerify`
 ```go
-layoutPath := "path/to/root.layout"
-pubKeyPath := "path/to/layout/signature/verification/public/key"
-linkDir := "path/to/dir/with/link/metadata/"
+package main
 
-// Load an RSA public key in PEM format used to verify the layout signature
-var pubKey Key
-if err := pubKey.LoadPublicKey(pubKeyPath); err != nil {
-  t.Error(err)
+import (
+  "fmt"
+  "github.com/in-toto/in-toto-golang/in_toto"
+)
+
+
+func main() {
+  layoutPath := "path/to/root.layout"
+  pubKeyPath := "path/to/layout/signature/verification/public/key"
+  linkDir := "path/to/dir/with/link/metadata/"
+
+
+  // Load an RSA public key in PEM format used to verify the layout signature
+  var pubKey in_toto.Key
+  if err := pubKey.LoadPublicKey(pubKeyPath); err != nil {
+    panic(err)
+  }
+
+  // Add public key to a key map, where the key id is used as map key
+  // Add additional keys if the layout has multiple signatures
+  var layouKeys = map[string]in_toto.Key{
+    pubKey.KeyId: pubKey,
+  }
+
+  // Run all in-toto verification routines
+  if err := in_toto.InTotoVerify(layoutPath, layouKeys, linkDir); err != nil {
+    fmt.Println("Verification failed: ", err)
+  } else {
+    fmt.Println("Verification passed")
+  }
 }
-
-// Add public key to a key map, where the key id is used as map key
-// Add additional keys if the layout has multiple signatures
-var layouKeys = map[string]Key{
-  pubKey.KeyId: pubKey,
-}
-
-// Run all in-toto verification routines
-if err := InTotoVerify(layoutPath, layouKeys, linkDir); err != nil {
-  fmt.Println("Verification failed: ", err)
-} else {
-  fmt.Println("Verification passed")
-}
-
 ```
 
 
