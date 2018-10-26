@@ -1,4 +1,4 @@
-package intoto
+package in_toto
 
 import (
   "os"
