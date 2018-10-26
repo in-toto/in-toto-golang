@@ -9,6 +9,33 @@ import (
   "path/filepath"
 )
 
+func RunInspections(layout Layout) (map[string]Metablock, error) {
+  inspectionMetadata := make(map[string]Metablock)
+
+  for _, inspection := range layout.Inspect {
+
+    linkMb, err := InTotoRun(inspection.Name, []string{"."}, []string{"."},
+        inspection.Run)
+    if err != nil {
+      return nil, err
+    }
+
+    retVal := linkMb.Signed.(Link).ByProducts["return-value"]
+    if retVal != 0 {
+      return nil, fmt.Errorf("Inspection command '%s' of inspection '%s'" +
+          " returned a non-zero value: %d", inspection.Run, inspection.Name,
+          retVal)
+    }
+
+    // Dump inspection link to cwd using the short link name format
+    linkName := fmt.Sprintf(LinkNameFormatShort, inspection.Name)
+    linkMb.Dump(linkName)
+
+    inspectionMetadata[inspection.Name] = linkMb
+  }
+  return inspectionMetadata, nil
+}
+
 func Subtract(a []string, b []string) []string {
   var result []string
   for _, valA := range a {
@@ -432,21 +459,27 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) 
   // exactly equal, we can reduce the map of steps metadata. However, we error
   // if the relevant properties are not equal among links of a step.
   stepsMetadataReduced, err := ReduceStepsMetadata(layout, stepsMetadataVerified)
+  if err != nil {
+    return err
+  }
 
-  // Go does not allow to pass pass []Step as []interface{}
+  // Go does not allow to pass []Step as []interface{}
   // We have to manually copy first :(
   // https://golang.org/doc/faq#convert_slice_of_interface
   stepsI := make([]interface{}, len(layout.Steps))
   for i, v := range layout.Steps {
       stepsI[i] = v
   }
-
+  // Verify artifact rules
   if err := VerifyArtifacts(stepsI, stepsMetadataReduced); err != nil {
     return err
   }
 
-  // ...
-  // TODO
+  inspectionMetadata, err := RunInspections(layout)
+  if err != nil {
+    return err
+  }
+
   return nil
 }
 
