@@ -36,6 +36,9 @@ func RunInspections(layout Layout) (map[string]Metablock, error) {
   return inspectionMetadata, nil
 }
 
+// TODO: This function has O(n**2), consider doing this with maps (in linear-time)
+// https://siongui.github.io/2018/03/14/go-set-difference-of-two-arrays/, or
+// find a proper set library
 func Subtract(a []string, b []string) []string {
   var result []string
   for _, valA := range a {
