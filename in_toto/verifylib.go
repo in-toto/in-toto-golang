@@ -36,7 +36,7 @@ func RunInspections(layout Layout) (map[string]Metablock, error) {
   return inspectionMetadata, nil
 }
 
-// TODO: This function has O(n**2), consider doing this with maps (in linear-time)
+// TODO: This function has O(n**2), consider using maps (in linear-time)
 // https://siongui.github.io/2018/03/14/go-set-difference-of-two-arrays/, or
 // find a proper set library
 func Subtract(a []string, b []string) []string {
@@ -140,7 +140,8 @@ func VerifyArtifacts(items []interface{}, stepsMetadata map[string]Metablock) er
         }
 
         // Process rules according to rule type
-        // TODO: Currently we only support "MATCH", "ALLOW" and "DISALLOW"
+        // TODO: Currently we only support rules of type "MATCH", "ALLOW" or
+        // "DISALLOW" (case insensitive)
         switch ruleData["type"] {
           case "match":
             // Get destination link metadata
