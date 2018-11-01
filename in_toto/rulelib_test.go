@@ -45,8 +45,7 @@ func TestUnpackValidRules(t *testing.T) {
         "dstType": "materials" , "dstName": "step-name"},
   }
 
-  for i := 0; i < len(rules); i++ {
-    rule := rules[i]
+  for i, rule := range rules {
     returnedRuleMap, err := UnpackRule(rule)
     if err != nil {
       t.Error(err)
