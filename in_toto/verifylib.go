@@ -141,8 +141,8 @@ func VerifyArtifacts(items []interface{},
         }
 
         // Process rules according to rule type
-        // TODO: Currently we only support rules of type "MATCH", "ALLOW" or
-        // "DISALLOW" (case insensitive)
+        // TODO: Currently we only process rules of type "match", "allow" or
+        // "disallow"
         switch ruleData["type"] {
           case "match":
             // Get destination link metadata
