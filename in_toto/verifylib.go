@@ -74,11 +74,12 @@ func FnFilter (pattern string, names []string) []string {
 }
 
 
-func VerifyArtifacts(items []interface{}, stepsMetadata map[string]Metablock) error {
+func VerifyArtifacts(items []interface{},
+    stepsMetadata map[string]Metablock) error {
   // Verify artifact rules for each item in the layout
   for _, itemI := range items {
-    // The layout item (interface) must be a Link or an Inspection
-    // we are only interested in the name and the expected materials and products
+    // The layout item (interface) must be a Link or an Inspection we are only
+    // interested in the name and the expected materials and products
     var itemName string
     var expected_materials [][]string
     var expected_products [][]string
@@ -147,7 +148,8 @@ func VerifyArtifacts(items []interface{}, stepsMetadata map[string]Metablock) er
             // Get destination link metadata
             dstLinkMb, exists := stepsMetadata[ruleData["dstName"]]
             if !exists {
-              // Destination link does not exist, rule can't consume any artifacts
+              // Destination link does not exist, rule can't consume any
+              // artifacts
               continue
             }
 
@@ -199,9 +201,9 @@ func VerifyArtifacts(items []interface{}, stepsMetadata map[string]Metablock) er
                 continue
               }
 
-              // Only if a source and destination artifact pair was found
-              // and their hashes are equal, will we mark the source artifact
-              // as successfully consumed, i.e. it will be removed from thequeue
+              // Only if a source and destination artifact pair was found and
+              // their hashes are equal, will we mark the source artifact as
+              // successfully consumed, i.e. it will be removed from the queue
               consumed = append(consumed, srcPath)
             }
             queue = Subtract(queue, consumed)
@@ -231,7 +233,9 @@ func VerifyArtifacts(items []interface{}, stepsMetadata map[string]Metablock) er
 }
 
 
-func ReduceStepsMetadata(layout Layout, stepsMetadata map[string]map[string]Metablock) (map[string]Metablock, error){
+func ReduceStepsMetadata(layout Layout,
+    stepsMetadata map[string]map[string]Metablock) (map[string]Metablock,
+    error) {
   stepsMetadataReduced := make(map[string]Metablock)
 
   for _, step := range layout.Steps {
@@ -267,7 +271,8 @@ func ReduceStepsMetadata(layout Layout, stepsMetadata map[string]map[string]Meta
             referenceLinkMb.Signed.(Link).Materials) ||
             !reflect.DeepEqual(linkMb.Signed.(Link).Products,
             referenceLinkMb.Signed.(Link).Products) {
-          return nil, fmt.Errorf("Link '%s' and '%s' have different artifacts.",
+          return nil, fmt.Errorf("Link '%s' and '%s' have different" +
+              " artifacts.",
               fmt.Sprintf(LinkNameFormat, step.Name, referenceKeyID),
               fmt.Sprintf(LinkNameFormat, step.Name, keyID))
         }
@@ -280,7 +285,8 @@ func ReduceStepsMetadata(layout Layout, stepsMetadata map[string]map[string]Meta
 }
 
 
-func VerifyStepCommandAlignment(layout Layout, stepsMetadata map[string]map[string]Metablock) {
+func VerifyStepCommandAlignment(layout Layout,
+    stepsMetadata map[string]map[string]Metablock) {
   for _, step := range layout.Steps {
     linksPerStep, ok := stepsMetadata[step.Name]
     // We should never get here, layout verification must fail earlier
@@ -304,7 +310,9 @@ func VerifyStepCommandAlignment(layout Layout, stepsMetadata map[string]map[stri
 }
 
 
-func VerifyLinkSignatureThesholds(layout Layout, stepsMetadata map[string]map[string]Metablock) (map[string]map[string]Metablock, error) {
+func VerifyLinkSignatureThesholds(layout Layout,
+    stepsMetadata map[string]map[string]Metablock) (
+    map[string]map[string]Metablock, error) {
   // Copy of passed stepsMetadata
   // But only stores links with valid signature from an authorized functionary
   stepsMetadataVerified := make(map[string]map[string]Metablock)
@@ -357,7 +365,8 @@ func VerifyLinkSignatureThesholds(layout Layout, stepsMetadata map[string]map[st
 }
 
 
-func LoadLinksForLayout(layout Layout, linkDir string) (map[string]map[string]Metablock, error) {
+func LoadLinksForLayout(layout Layout, linkDir string)(
+    map[string]map[string]Metablock, error) {
   stepsMetadata := make(map[string]map[string]Metablock)
 
   for _, step := range layout.Steps {
@@ -400,7 +409,8 @@ func VerifyLayoutExpiration(layout Layout) error {
 }
 
 
-func VerifyLayoutSignatures(layoutMb Metablock, layoutKeys map[string]Key) error {
+func VerifyLayoutSignatures(layoutMb Metablock,
+    layoutKeys map[string]Key) error {
   if len(layoutKeys) < 1 {
     return fmt.Errorf("Layout verification requires at least one key.")
   }
@@ -414,7 +424,8 @@ func VerifyLayoutSignatures(layoutMb Metablock, layoutKeys map[string]Key) error
 }
 
 
-func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) error {
+func InTotoVerify(layoutPath string, layoutKeys map[string]Key,
+    linkDir string) error {
 
   var layoutMb Metablock
 
@@ -445,7 +456,8 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) 
   }
 
   // Verify link signatures
-  stepsMetadataVerified, err := VerifyLinkSignatureThesholds(layout, stepsMetadata)
+  stepsMetadataVerified, err := VerifyLinkSignatureThesholds(layout,
+      stepsMetadata)
   if err != nil {
     return err
   }
@@ -459,7 +471,8 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) 
   // the relevant link properties, i.e. materials and products, have to be
   // exactly equal, we can reduce the map of steps metadata. However, we error
   // if the relevant properties are not equal among links of a step.
-  stepsMetadataReduced, err := ReduceStepsMetadata(layout, stepsMetadataVerified)
+  stepsMetadataReduced, err := ReduceStepsMetadata(layout,
+      stepsMetadataVerified)
   if err != nil {
     return err
   }

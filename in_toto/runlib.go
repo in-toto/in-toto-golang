@@ -31,17 +31,18 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
   artifacts := make(map[string]interface{})
   // NOTE: Walk cannot follow symlinks
   for _, path := range paths {
-    err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-        // Don't hash directories
-        if info.IsDir() {
-          return nil
-        }
-        artifact, err := RecordArtifact(path)
-        if err != nil {
-          return err
-        }
-        artifacts[path] = artifact
+    err := filepath.Walk(path,
+        func(path string, info os.FileInfo, err error) error {
+      // Don't hash directories
+      if info.IsDir() {
         return nil
+      }
+      artifact, err := RecordArtifact(path)
+      if err != nil {
+        return err
+      }
+      artifacts[path] = artifact
+      return nil
     })
     if err != nil {
       return nil, err
@@ -104,7 +105,8 @@ func RunCommand(cmdArgs []string) (map[string]interface{}, error) {
 }
 
 
-func InTotoRun(name string, materialPaths []string, productPaths []string, cmdArgs []string) (Metablock, error) {
+func InTotoRun(name string, materialPaths []string, productPaths []string,
+    cmdArgs []string) (Metablock, error) {
   var linkMb Metablock
   materials, err := RecordArtifacts(materialPaths)
   if err != nil {
