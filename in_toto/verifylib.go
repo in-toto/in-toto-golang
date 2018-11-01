@@ -432,8 +432,7 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) 
     return err
   }
 
-  // Substitute parameters
-  // TODO
+  // TODO: Substitute parameters
 
   // Load links for layout
   stepsMetadata, err := LoadLinksForLayout(layout, linkDir)
@@ -447,8 +446,7 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key, linkDir string) 
     return err
   }
 
-  // Verify sublayouts
-  // TODO
+  // TODO: Verify sublayouts
 
   // Verify command alignment (WARNING only)
   VerifyStepCommandAlignment(layout, stepsMetadataVerified)

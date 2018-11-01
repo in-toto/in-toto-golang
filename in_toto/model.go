@@ -41,7 +41,7 @@ const LinkNameFormatShort = "%s.link"
 type Inspection struct {
   Type string `json:"_type"`
   Run []string `json:"run"`
-  //TODO: Abstraction for Steps and Inspections?
+  // TODO: Abstraction for Steps and Inspections?
   Name string  `json:"name"`
   ExpectedMaterials [][]string `json:"expected_materials"`
   ExpectedProducts [][]string `json:"expected_products"`
@@ -53,7 +53,7 @@ type Step struct {
   ExpectedCommand []string `json:"expected_command"`
   Threshold int `json:"threshold"`
 
-  //TODO: Abstraction for Steps and Inspections?
+  // TODO: Abstraction for Steps and Inspections?
   Name string  `json:"name"`
   ExpectedMaterials [][]string `json:"expected_materials"`
   ExpectedProducts [][]string `json:"expected_products"`

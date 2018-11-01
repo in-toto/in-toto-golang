@@ -90,7 +90,7 @@ func RunCommand(cmdArgs []string) (map[string]interface{}, error) {
     return nil, err
   }
 
-  // Todo duplicate stdout, stderr
+  // TODO: duplicate stdout, stderr
   stdout, _ := ioutil.ReadAll(stdoutPipe)
   stderr, _ := ioutil.ReadAll(stderrPipe)
 
