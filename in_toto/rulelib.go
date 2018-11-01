@@ -5,14 +5,14 @@ import (
   "strings"
   )
 
-var errorMsg string = "Wrong rule format, available formats are:\n\t" +
-  "MATCH <pattern> [IN <source-path-prefix>] WITH (MATERIALS|PRODUCTS)" +
-      " [IN <destination-path-prefix>] FROM <step>,\n\t" +
-  "CREATE <pattern>,\n\t" +
-  "DELETE <pattern>,\n\t" +
-  "MODIFY <pattern>,\n\t" +
-  "ALLOW <pattern>,\n\t" +
-  "DISALLOW <pattern>\n\n"
+var errorMsg string = "Wrong rule format, available formats are:\n" +
+  "\tMATCH <pattern> [IN <source-path-prefix>] WITH (MATERIALS|PRODUCTS)" +
+      " [IN <destination-path-prefix>] FROM <step>,\n" +
+  "\tCREATE <pattern>,\n" +
+  "\tDELETE <pattern>,\n" +
+  "\tMODIFY <pattern>,\n" +
+  "\tALLOW <pattern>,\n" +
+  "\tDISALLOW <pattern>\n\n"
 
 
 
