@@ -46,6 +46,8 @@ func UnpackRule(rule []string) (map[string]string, error) {
       var dstPrefix string
       var dstName string
 
+      // MATCH <pattern> IN <source-path-prefix> WITH (MATERIALS|PRODUCTS) \
+      // IN <destination-path-prefix> FROM <step>
       if ruleLen == 10 && ruleLower[2] == "in" &&
           ruleLower[4] == "with" && ruleLower[6] == "in" &&
           ruleLower[8] == "from" {
@@ -54,6 +56,9 @@ func UnpackRule(rule []string) (map[string]string, error) {
         dstPrefix = rule[7]
         dstName = rule[9]
 
+
+      // MATCH <pattern> IN <source-path-prefix> WITH (MATERIALS|PRODUCTS) \
+      // FROM <step>
       } else if ruleLen == 8 && ruleLower[2] == "in" &&
           ruleLower[4] == "with" && ruleLower[6] == "from" {
         srcPrefix = rule[3]
@@ -61,6 +66,8 @@ func UnpackRule(rule []string) (map[string]string, error) {
         dstPrefix = ""
         dstName = rule[7]
 
+      // MATCH <pattern> WITH (MATERIALS|PRODUCTS) IN <destination-path-prefix>
+      // FROM <step>
       } else if ruleLen == 8 && ruleLower[2] == "with" &&
           ruleLower[4] == "in" && ruleLower[6] == "from" {
         srcPrefix = ""
@@ -68,6 +75,7 @@ func UnpackRule(rule []string) (map[string]string, error) {
         dstPrefix = rule[5]
         dstName = rule[7]
 
+      // MATCH <pattern> WITH (MATERIALS|PRODUCTS) FROM <step>
       } else if ruleLen == 6 && ruleLower[2] == "with" &&
           ruleLower[4] == "from" {
         srcPrefix = ""
