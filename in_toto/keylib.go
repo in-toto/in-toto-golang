@@ -27,6 +27,7 @@ func (k *Key) LoadPublicKey(path string) error {
     return err
   }
 
+  // Parse just to see if this is a pem formatted key
   // TODO: There could be more key data in _, which we silently ignore here.
   // Should we handle it / fail / say something about it?
   data, _ := pem.Decode([]byte(keyBytes))
@@ -34,14 +35,19 @@ func (k *Key) LoadPublicKey(path string) error {
     return fmt.Errorf("No valid public rsa key found at '%s'", path)
   }
 
-  // Try if this is a indeed a public key, just to see if the key is valid
-  _, err = x509.ParsePKIXPublicKey(data.Bytes)
+  // Parse just to see if this is indeed an rsa public key
+  pub, err := x509.ParsePKIXPublicKey(data.Bytes)
   if err != nil {
     return err
   }
+  _, isRsa := pub.(*rsa.PublicKey)
+  if !isRsa {
+    return fmt.Errorf("We currently only support rsa keys: got '%s'",
+        reflect.TypeOf(pub))
+  }
 
   // Strip leading and trailing data from PEM file like securesystemslib does
-  // TODO: Should we instead use the parsed public key to recontsruct the PEM?
+  // TODO: Should we instead use the parsed public key to reconstruct the PEM?
   keyHeader := "-----BEGIN PUBLIC KEY-----"
   keyFooter := "-----END PUBLIC KEY-----"
   keyStart := strings.Index(string(keyBytes), keyHeader)
