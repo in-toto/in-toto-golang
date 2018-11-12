@@ -1,4 +1,5 @@
 # Go in-toto verification
+[![Build Status](https://travis-ci.com/in-toto/in-toto-golang.svg?branch=master)](https://travis-ci.com/in-toto/in-toto-golang)
 
 Basic Go implementation of in-toto supply chain verification, based on the
 [in-toto Python reference implementation](https://github.com/in-toto/in-toto).
