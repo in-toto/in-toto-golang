@@ -14,6 +14,29 @@ import (
   "reflect"
 )
 
+func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
+  // TODO: There could be more key data in _, which we silently ignore here.
+  // Should we handle it / fail / say something about it?
+  data, _ := pem.Decode([]byte(pemBytes))
+  if data == nil {
+    return nil, fmt.Errorf("Could not find a public key PEM block")
+  }
+
+  pub, err := x509.ParsePKIXPublicKey(data.Bytes)
+  if err != nil {
+    return nil, err
+  }
+
+  //ParsePKIXPublicKey might return an rsa, dsa, or ecdsa public key
+  rsaPub, isRsa := pub.(*rsa.PublicKey)
+  if !isRsa {
+    return nil, fmt.Errorf("We currently only support rsa keys: got '%s'",
+        reflect.TypeOf(pub))
+  }
+
+  return rsaPub, nil
+}
+
 func (k *Key) LoadPublicKey(path string) error {
   keyFile, err := os.Open(path)
   defer keyFile.Close()
@@ -27,23 +50,12 @@ func (k *Key) LoadPublicKey(path string) error {
     return err
   }
 
-  // Parse just to see if this is a pem formatted key
-  // TODO: There could be more key data in _, which we silently ignore here.
-  // Should we handle it / fail / say something about it?
-  data, _ := pem.Decode([]byte(keyBytes))
-  if data == nil {
-    return fmt.Errorf("No valid public rsa key found at '%s'", path)
-  }
-
-  // Parse just to see if this is indeed an rsa public key
-  pub, err := x509.ParsePKIXPublicKey(data.Bytes)
+  // We only parse to see if this is indeed a pem formatted rsa public key,
+  // but don't use the returned *rsa.PublicKey. Instead, we continue with
+  // the original keyBytes from above.
+  _, err = ParseRSAPublicKeyFromPEM(keyBytes)
   if err != nil {
     return err
-  }
-  _, isRsa := pub.(*rsa.PublicKey)
-  if !isRsa {
-    return fmt.Errorf("We currently only support rsa keys: got '%s'",
-        reflect.TypeOf(pub))
   }
 
   // Strip leading and trailing data from PEM file like securesystemslib does
@@ -54,7 +66,7 @@ func (k *Key) LoadPublicKey(path string) error {
   keyEnd := strings.Index(string(keyBytes), keyFooter) + len(keyFooter)
 
   // Fail if header and footer are not present
-  // TODO: Is this necessary? pem.Decode or ParsePKIXPublicKey should already
+  // TODO: Is this necessary? ParseRSAPublicKeyFromPEM should already
   // return an error if header and footer are not present
   if keyStart == -1 || keyEnd == -1 {
     return fmt.Errorf("No valid public rsa key found at '%s'", path)
@@ -112,21 +124,11 @@ func VerifySignature(key Key, sig Signature, data []byte) error {
   if err != nil {
     return err
   }
-
-  block, _ := pem.Decode(pemBytes)
-  if block == nil {
-    return fmt.Errorf("Could not find a public key PEM block")
-  }
-
-  pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+  rsaPub, err := ParseRSAPublicKeyFromPEM(pemBytes)
   if err != nil {
     return err
   }
 
-  rsaPub, ok := pub.(*rsa.PublicKey)
-  if !ok {
-    return fmt.Errorf("Expected '*rsa.PublicKey' got '%s", reflect.TypeOf(pub))
-  }
 
   hashed := sha256.Sum256(data)
 
