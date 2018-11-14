@@ -477,15 +477,8 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key,
     return err
   }
 
-  // Go does not allow to pass []Step as []interface{}
-  // We have to manually copy first :(
-  // https://golang.org/doc/faq#convert_slice_of_interface
-  stepsI := make([]interface{}, len(layout.Steps))
-  for i, v := range layout.Steps {
-      stepsI[i] = v
-  }
   // Verify artifact rules
-  if err := VerifyArtifacts(stepsI, stepsMetadataReduced); err != nil {
+  if err := VerifyArtifacts(layout.StepsAsInterfaceSlice(), stepsMetadataReduced); err != nil {
     return err
   }
 
@@ -500,18 +493,9 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key,
     inspectionMetadata[k] = v
   }
 
-  // Convert []Inspections to []interace{} (see `stepsI` above)
-  inspectionsI := make([]interface{}, len(layout.Inspect))
-  for i, v := range layout.Inspect {
-      inspectionsI[i] = v
-  }
-
-  if err := VerifyArtifacts(inspectionsI, inspectionMetadata); err != nil {
+  if err := VerifyArtifacts(layout.InspectAsInterfaceSlice(), inspectionMetadata); err != nil {
     return err
   }
 
   return nil
 }
-
-
-

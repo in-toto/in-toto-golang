@@ -68,6 +68,27 @@ type Layout struct {
   Readme string `json:"readme"`
 }
 
+// Go does not allow to pass `[]T` (slice with certain type) to a function
+// the accepts `[]interface{}` (slice with generic type)
+// We have to manually create the interface slice first, see
+// https://golang.org/doc/faq#convert_slice_of_interface
+// TODO: Is there a better way to do polymorphism for steps and inspections?
+func (l *Layout) StepsAsInterfaceSlice() []interface{} {
+  stepsI := make([]interface{}, len(l.Steps))
+  for i, v := range l.Steps {
+      stepsI[i] = v
+  }
+  return stepsI
+}
+func (l *Layout) InspectAsInterfaceSlice() []interface{} {
+  inspectionsI := make([]interface{}, len(l.Inspect))
+  for i, v := range l.Inspect {
+      inspectionsI[i] = v
+  }
+  return inspectionsI
+}
+
+
 type Metablock struct {
   // NOTE: Whenever we want to access an attribute of `Signed` we have to
   // perform type assertion, e.g. `metablock.Signed.(Layout).Keys`
