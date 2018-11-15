@@ -1,3 +1,8 @@
+/*
+Package in_toto implements types and routines to verify a software supply chain
+according to the in-toto specification.
+https://github.com/in-toto/docs/blob/master/in-toto-spec.md
+*/
 package in_toto
 
 import (
