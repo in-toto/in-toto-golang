@@ -76,14 +76,14 @@ type Layout struct {
 func (l *Layout) StepsAsInterfaceSlice() []interface{} {
   stepsI := make([]interface{}, len(l.Steps))
   for i, v := range l.Steps {
-      stepsI[i] = v
+    stepsI[i] = v
   }
   return stepsI
 }
 func (l *Layout) InspectAsInterfaceSlice() []interface{} {
   inspectionsI := make([]interface{}, len(l.Inspect))
   for i, v := range l.Inspect {
-      inspectionsI[i] = v
+    inspectionsI[i] = v
   }
   return inspectionsI
 }
