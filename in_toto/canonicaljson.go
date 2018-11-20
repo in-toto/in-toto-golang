@@ -11,15 +11,28 @@ import (
   "errors"
 )
 
+/*
+_encode_canonical_string is a helper function to canonicalize the passed string
+according to the OLPC canonical JSON specification for strings (see
+http://wiki.laptop.org/go/Canonical_JSON).  String canonicalization consists of
+escaping backslashes ("\") and double quotes (") and wrapping the resulting
+string in double quotes (").
+*/
 func _encode_canonical_string(s string) string  {
   re := regexp.MustCompile(`([\"\\])`)
   return fmt.Sprintf("\"%s\"", re.ReplaceAllString(s, "\\$1"))
 }
 
+/*
+_encode_canonical is a helper function to recursively canonicalize the passed
+object according to the OLPC canonical JSON specification (see
+http://wiki.laptop.org/go/Canonical_JSON) and write it to the passed
+*bytes.Buffer.  If canonicalization fails it returns an error.
+*/
 func _encode_canonical(obj interface{}, result *bytes.Buffer) (err error) {
   // Since this function is called recursively, we use panic if an error occurs
-  // and recover in below function, which is always called before returning, to
-  // set the error that is returned eventually
+  // and recover in a deferred function, which is always called before
+  // returning. There we set the error that is returned eventually.
   defer func() {
     if r := recover(); r != nil {
         err = errors.New(r.(string))
@@ -37,17 +50,18 @@ func _encode_canonical(obj interface{}, result *bytes.Buffer) (err error) {
         result.WriteString("false")
       }
 
-    // Golang's JSON decoder that we always use reads before doing
-    // canonicalization stores alls JSON numbers as float64 so it is safe to
-    // only expect float64 Also securesystemslib only does ints in
-    // canonicalization, so it is safe to convert the float to an int before
-    // writing its ASCII representation
+    // Golang's JSON decoder, which we use before canonicalization, in order to
+    // transform any passed object to a generic JSON object, stores JSON
+    // numbers as float64. Hence, it is safe to expect all numeric values to be
+    // float64.
     case float64:
+      // The used canonicalization spec only allows non-floating point numbers
       result.WriteString(strconv.Itoa(int(objAsserted)))
 
     case nil:
       result.WriteString("null")
 
+    // Canonicalize slice
     case []interface{}:
       result.WriteString("[")
       for i, val := range objAsserted {
@@ -58,7 +72,6 @@ func _encode_canonical(obj interface{}, result *bytes.Buffer) (err error) {
       }
       result.WriteString("]")
 
-    // It should be safe to assume that the keys are always strings
     case map[string]interface{}:
       result.WriteString("{")
 
@@ -83,12 +96,19 @@ func _encode_canonical(obj interface{}, result *bytes.Buffer) (err error) {
       result.WriteString("}")
 
     default:
+      // We recover in a deferred function defined above
       panic(fmt.Sprintf("Can't canonicalize '%s' of type '%s'",
           objAsserted, reflect.TypeOf(objAsserted)))
   }
   return nil
 }
 
+/*
+encode_canonical JSON canonicalizes the passed object and returns it as a byte
+slice.  It uses the OLPC canonical JSON specification (see
+http://wiki.laptop.org/go/Canonical_JSON).  If canonicalization fails the byte
+slice is nil and the second return value contains the error.
+*/
 func encode_canonical(obj interface{}) ([]byte, error) {
   // FIXME: Terrible hack to turn the passed struct into a map, converting
   // the struct's variable names to the json key names defined in the struct

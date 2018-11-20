@@ -10,6 +10,18 @@ import (
   "crypto/sha256"
 )
 
+
+/*
+RecordArtifact reads and hashes the contents of the file at the passed path
+using sha256 and returns a map in the following format:
+  {
+    "<path>": {
+      "sha256": <hex representation of hash>
+    }
+  }
+If reading the file fails, the first return value is nil and the second return
+value is the error.
+*/
 func RecordArtifact(path string) (map[string]interface{}, error) {
   // Read file from passed path
   content, err := ioutil.ReadFile(path)
@@ -24,9 +36,25 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
   return map[string]interface{} {
     "sha256" : fmt.Sprintf("%x", hashed),
   }, nil
-
 }
 
+
+/*
+RecordArtifacts walks through the passed slice of paths, traversing
+subdirectories, and calls RecordArtifact for each file.  It returns a map in
+the following format:
+  {
+    "<path>": {
+      "sha256": <hex representation of hash>
+    },
+    "<path>": {
+      "sha256": <hex representation of hash>
+    },
+    ...
+  }
+If recording an artifact fails the first return value is nil and the second
+return value is the error.
+*/
 func RecordArtifacts(paths []string) (map[string]interface{}, error) {
   artifacts := make(map[string]interface{})
   // NOTE: Walk cannot follow symlinks
@@ -52,6 +80,11 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
   return artifacts, nil
 }
 
+
+/*
+WaitErrToExitCode converts an error returned by Cmd.wait() to an exit code.  It
+returns -1 if no exit code can be inferred.
+*/
 func WaitErrToExitCode(err error) int {
   // If there's no exit code, we return -1
   retVal := -1
@@ -75,6 +108,21 @@ func WaitErrToExitCode(err error) int {
   return retVal
 }
 
+
+/*
+RunCommand executes the passed command in a subprocess.  The first element of
+cmdArgs is used as executable and the rest as command arguments.  It captures
+and returns stdout, stderr and exit code.  The format of the returned map is:
+  {
+    "return-value": <exit code>,
+    "stdout": "<standard output>",
+    "stderr": "<standard error>"
+  }
+If the command cannot be executed or no pipes for stdout or stderr can be
+created the first return value is nil and the second return value is the error.
+NOTE: Since stdout and stderr are captured, they cannot be seen during the
+command execution.
+*/
 func RunCommand(cmdArgs []string) (map[string]interface{}, error) {
 
   cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
@@ -105,6 +153,15 @@ func RunCommand(cmdArgs []string) (map[string]interface{}, error) {
 }
 
 
+/*
+InTotoRun executes commands, e.g. for software supply chain steps or
+inspections of an in-toto layout, and creates and returns corresponding link
+metadata.  Link metadata contains recorded products at the passed productPaths
+and materials at the passed materialPaths.  The returned link is wrapped in a
+Metablock object.  If command execution or artifact recording fails the first
+return value is nil and the second return value is the error.
+NOTE: Currently InTotoRun cannot be used to sign Link metadata.
+*/
 func InTotoRun(name string, materialPaths []string, productPaths []string,
     cmdArgs []string) (Metablock, error) {
   var linkMb Metablock

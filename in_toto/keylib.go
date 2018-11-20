@@ -14,6 +14,12 @@ import (
   "reflect"
 )
 
+/*
+ParseRSAPublicKeyFromPEM parses the passed pemBytes as e.g. read from a PEM
+formatted file, and instantiates and returns the corresponding RSA public key.
+If the no RSA public key can be parsed, the first return value is nil and the
+second return value is the error.
+*/
 func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
   // TODO: There could be more key data in _, which we silently ignore here.
   // Should we handle it / fail / say something about it?
@@ -37,6 +43,12 @@ func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
   return rsaPub, nil
 }
 
+
+/*
+LoadPublicKey parses an RSA public key from a PEM formatted file at the passed
+path into the Key object on which it was called.  It returns an error if the
+file at path does not exist or is not a PEM formatted RSA public key.
+*/
 func (k *Key) LoadPublicKey(path string) error {
   keyFile, err := os.Open(path)
   defer keyFile.Close()
@@ -116,6 +128,11 @@ func (k *Key) LoadPublicKey(path string) error {
 }
 
 
+/*
+VerifySignature uses the passed Key to verify the passed Signature over the
+passed data.  It returns an error if the key is not a valid RSA public key or
+if the signature is not valid for the data.
+*/
 func VerifySignature(key Key, sig Signature, data []byte) error {
   // Create rsa.PublicKey object from DER encoded public key string as
   // found in the public part of the keyval part of a securesystemslib key dict

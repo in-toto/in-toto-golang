@@ -5,6 +5,7 @@ import (
   "strings"
   )
 
+// An error message issued in UnpackRule if it receives a malformed rule.
 var errorMsg string = "Wrong rule format, available formats are:\n" +
   "\tMATCH <pattern> [IN <source-path-prefix>] WITH (MATERIALS|PRODUCTS)" +
       " [IN <destination-path-prefix>] FROM <step>,\n" +
@@ -15,14 +16,39 @@ var errorMsg string = "Wrong rule format, available formats are:\n" +
   "\tDISALLOW <pattern>\n\n"
 
 
+/*
+UnpackRule parses the passed rule and extracts and returns the information
+required for rule processing.  It can be used to verify if a rule has a valid
+format.  Available rule formats are:
+  MATCH <pattern> [IN <source-path-prefix>] WITH (MATERIALS|PRODUCTS)
+      [IN <destination-path-prefix>] FROM <step>,
+  CREATE <pattern>,
+  DELETE <pattern>,
+  MODIFY <pattern>,
+  ALLOW <pattern>,
+  DISALLOW <pattern>
 
+Rule tokens are normalized to lower case before returning.  The returned map
+has the following format:
+  {
+    "type": "match" | "create" | "delete" |"modify" | "allow" | "disallow"
+    "pattern": "<file name pattern>",
+    "srcPrefix": "<path or empty string>", // MATCH rule only
+    "dstPrefix": "<path or empty string>", // MATCH rule only
+    "dstType": "materials" | "products">, // MATCH rule only
+    "dstName": "<step name>", // Match rule only
+  }
+
+If the rule does not match any of the available formats the first return value
+is nil and the second return value is the error.
+*/
 func UnpackRule(rule []string) (map[string]string, error) {
   // Cache rule len
   ruleLen := len(rule)
 
-  // Create all lower rule copy to case insensitively parse out tokens whose
-  // position we don't know yet
-  // We keep the original rule to retain the non-token elements' case
+  // Create all lower rule copy to case-insensitively parse out tokens whose
+  // position we don't know yet. We keep the original rule to retain the
+  // non-token elements' case.
   ruleLower := make([]string, ruleLen)
   for i, val := range rule {
     ruleLower[i] = strings.ToLower(val)
@@ -102,6 +128,5 @@ func UnpackRule(rule []string) (map[string]string, error) {
     default:
       return nil,
           fmt.Errorf("%s Got:\n\t %s", errorMsg, rule)
-
   }
 }
