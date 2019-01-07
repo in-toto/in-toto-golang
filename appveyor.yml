@@ -1,0 +1,11 @@
+build: off
+
+clone_folder: c:\gopath\src\github.com\in-toto\in-toto-golang
+
+environment:
+  GOPATH: c:\gopath
+
+stack: go 1.11
+
+test_script:
+  - go test ./...
