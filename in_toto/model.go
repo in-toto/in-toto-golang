@@ -69,7 +69,7 @@ type Layout struct {
 }
 
 // Go does not allow to pass `[]T` (slice with certain type) to a function
-// the accepts `[]interface{}` (slice with generic type)
+// that accepts `[]interface{}` (slice with generic type)
 // We have to manually create the interface slice first, see
 // https://golang.org/doc/faq#convert_slice_of_interface
 // TODO: Is there a better way to do polymorphism for steps and inspections?
