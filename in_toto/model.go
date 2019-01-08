@@ -38,13 +38,17 @@ type Link struct {
 const LinkNameFormat = "%s.%.8s.link"
 const LinkNameFormatShort = "%s.link"
 
-type Inspection struct {
-  Type string `json:"_type"`
-  Run []string `json:"run"`
-  // TODO: Abstraction for Steps and Inspections?
+
+type SupplyChainItem struct {
   Name string  `json:"name"`
   ExpectedMaterials [][]string `json:"expected_materials"`
   ExpectedProducts [][]string `json:"expected_products"`
+}
+
+type Inspection struct {
+  Type string `json:"_type"`
+  Run []string `json:"run"`
+  SupplyChainItem
 }
 
 type Step struct {
@@ -52,11 +56,7 @@ type Step struct {
   PubKeys []string `json:"pubkeys"`
   ExpectedCommand []string `json:"expected_command"`
   Threshold int `json:"threshold"`
-
-  // TODO: Abstraction for Steps and Inspections?
-  Name string  `json:"name"`
-  ExpectedMaterials [][]string `json:"expected_materials"`
-  ExpectedProducts [][]string `json:"expected_products"`
+  SupplyChainItem
 }
 
 type Layout struct {
@@ -67,6 +67,27 @@ type Layout struct {
   Expires string `json:"expires"`
   Readme string `json:"readme"`
 }
+
+// Go does not allow to pass `[]T` (slice with certain type) to a function
+// that accepts `[]interface{}` (slice with generic type)
+// We have to manually create the interface slice first, see
+// https://golang.org/doc/faq#convert_slice_of_interface
+// TODO: Is there a better way to do polymorphism for steps and inspections?
+func (l *Layout) StepsAsInterfaceSlice() []interface{} {
+  stepsI := make([]interface{}, len(l.Steps))
+  for i, v := range l.Steps {
+    stepsI[i] = v
+  }
+  return stepsI
+}
+func (l *Layout) InspectAsInterfaceSlice() []interface{} {
+  inspectionsI := make([]interface{}, len(l.Inspect))
+  for i, v := range l.Inspect {
+    inspectionsI[i] = v
+  }
+  return inspectionsI
+}
+
 
 type Metablock struct {
   // NOTE: Whenever we want to access an attribute of `Signed` we have to
