@@ -8,4 +8,5 @@ environment:
 stack: go 1.11
 
 test_script:
+  - ps: if (gofmt -l in_toto) { Write-Error "Use gofmt" }
   - go test ./...
