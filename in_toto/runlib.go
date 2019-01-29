@@ -59,17 +59,23 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 	for _, path := range paths {
 		err := filepath.Walk(path,
 			func(path string, info os.FileInfo, err error) error {
+				// Abort if Walk function has a problem, e.g. path does not exist)
+				if err != nil {
+					return err
+				}
 				// Don't hash directories
 				if info.IsDir() {
 					return nil
 				}
 				artifact, err := RecordArtifact(path)
+				// Abort if artifact can't be recorded, e.g. due to file permissions
 				if err != nil {
 					return err
 				}
 				artifacts[path] = artifact
 				return nil
 			})
+
 		if err != nil {
 			return nil, err
 		}
