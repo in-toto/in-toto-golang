@@ -224,8 +224,8 @@ func (mb *Metablock) Load(path string) error {
 		mb.Signed = layout
 
 	} else {
-		return fmt.Errorf(`The '_type' field of the 'signed' part of a metadata
-        file must be one of 'link' or 'layout'`)
+		return fmt.Errorf("The '_type' field of the 'signed' part of a metadata" +
+			" file must be one of 'link' or 'layout'")
 	}
 
 	return nil
