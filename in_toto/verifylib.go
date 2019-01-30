@@ -533,6 +533,26 @@ func VerifyLayoutSignatures(layoutMb Metablock,
 	return nil
 }
 
+func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (Metablock, error) {
+    summaryLink := make(Link)
+    if len(layout.Steps) > 0 {
+        firstStepLink := stepsMetadataReduced[layout.Steps[0].Name]
+        lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps) - 1].Name]
+
+        summaryLink.Materials = firstStepLink.Signed.Materials
+        summaryLink.Name = firstStepLink.Signed.Name
+
+        summaryLink.Products = lastStepLink.Signed.Products
+        summaryLink.ByProducts = lastStepLink.Signed.ByProducts
+        summaryLink.Command = lastStepLink.Signed.Command
+    }
+
+    result := make(Metablock)
+    result.Signed = summaryLink
+
+    return result
+}
+
 /*
 InTotoVerify can be used to verify an entire software supply chain according to
 the in-toto specification.  It requires a path to a root layout, a map that
