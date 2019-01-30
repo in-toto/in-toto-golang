@@ -432,10 +432,10 @@ func VerifyLinkSignatureThesholds(layout Layout,
 
 		if len(linksPerStepVerified) < step.Threshold {
 			linksPerStep, _ := stepsMetadata[step.Name]
-			return nil, fmt.Errorf(`Step '%s' requires '%d' link metadata file(s).
-          '%d' out of '%d' available link(s) have a valid signature from an
-          authorized signer.`, step.Name,
-				step.Threshold, len(linksPerStepVerified), len(linksPerStep))
+			return nil, fmt.Errorf("Step '%s' requires '%d' link metadata file(s)."+
+				" '%d' out of '%d' available link(s) have a valid signature from an"+
+				" authorized signer.", step.Name, step.Threshold,
+				len(linksPerStepVerified), len(linksPerStep))
 		}
 	}
 	return stepsMetadataVerified, nil
@@ -486,8 +486,8 @@ func LoadLinksForLayout(layout Layout, linkDir string) (
 		}
 
 		if len(linksPerStep) < step.Threshold {
-			return nil, fmt.Errorf(`Step '%s' requires '%d' link metadata file(s),
-          found '%d'.`, step.Name, step.Threshold, len(linksPerStep))
+			return nil, fmt.Errorf("Step '%s' requires '%d' link metadata file(s),"+
+				" found '%d'.", step.Name, step.Threshold, len(linksPerStep))
 		}
 
 		stepsMetadata[step.Name] = linksPerStep
