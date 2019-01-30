@@ -534,25 +534,39 @@ func VerifyLayoutSignatures(layoutMb Metablock,
 }
 
 // What are the possible errors here?
-// Handle type assertions for Metablock.Signed
 func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (Metablock) {
     summaryLink := make(Link)
     if len(layout.Steps) > 0 {
         firstStepLink := stepsMetadataReduced[layout.Steps[0].Name]
         lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps) - 1].Name]
 
-        summaryLink.Materials = firstStepLink.Signed.(Link).Materials
-        summaryLink.Name = firstStepLink.Signed.(Link).Name
+        summaryLink.Materials, ok = firstStepLink.Signed.(Link).Materials
+        if !ok {
+            return nil, fmt.Errorf("Type assertion error")
+        }
+        summaryLink.Name, ok = firstStepLink.Signed.(Link).Name
+        if !ok {
+            return nil, fmt.Errorf("Type assertion error")
+        }
 
-        summaryLink.Products = lastStepLink.Signed.(Link).Products
-        summaryLink.ByProducts = lastStepLink.Signed.(Link).ByProducts
-        summaryLink.Command = lastStepLink.Signed.(Link).Command
+        summaryLink.Products, ok = lastStepLink.Signed.(Link).Products
+        if !ok {
+            return nil, fmt.Errorf("Type assertion error")
+        }
+        summaryLink.ByProducts, ok = lastStepLink.Signed.(Link).ByProducts
+        if !ok {
+            return nil, fmt.Errorf("Type assertion error")
+        }
+        summaryLink.Command, ok = lastStepLink.Signed.(Link).Command
+        if !ok {
+            return nil, fmt.Errorf("Type assertion error")
+        }
     }
 
     result := make(Metablock)
     result.Signed = summaryLink
 
-    return result
+    return result, nil
 }
 
 /*
