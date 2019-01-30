@@ -541,12 +541,12 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
         firstStepLink := stepsMetadataReduced[layout.Steps[0].SupplyChainItem.Name]
         lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps) - 1].SupplyChainItem.Name]
 
-        summaryLink.Materials = firstStepLink.Signed.Materials
-        summaryLink.Name = firstStepLink.Signed.SupplyChainItem.Name
+        summaryLink.Materials = firstStepLink.Signed.(Link).Materials
+        summaryLink.Name = firstStepLink.Signed.(Link).SupplyChainItem.Name
 
-        summaryLink.Products = lastStepLink.Signed.Products
-        summaryLink.ByProducts = lastStepLink.Signed.ByProducts
-        summaryLink.Command = lastStepLink.Signed.Command
+        summaryLink.Products = lastStepLink.Signed.(Link).Products
+        summaryLink.ByProducts = lastStepLink.Signed.(Link).ByProducts
+        summaryLink.Command = lastStepLink.Signed.(Link).Command
     }
 
     result := make(Metablock)
