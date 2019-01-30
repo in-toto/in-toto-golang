@@ -538,11 +538,11 @@ func VerifyLayoutSignatures(layoutMb Metablock,
 func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (Metablock) {
     summaryLink := make(Link)
     if len(layout.Steps) > 0 {
-        firstStepLink := stepsMetadataReduced[layout.Steps[0].SupplyChainItem.Name]
-        lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps) - 1].SupplyChainItem.Name]
+        firstStepLink := stepsMetadataReduced[layout.Steps[0].Name]
+        lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps) - 1].Name]
 
         summaryLink.Materials = firstStepLink.Signed.(Link).Materials
-        summaryLink.Name = firstStepLink.Signed.(Link).SupplyChainItem.Name
+        summaryLink.Name = firstStepLink.Signed.(Link).Name
 
         summaryLink.Products = lastStepLink.Signed.(Link).Products
         summaryLink.ByProducts = lastStepLink.Signed.(Link).ByProducts
