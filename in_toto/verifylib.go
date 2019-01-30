@@ -533,14 +533,16 @@ func VerifyLayoutSignatures(layoutMb Metablock,
 	return nil
 }
 
-func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (Metablock, error) {
+// What are the possible errors here?
+// Handle type assertions for Metablock.Signed
+func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (Metablock) {
     summaryLink := make(Link)
     if len(layout.Steps) > 0 {
-        firstStepLink := stepsMetadataReduced[layout.Steps[0].Name]
-        lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps) - 1].Name]
+        firstStepLink := stepsMetadataReduced[layout.Steps[0].SupplyChainItem.Name]
+        lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps) - 1].SupplyChainItem.Name]
 
         summaryLink.Materials = firstStepLink.Signed.Materials
-        summaryLink.Name = firstStepLink.Signed.Name
+        summaryLink.Name = firstStepLink.Signed.SupplyChainItem.Name
 
         summaryLink.Products = lastStepLink.Signed.Products
         summaryLink.ByProducts = lastStepLink.Signed.ByProducts
