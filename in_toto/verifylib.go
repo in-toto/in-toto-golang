@@ -540,27 +540,20 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
         firstStepLink := stepsMetadataReduced[layout.Steps[0].Name]
         lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps) - 1].Name]
 
-        summaryLink.Materials, ok = firstStepLink.Signed.(Link).Materials
-        if !ok {
-            return nil, fmt.Errorf("Type assertion error")
+        // Move type assertions here and immediately error out?
+        if !firstStepLink.Signed.(Link) {
+            return nil, fmt.Errorf("Sublayout not expanded")
         }
-        summaryLink.Name, ok = firstStepLink.Signed.(Link).Name
-        if !ok {
-            return nil, fmt.Errorf("Type assertion error")
+        if !lastStepLink.Signed.(Link) {
+            return nil, fmt.Errorf("Sublayout not expanded")
         }
 
+        summaryLink.Materials, ok = firstStepLink.Signed.(Link).Materials
+        summaryLink.Name, ok = firstStepLink.Signed.(Link).Name
+
         summaryLink.Products, ok = lastStepLink.Signed.(Link).Products
-        if !ok {
-            return nil, fmt.Errorf("Type assertion error")
-        }
         summaryLink.ByProducts, ok = lastStepLink.Signed.(Link).ByProducts
-        if !ok {
-            return nil, fmt.Errorf("Type assertion error")
-        }
         summaryLink.Command, ok = lastStepLink.Signed.(Link).Command
-        if !ok {
-            return nil, fmt.Errorf("Type assertion error")
-        }
     }
 
     result := make(Metablock)
