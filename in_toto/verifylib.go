@@ -534,7 +534,7 @@ func VerifyLayoutSignatures(layoutMb Metablock,
 }
 
 // What are the possible errors here?
-func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (Metablock) {
+func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (Metablock, error) {
     summaryLink := make(Link)
     if len(layout.Steps) > 0 {
         firstStepLink := stepsMetadataReduced[layout.Steps[0].Name]
@@ -572,7 +572,10 @@ func VerifySublayouts(layout Layout, stepsMetadataVerified map[string]map[string
 
                 sublayoutLinkDir := stepName + "." + keyId[:8]
                 sublayoutLinkPath := filepath.Join(superLayoutLinkPath, sublayoutLinkDir)
-                summaryLink = InTotoVerify(linkData, layoutKeys, sublayoutLinkPath)
+                summaryLink, err = InTotoVerify(linkData, layoutKeys, sublayoutLinkPath)
+                if err != nil {
+                    return nil, err
+                }
                 linkData[keyId] = summaryLink
             }
 
@@ -606,18 +609,18 @@ NOTE: Parameter substitution, sublayout (recursive) verification and artifact
 rules of type "create", "modify" and "delete" are currently not supported.
 */
 func InTotoVerify(layoutPath string, layoutKeys map[string]Key,
-	linkDir string) error {
+	linkDir string) (Metablock, error) {
 
 	var layoutMb Metablock
 
 	// Load layout
 	if err := layoutMb.Load(layoutPath); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Verify root signatures
 	if err := VerifyLayoutSignatures(layoutMb, layoutKeys); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Extract the layout from its Metablock container (for further processing)
@@ -625,7 +628,7 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key,
 
 	// Verify layout expiration
 	if err := VerifyLayoutExpiration(layout); err != nil {
-		return err
+		return nil, err
 	}
 
 	// TODO: Substitute parameters
@@ -633,39 +636,40 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key,
 	// Load links for layout
 	stepsMetadata, err := LoadLinksForLayout(layout, linkDir)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Verify link signatures
 	stepsMetadataVerified, err := VerifyLinkSignatureThesholds(layout,
 		stepsMetadata)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// TODO: Verify sublayouts
+    stepsSublayoutVerified, err := VerifySublayouts(layout, stepsMetadataVerified, linkDir)
 
 	// Verify command alignment (WARNING only)
-	VerifyStepCommandAlignment(layout, stepsMetadataVerified)
+	VerifyStepCommandAlignment(layout, stepsSublayoutVerified)
 
 	// Given that signature thresholds have been checked above and the rest of
 	// the relevant link properties, i.e. materials and products, have to be
 	// exactly equal, we can reduce the map of steps metadata. However, we error
 	// if the relevant properties are not equal among links of a step.
 	stepsMetadataReduced, err := ReduceStepsMetadata(layout,
-		stepsMetadataVerified)
+		stepSublayoutVerified)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Verify artifact rules
 	if err := VerifyArtifacts(layout.StepsAsInterfaceSlice(), stepsMetadataReduced); err != nil {
-		return err
+		return nil, err
 	}
 
 	inspectionMetadata, err := RunInspections(layout)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Add steps metadata to inspection metadata, because inspection artifact
@@ -675,8 +679,13 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key,
 	}
 
 	if err := VerifyArtifacts(layout.InspectAsInterfaceSlice(), inspectionMetadata); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+    summaryLink, err := GetSummaryLink(layout, stepsMetadataReduced)
+    if err != nil {
+        return nil, err
+    }
+
+	return summaryLink, nil
 }
