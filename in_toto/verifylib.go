@@ -562,6 +562,25 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
     return result, nil
 }
 
+
+func VerifySublayouts(layout Layout, stepsMetadataVerified map[string]map[string]Metablock, superLayoutLinkPath string) (map[string]map[string]Metablock, error) {
+    for stepName, linkData := range stepsMetadataVerified {
+        for keyId, metadata := range linkData {
+            if metadata.Signed.(Layout) {
+                layoutKeys := make(map[string]Key)
+                layoutKeys[keyId] = layout.Keys[keyId]
+
+                sublayoutLinkDir := stepName + "." + keyId[:8]
+                sublayoutLinkPath := filepath.Join(superLayoutLinkPath, sublayoutLinkDir)
+                summaryLink = InTotoVerify(linkData, layoutKeys, sublayoutLinkPath)
+                linkData[keyId] = summaryLink
+            }
+
+        }
+    }
+    return stepsMetadataVerified, nil
+}
+
 /*
 InTotoVerify can be used to verify an entire software supply chain according to
 the in-toto specification.  It requires a path to a root layout, a map that
