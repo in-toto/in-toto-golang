@@ -104,7 +104,7 @@ func TestGetSummaryLink(t *testing.T) {
 	if summaryLink, err := GetSummaryLink(demoLayout.Signed.(Layout), demoLink); err != nil {
 		t.Error(err)
 	}
-	if summaryLink.Type != codeLink.Signed.(Link).Type {
+	if summaryLink.Signed.(Link).Type != codeLink.Signed.(Link).Type {
 		t.Error("Result isn't of type Link")
 	}
 	if !reflect.DeepEqual(summaryLink.Signed.(Link).Name, codeLink.Signed.(Link).Name) {
@@ -120,7 +120,7 @@ func TestGetSummaryLink(t *testing.T) {
 		t.Errorf("Summary Link products don't match. Expected '%s', returned '%s",
 			packageLink.Signed.(Link).Products, summaryLink.Signed.(Link).Products)
 	}
-	if !reflect.DeepEqual(summaryLink.Signed.(Link).Comamnd, packageLink.Signed.(Link).Command) {
+	if !reflect.DeepEqual(summaryLink.Signed.(Link).Command, packageLink.Signed.(Link).Command) {
 		t.Errorf("Summary Link command doesn't match. Expected '%s', returned '%s",
 			packageLink.Signed.(Link).Command, summaryLink.Signed.(Link).Command)
 	}
