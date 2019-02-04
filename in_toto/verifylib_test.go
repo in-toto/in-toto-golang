@@ -51,7 +51,7 @@ func TestInTotoVerifyPass(t *testing.T) {
 	// implement signing and create the date and sign the layout on the fly.
 	layoutPath := "demo.layout.template"
 	pubKeyPath := "alice.pub"
-	linkDir := "."
+	linkDir := "../test/data"
 
 	var layoutMb Metablock
 	if err := layoutMb.Load(layoutPath); err != nil {
