@@ -5,9 +5,9 @@ import (
 	"os"
 )
 
-const LayoutPath = "../test/data/demo.layout.template"
-const LayoutKeyPath = "../test/data/alice.pub"
-const LinkDirectory = "../test/data/"
+const LayoutPath = "demo.layout.template"
+const LayoutKeyPath = "alice.pub"
+const LinkDirectory = "../test/data"
 
 func ExampleInTotoVerify() {
 	// Load the layout verification key and create a map as is required by
