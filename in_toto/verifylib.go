@@ -535,28 +535,28 @@ func VerifyLayoutSignatures(layoutMb Metablock,
 
 // What are the possible errors here?
 func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (Metablock, error) {
-    summaryLink := make(Link)
+    var summaryLink Link
+	var result Metablock
     if len(layout.Steps) > 0 {
         firstStepLink := stepsMetadataReduced[layout.Steps[0].Name]
         lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps) - 1].Name]
 
         // Move type assertions here and immediately error out?
-        if !firstStepLink.Signed.(Link) {
-            return nil, fmt.Errorf("Sublayout not expanded")
+        if firstStepLink.Signed.(Link).Type != "link" {
+            return result, fmt.Errorf("Sublayout not expanded")
         }
-        if !lastStepLink.Signed.(Link) {
-            return nil, fmt.Errorf("Sublayout not expanded")
+        if lastStepLink.Signed.(Link).Type != "link" {
+            return result, fmt.Errorf("Sublayout not expanded")
         }
 
-        summaryLink.Materials, ok = firstStepLink.Signed.(Link).Materials
-        summaryLink.Name, ok = firstStepLink.Signed.(Link).Name
+        summaryLink.Materials = firstStepLink.Signed.(Link).Materials
+        summaryLink.Name = firstStepLink.Signed.(Link).Name
 
-        summaryLink.Products, ok = lastStepLink.Signed.(Link).Products
-        summaryLink.ByProducts, ok = lastStepLink.Signed.(Link).ByProducts
-        summaryLink.Command, ok = lastStepLink.Signed.(Link).Command
+        summaryLink.Products = lastStepLink.Signed.(Link).Products
+        summaryLink.ByProducts = lastStepLink.Signed.(Link).ByProducts
+        summaryLink.Command = lastStepLink.Signed.(Link).Command
     }
 
-    result := make(Metablock)
     result.Signed = summaryLink
 
     return result, nil
@@ -566,13 +566,13 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
 func VerifySublayouts(layout Layout, stepsMetadataVerified map[string]map[string]Metablock, superLayoutLinkPath string) (map[string]map[string]Metablock, error) {
     for stepName, linkData := range stepsMetadataVerified {
         for keyId, metadata := range linkData {
-            if metadata.Signed.(Layout) {
+            if metadata.Signed.(Layout).Type == "layout" {
                 layoutKeys := make(map[string]Key)
                 layoutKeys[keyId] = layout.Keys[keyId]
 
                 sublayoutLinkDir := stepName + "." + keyId[:8]
                 sublayoutLinkPath := filepath.Join(superLayoutLinkPath, sublayoutLinkDir)
-                summaryLink, err = InTotoVerify(linkData, layoutKeys, sublayoutLinkPath)
+                summaryLink, err := InTotoVerify(linkData, layoutKeys, sublayoutLinkPath)
                 if err != nil {
                     return nil, err
                 }
