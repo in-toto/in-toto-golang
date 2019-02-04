@@ -86,45 +86,52 @@ func TestInTotoVerifyLayoutDoesNotExist(t *testing.T) {
 
 func TestGetSummaryLink(t *testing.T) {
 	var demoLayout Metablock
-	if err := demoLayout.Load(testData + "/demo.layout.template"); err != nil {
+	if err := demoLayout.Load("demo.layout.template"); err != nil {
 		t.Error(err)
 	}
 	var codeLink Metablock
-	if err := codeLink.Load(testData + "/write-code.776a00e2.link"); err != nil {
+	if err := codeLink.Load("write-code.776a00e2.link"); err != nil {
 		t.Error(err)
 	}
 	var packageLink Metablock
-	if err := packageLink.Load(testData + "/package.2f89b927.link"); err != nil {
+	if err := packageLink.Load("package.2f89b927.link"); err != nil {
 		t.Error(err)
 	}
-	var demoLink map[string]Metablock
+	demoLink := make(map[string]Metablock)
 	demoLink["write-code"] = codeLink
 	demoLink["package"] = packageLink
 
-	if summaryLink, err := GetSummaryLink(demoLayout.Signed.(Layout), demoLink); err != nil {
+	var summaryLink Metablock
+	var err error
+	if summaryLink, err = GetSummaryLink(demoLayout.Signed.(Layout), demoLink); err != nil {
 		t.Error(err)
 	}
 	if summaryLink.Signed.(Link).Type != codeLink.Signed.(Link).Type {
-		t.Error("Result isn't of type Link")
+		t.Errorf("Summary Link isn't of type Link")
 	}
-	if !reflect.DeepEqual(summaryLink.Signed.(Link).Name, codeLink.Signed.(Link).Name) {
+	if !reflect.DeepEqual(summaryLink.Signed.(Link).Name,
+		codeLink.Signed.(Link).Name) {
 		t.Errorf("Summary Link name doesn't match. Expected '%s', returned '%s",
 			codeLink.Signed.(Link).Name, summaryLink.Signed.(Link).Name)
 	}
-	if !reflect.DeepEqual(summaryLink.Signed.(Link).Materials, codeLink.Signed.(Link).Materials) {
+	if !reflect.DeepEqual(summaryLink.Signed.(Link).Materials,
+		codeLink.Signed.(Link).Materials) {
 		t.Errorf("Summary Link materials don't match. Expected '%s', returned '%s",
 			codeLink.Signed.(Link).Materials, summaryLink.Signed.(Link).Materials)
 	}
 
-	if !reflect.DeepEqual(summaryLink.Signed.(Link).Products, packageLink.Signed.(Link).Products) {
+	if !reflect.DeepEqual(summaryLink.Signed.(Link).Products,
+		packageLink.Signed.(Link).Products) {
 		t.Errorf("Summary Link products don't match. Expected '%s', returned '%s",
 			packageLink.Signed.(Link).Products, summaryLink.Signed.(Link).Products)
 	}
-	if !reflect.DeepEqual(summaryLink.Signed.(Link).Command, packageLink.Signed.(Link).Command) {
+	if !reflect.DeepEqual(summaryLink.Signed.(Link).Command,
+		packageLink.Signed.(Link).Command) {
 		t.Errorf("Summary Link command doesn't match. Expected '%s', returned '%s",
 			packageLink.Signed.(Link).Command, summaryLink.Signed.(Link).Command)
 	}
-	if !reflect.DeepEqual(summaryLink.Signed.(Link).ByProducts, packageLink.Signed.(Link).ByProducts) {
+	if !reflect.DeepEqual(summaryLink.Signed.(Link).ByProducts,
+		packageLink.Signed.(Link).ByProducts) {
 		t.Errorf("Summary Link by-products don't match. Expected '%s', returned '%s",
 			packageLink.Signed.(Link).ByProducts, summaryLink.Signed.(Link).ByProducts)
 	}
