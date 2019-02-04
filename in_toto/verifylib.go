@@ -608,15 +608,8 @@ is returned.
 NOTE: Parameter substitution, sublayout (recursive) verification and artifact
 rules of type "create", "modify" and "delete" are currently not supported.
 */
-func InTotoVerify(layoutPath string, layoutKeys map[string]Key,
+func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 	linkDir string) (Metablock, error) {
-
-	var layoutMb Metablock
-
-	// Load layout
-	if err := layoutMb.Load(layoutPath); err != nil {
-		return nil, err
-	}
 
 	// Verify root signatures
 	if err := VerifyLayoutSignatures(layoutMb, layoutKeys); err != nil {

@@ -53,6 +53,11 @@ func TestInTotoVerifyPass(t *testing.T) {
 	pubKeyPath := "alice.pub"
 	linkDir := "."
 
+	var layoutMb Metablock
+	if err := layoutMb.Load(layoutPath); err != nil {
+		t.Error(err)
+	}
+
 	var pubKey Key
 	if err := pubKey.LoadPublicKey(pubKeyPath); err != nil {
 		t.Error(err)
@@ -63,7 +68,7 @@ func TestInTotoVerifyPass(t *testing.T) {
 	}
 
 	// No error should occur
-	if err := InTotoVerify(layoutPath, layouKeys, linkDir); err != nil {
+	if _, err := InTotoVerify(layoutMb, layouKeys, linkDir); err != nil {
 		t.Error(err)
 	}
 }
