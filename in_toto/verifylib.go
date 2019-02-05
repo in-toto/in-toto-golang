@@ -567,7 +567,7 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
 func VerifySublayouts(layout Layout, stepsMetadataVerified map[string]map[string]Metablock, superLayoutLinkPath string) (map[string]map[string]Metablock, error) {
     for stepName, linkData := range stepsMetadataVerified {
         for keyId, metadata := range linkData {
-            if metadata.Signed.(Layout).Type == "layout" {
+            if metadata.Signed.(Link).Type == "layout" {
                 layoutKeys := make(map[string]Key)
                 layoutKeys[keyId] = layout.Keys[keyId]
 
