@@ -73,17 +73,6 @@ func TestInTotoVerifyPass(t *testing.T) {
 	}
 }
 
-/*
-func TestInTotoVerifyLayoutDoesNotExist(t *testing.T) {
-	err := InTotoVerify("layout/does/not/exist", map[string]Key{},
-		"link/dir/does/not/matter")
-	// Asssert error type to PathError
-	if _, ok := err.(*os.PathError); ok == false {
-		t.Fail()
-	}
-}
-*/
-
 func TestGetSummaryLink(t *testing.T) {
 	var demoLayout Metablock
 	if err := demoLayout.Load("demo.layout.template"); err != nil {
