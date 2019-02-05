@@ -564,7 +564,7 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
 }
 
 
-/*func VerifySublayouts(layout Layout, stepsMetadataVerified map[string]map[string]Metablock, superLayoutLinkPath string) (map[string]map[string]Metablock, error) {
+func VerifySublayouts(layout Layout, stepsMetadataVerified map[string]map[string]Metablock, superLayoutLinkPath string) (map[string]map[string]Metablock, error) {
     for stepName, linkData := range stepsMetadataVerified {
         for keyId, metadata := range linkData {
             if metadata.Signed.(Layout).Type == "layout" {
@@ -573,7 +573,7 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
 
                 sublayoutLinkDir := stepName + "." + keyId[:8]
                 sublayoutLinkPath := filepath.Join(superLayoutLinkPath, sublayoutLinkDir)
-                summaryLink, err := InTotoVerify(linkData, layoutKeys, sublayoutLinkPath)
+                summaryLink, err := InTotoVerify(metadata, layoutKeys, sublayoutLinkPath)
                 if err != nil {
                     return nil, err
                 }
@@ -583,7 +583,7 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
         }
     }
     return stepsMetadataVerified, nil
-}*/
+}
 
 /*
 InTotoVerify can be used to verify an entire software supply chain according to
@@ -643,17 +643,17 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 	}
 
 	// TODO: Verify sublayouts
-    //stepsSublayoutVerified, err := VerifySublayouts(layout, stepsMetadataVerified, linkDir)
+    stepsSublayoutVerified, err := VerifySublayouts(layout, stepsMetadataVerified, linkDir)
 
 	// Verify command alignment (WARNING only)
-	VerifyStepCommandAlignment(layout, stepsMetadataVerified)
+	VerifyStepCommandAlignment(layout, stepsSublayoutVerified)
 
 	// Given that signature thresholds have been checked above and the rest of
 	// the relevant link properties, i.e. materials and products, have to be
 	// exactly equal, we can reduce the map of steps metadata. However, we error
 	// if the relevant properties are not equal among links of a step.
 	stepsMetadataReduced, err := ReduceStepsMetadata(layout,
-		stepsMetadataVerified)
+		stepsSublayoutVerified)
 	if err != nil {
 		return temp, err
 	}
