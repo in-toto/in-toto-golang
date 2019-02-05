@@ -71,6 +71,7 @@ that are not signed, e.g.:
 */
 const LinkNameFormat = "%s.%.8s.link"
 const LinkNameFormatShort = "%s.link"
+const LinkDirFormat = "%s.%.8s"
 
 /*
 SupplyChainItem summarizes common fields of the two available supply chain
