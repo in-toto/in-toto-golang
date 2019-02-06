@@ -27,8 +27,8 @@ returned.  The format is:
     ...
   }
 If executing the inspection command fails, or if the executed command has a
-non-zero exit code, the first return value is nil and the second return value
-is the error.
+non-zero exit code, the first return value is an empty Metablock map and the
+second return value is the error.
 */
 func RunInspections(layout Layout) (map[string]Metablock, error) {
 	inspectionMetadata := make(map[string]Metablock)
@@ -95,7 +95,6 @@ func FnFilter(pattern string, names []string) []string {
 	}
 	return namesFiltered
 }
-
 
 // verifyMatchRule is a helper function to process artifact rules of
 // type MATCH. See VerifyArtifacts for more details.
@@ -293,8 +292,8 @@ step.  The function returns a map with one Metablock (link) per step:
     ...
   }
 If links corresponding to the same step report different Materials or different
-Products, the first return value is nil and the second return value is the
-error.
+Products, the first return value is an empty Metablock map and the second
+return value is the error.
 */
 func ReduceStepsMetadata(layout Layout,
 	stepsMetadata map[string]map[string]Metablock) (map[string]Metablock,
@@ -396,7 +395,8 @@ links with valid signatures from distinct functionaries and has the format:
     ...
   }
 If for any step of the layout there are not enough links available, the first
-return value is nil and the second return value is the error.
+return value is an empty map of Metablock maps and the second return value is
+the error.
 */
 func VerifyLinkSignatureThesholds(layout Layout,
 	stepsMetadata map[string]map[string]Metablock) (
@@ -476,7 +476,7 @@ format:
 If a link cannot be loaded at a constructed link name or is invalid, it is
 ignored. Only a preliminary threshold check is performed, that is, if there
 aren't at least Threshold links for any given step, the first return value
-is nil and the second return value is the error.
+is an empty map of Metablock maps and the second return value is the error.
 */
 func LoadLinksForLayout(layout Layout, linkDir string) (
 	map[string]map[string]Metablock, error) {
