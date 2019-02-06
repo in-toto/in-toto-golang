@@ -75,13 +75,8 @@ func (k *Key) LoadPublicKey(path string) error {
 	keyFooter := "-----END PUBLIC KEY-----"
 	keyStart := strings.Index(string(keyBytes), keyHeader)
 	keyEnd := strings.Index(string(keyBytes), keyFooter) + len(keyFooter)
-
-	// Fail if header and footer are not present
-	// TODO: Is this necessary? ParseRSAPublicKeyFromPEM should already
-	// return an error if header and footer are not present
-	if keyStart == -1 || keyEnd == -1 {
-		return fmt.Errorf("No valid public rsa key found at '%s'", path)
-	}
+	// Successful call to ParseRSAPublicKeyFromPEM already guarantees that
+	// header and footer are present, i.e. `!(keyStart == -1 || keyEnd == -1)`
 	keyBytesStripped := keyBytes[keyStart:keyEnd]
 
 	// Declare values for key
