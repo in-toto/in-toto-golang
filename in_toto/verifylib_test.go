@@ -7,6 +7,8 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"sort"
+	"strings"
 	"testing"
 )
 
@@ -183,4 +185,502 @@ func TestVerifySublayouts(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestRunInspections(t *testing.T) {
+	// Load layout template used as basis for all tests
+	var mb Metablock
+	mb.Load("demo.layout.template")
+	layout := mb.Signed.(Layout)
+
+	// Test 1
+	// Successfully run two inspections foo and bar, testing that each generates
+	// a link file and they record the correct materials and products.
+	layout.Inspect = []Inspection{
+		{
+			SupplyChainItem: SupplyChainItem{Name: "foo"},
+			Run:             []string{"sh", "-c", "true"},
+		},
+		{
+			SupplyChainItem: SupplyChainItem{Name: "bar"},
+			Run:             []string{"sh", "-c", "true"},
+		},
+	}
+
+	// Make a list of files in current dir (all must be recorded as artifacts)
+	availableFiles, _ := filepath.Glob("*")
+	result, err := RunInspections(layout)
+
+	// Error must be nil
+	if err != nil {
+		t.Errorf("RunInspections returned %s as error, expected nil.",
+			err)
+	}
+
+	// Assert contents of inspection link metadata for both inspections
+	for _, inspectionName := range []string{"foo", "bar"} {
+		// Available files must be sorted after each inspection because the link
+		// file is added below
+		sort.Strings(availableFiles)
+		// Compare material and products (only file names) to files that were
+		// in the directory before calling RunInspections
+		materialNames := _stringKeys(result[inspectionName].Signed.(Link).Materials)
+		productNames := _stringKeys(result[inspectionName].Signed.(Link).Products)
+		sort.Strings(materialNames)
+		sort.Strings(productNames)
+		if !reflect.DeepEqual(materialNames, availableFiles) ||
+			!reflect.DeepEqual(productNames, availableFiles) {
+			t.Errorf("RunInspections recorded materials and products '%s' and %s'"+
+				" for insepction '%s', expected '%s' and '%s'.", materialNames,
+				productNames, inspectionName, availableFiles, availableFiles)
+		}
+		linkName := inspectionName + ".link"
+		// Append link created by an inspection to available files because it
+		// is recorded by succeeding inspections
+		availableFiles = append(availableFiles, linkName)
+
+		// Remove generated inspection link
+		err = os.Remove(linkName)
+		if os.IsNotExist(err) {
+			t.Errorf("RunInspections didn't generate expected '%s'", linkName)
+		}
+	}
+
+	// Test 2
+	// Fail RunInspections due to inexistent command
+	layout.Inspect = []Inspection{
+		{
+			SupplyChainItem: SupplyChainItem{Name: "foo"},
+			Run:             []string{"command-does-not-exist"},
+		},
+	}
+
+	result, err = RunInspections(layout)
+	if result != nil || err == nil {
+		t.Errorf("RunInspections returned '(%s, %s)', expected"+
+			" '(nil, *exec.Error)'", result, err)
+	}
+
+	// Test 2
+	// Fail RunInspections due to non-zero exiting command
+	layout.Inspect = []Inspection{
+		{
+			SupplyChainItem: SupplyChainItem{Name: "foo"},
+			Run:             []string{"sh", "-c", "false"},
+		},
+	}
+	result, err = RunInspections(layout)
+	if result != nil || err == nil {
+		t.Errorf("RunInspections returned '(%s, %s)', expected"+
+			" '(nil, *exec.Error)'", result, err)
+	}
+}
+
+func TestFnFilter(t *testing.T) {
+	// tests[0] = pattern, tests[1] = names, tests[2] = expected result
+	// Tests:
+	// - match
+	// - match with wildcard,
+	// - no match
+	// - no match (due to invalid pattern)
+	tests := [][][]string{
+		{{"foo"}, {"foo", "foobar", "bar"}, {"foo"}},
+		{{"foo*"}, {"foo", "foobar", "bar"}, {"foo", "foobar"}},
+		{{"foo"}, {"bar"}, nil},
+		{{"["}, {"["}, nil},
+	}
+
+	for _, test := range tests {
+		result := FnFilter(test[0][0], test[1])
+		if !reflect.DeepEqual(result, test[2]) {
+			t.Errorf("FnFilter returned '%s', expected '%s'.", result, test[2])
+		}
+	}
+}
+
+func TestVerifyArtifacts(t *testing.T) {
+	// Test error cases for combinations of Step and Inspection items and
+	// material and product rules:
+	// - Item must be one of step or inspection
+	// - Can't find link metadata for step
+	// - Can't find link metadata for inspection
+	// - Wrong step expected material
+	// - Wrong step expected product
+	// - Wrong inspection expected material
+	// - Wrong inspection expected product
+	// - Disallowed material in step
+	// - Disallowed product in step
+	// - Disallowed material in inspection
+	// - Disallowed product in inspection
+	items := [][]interface{}{
+		{nil},
+		{Step{SupplyChainItem: SupplyChainItem{Name: "foo"}}},
+		{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo"}}},
+		{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"INVALID", "rule"}}}}},
+		{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"INVALID", "rule"}}}}},
+		{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"INVALID", "rule"}}}}},
+		{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"INVALID", "rule"}}}}},
+		{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"DISALLOW", "*"}}}}},
+		{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"DISALLOW", "*"}}}}},
+		{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"DISALLOW", "*"}}}}},
+		{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"DISALLOW", "*"}}}}},
+	}
+	itemsMetadata := []map[string]Metablock{
+		{},
+		{},
+		{},
+		{"foo": {Signed: Link{Name: "foo"}}},
+		{"foo": {Signed: Link{Name: "foo"}}},
+		{"foo": {Signed: Link{Name: "foo"}}},
+		{"foo": {Signed: Link{Name: "foo"}}},
+		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+		{"foo": {Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+		{"foo": {Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+	}
+	errorPart := []string{
+		"item of invalid type",
+		"could not find metadata",
+		"could not find metadata",
+		"rule format",
+		"rule format",
+		"rule format",
+		"rule format",
+		"materials [foo.py] disallowed by rule",
+		"products [foo.py] disallowed by rule",
+		"materials [foo.py] disallowed by rule",
+		"products [foo.py] disallowed by rule",
+	}
+
+	for i := 0; i < len(items); i++ {
+		err := VerifyArtifacts(items[i], itemsMetadata[i])
+		if err == nil || !strings.Contains(err.Error(), errorPart[i]) {
+			t.Errorf("VerifyArtifacts returned '%s', expected '%s' error",
+				err, errorPart[i])
+		}
+	}
+}
+
+func TestVerifyMatchRule(t *testing.T) {
+	// Test MatchRule queue processing:
+	// - Can't find destination link (invalid rule) -> queue unmodified (empty)
+	// - Can't find destination link (empty metadata map) -> queue unmodified
+	// - Match material foo.py -> remove from queue
+	// - Match material foo.py with foo.d/foo.py -> remove from queue
+	// - Match material foo.d/foo.py with foo.py -> remove from queue
+	// - Don't match material (different name) -> queue unmodified
+	// - Don't match material (different hash) -> queue unmodified
+	ruleData := []map[string]string{
+		{},
+		{"pattern": "*", "dstName": "foo", "dstType": "materials"},
+		{"pattern": "*", "dstName": "foo", "dstType": "materials"},
+		{"pattern": "*", "dstName": "foo", "dstType": "materials", "dstPrefix": "foo.d"},
+		{"pattern": "*", "dstName": "foo", "dstType": "materials", "srcPrefix": "foo.d"},
+		{"pattern": "*", "dstName": "foo", "dstType": "materials"},
+		{"pattern": "*", "dstName": "foo", "dstType": "materials"},
+	}
+	srcArtifacts := []map[string]interface{}{
+		{},
+		{"foo.py": map[string]interface{}{"sha265": "abc"}},
+		{"foo.py": map[string]interface{}{"sha265": "abc"}},
+		{"foo.py": map[string]interface{}{"sha265": "abc"}},
+		{"foo.d/foo.py": map[string]interface{}{"sha265": "abc"}},
+		{"foo.py": map[string]interface{}{"sha265": "dead"}},
+		{"bar.py": map[string]interface{}{"sha265": "abc"}},
+	}
+	// queue[i] = _stringKeys(srcArtifacts[i])
+	itemsMetadata := []map[string]Metablock{
+		{},
+		{},
+		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.d/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+	}
+	expected := [][]string{
+		{},
+		{"foo.py"},
+		nil,
+		nil,
+		nil,
+		{"foo.py"},
+		{"bar.py"},
+	}
+
+	for i := 0; i < len(ruleData); i++ {
+		result := verifyMatchRule(ruleData[i], srcArtifacts[i],
+			_stringKeys(srcArtifacts[i]), itemsMetadata[i])
+		if !reflect.DeepEqual(result, expected[i]) {
+			t.Errorf("verifyMatchRule returned '%s', expected '%s'", result,
+				expected[i])
+		}
+	}
+}
+
+func TestReduceStepsMetadata(t *testing.T) {
+	var mb Metablock
+	mb.Load("demo.layout.template")
+	layout := mb.Signed.(Layout)
+	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{Name: "foo"}}}
+
+	// Test 1: Successful reduction of multiple links for one step (foo)
+	stepsMetadata := map[string]map[string]Metablock{
+		"foo": {
+			"a": Metablock{Signed: Link{
+				Type:      "link",
+				Name:      "foo",
+				Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}},
+				Products:  map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "cde"}},
+			}},
+			"b": Metablock{Signed: Link{
+				Type:      "link",
+				Name:      "foo",
+				Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}},
+				Products:  map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "cde"}},
+			}},
+		},
+	}
+
+	result, err := ReduceStepsMetadata(layout, stepsMetadata)
+	if !reflect.DeepEqual(result["foo"], stepsMetadata["foo"]["a"]) || err != nil {
+		t.Errorf("ReduceStepsMetadata returned (%s, %s), expected (%s, nil)"+
+			" and a 'different artifacts' error", result, err, stepsMetadata["foo"]["a"])
+	}
+
+	// Test 2: Test different error scenarios when creating one link out of
+	// multiple links for the same step:
+	// - Different materials (hash)
+	// - Different materials (name)
+	// - Different products (hash)
+	// - Different products (name)
+	stepsMetadataList := []map[string]map[string]Metablock{
+		{"foo": {
+			"a": Metablock{Signed: Link{Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
+			"b": Metablock{Signed: Link{Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "def"}}}},
+		}},
+		{"foo": {
+			"a": Metablock{Signed: Link{Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
+			"b": Metablock{Signed: Link{Materials: map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "abc"}}}},
+		}},
+		{"foo": {
+			"a": Metablock{Signed: Link{Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
+			"b": Metablock{Signed: Link{Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "def"}}}},
+		}},
+		{"foo": {
+			"a": Metablock{Signed: Link{Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
+			"b": Metablock{Signed: Link{Products: map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "abc"}}}},
+		}},
+	}
+
+	for i := 0; i < len(stepsMetadataList); i++ {
+		result, err := ReduceStepsMetadata(layout, stepsMetadataList[i])
+		if err == nil || !strings.Contains(err.Error(), "different artifacts") {
+			t.Errorf("ReduceStepsMetadata returned (%s, %s), expected an empty map"+
+				" and a 'different artifacts' error", result, err)
+		}
+	}
+
+	// Panic due to missing link metadata for step (final product verification
+	// should gracefully error earlier)
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("ReduceStepsMetadata should have panicked due to missing link" +
+				" metadata")
+		}
+	}()
+	ReduceStepsMetadata(layout, nil)
+	//NOTE: This test won't get any further because of panic
+}
+
+func TestVerifyStepCommandAlignment(t *testing.T) {
+	var mb Metablock
+	mb.Load("demo.layout.template")
+	layout := mb.Signed.(Layout)
+	layout.Steps = []Step{
+		{
+			SupplyChainItem: SupplyChainItem{Name: "foo"},
+			ExpectedCommand: []string{"rm", "-rf", "."},
+		},
+	}
+
+	stepsMetadata := map[string]map[string]Metablock{
+		"foo": {"a": Metablock{Signed: Link{Command: []string{"rm", "-rf", "/"}}}},
+	}
+	// Test warning due to non-aligning commands
+	// FIXME: Assert warning?
+	fmt.Printf("[begin test warning output]\n")
+	VerifyStepCommandAlignment(layout, stepsMetadata)
+	fmt.Printf("[end test warning output]\n")
+
+	// Panic due to missing link metadata for step (final product verification
+	// should gracefully error earlier)
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("ReduceStepsMetadata should have panicked due to missing link" +
+				" metadata")
+		}
+	}()
+	VerifyStepCommandAlignment(layout, nil)
+	//NOTE: This test won't get any further because of panic
+}
+
+func TestVerifyLinkSignatureThesholds(t *testing.T) {
+	keyId1 := "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498"
+	keyId2 := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
+	keyId3 := "abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca"
+
+	var mb Metablock
+	mb.Load("demo.layout.template")
+	layout := mb.Signed.(Layout)
+
+	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{
+		Name: "foo"},
+		Threshold: 2,
+		PubKeys:   []string{keyId1, keyId2, keyId3}}}
+
+	var mbLink1 Metablock
+	mbLink1.Load("foo.2f89b927.link")
+	var mbLink2 Metablock
+	mbLink2.Load("foo.776a00e2.link")
+	var mbLinkBroken Metablock
+	mbLinkBroken.Load("foo.776a00e2.link")
+	mbLinkBroken.Signatures[0].Sig = "breaksignature"
+
+	// Test less then threshold distinct valid links errors:
+	// - Missing step name in step metadata map
+	// - Missing links for step
+	// - Less than threshold links for step
+	// - Less than threshold distinct links for step
+	// - Less than threshold validly signed links for step
+	stepsMetadata := []map[string]map[string]Metablock{
+		{"bar": nil},
+		{"foo": nil},
+		{"foo": {keyId1: mbLink1}},
+		{"foo": {keyId1: mbLink1, keyId2: mbLink1}},
+		{"foo": {keyId1: mbLink1, keyId2: mbLinkBroken}},
+	}
+	for i := 0; i < len(stepsMetadata); i++ {
+		result, err := VerifyLinkSignatureThesholds(layout, stepsMetadata[i])
+		if err == nil {
+			t.Errorf("VerifyLinkSignatureThesholds returned (%s, %s), expected"+
+				" 'not enough distinct valid links' error.", result, err)
+		}
+	}
+
+	// Test successfully return threshold distinct valid links:
+	// - Threshold 2, two valid links
+	// - Threshold 2, two valid links, one invalid link ignored
+	stepsMetadata = []map[string]map[string]Metablock{
+		{"foo": {keyId1: mbLink1, keyId2: mbLink2}},
+		{"foo": {keyId1: mbLink1, keyId2: mbLink2, keyId3: mbLinkBroken}},
+	}
+	for i := 0; i < len(stepsMetadata); i++ {
+		result, err := VerifyLinkSignatureThesholds(layout, stepsMetadata[i])
+		validLinks, ok := result["foo"]
+		if !ok || len(validLinks) != 2 {
+			t.Errorf("VerifyLinkSignatureThesholds returned (%s, %s), expected"+
+				" a map of two valid foo links.", result, err)
+		}
+	}
+}
+
+func TestLoadLinksForLayout(t *testing.T) {
+	keyId1 := "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498"
+	keyId2 := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
+	var mb Metablock
+	mb.Load("demo.layout.template")
+	layout := mb.Signed.(Layout)
+
+	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{
+		Name: "foo"},
+		Threshold: 2,
+		PubKeys:   []string{keyId1, keyId2}}}
+
+	// Test successfully load two links for layout (one step foo, threshold 2)
+	result, err := LoadLinksForLayout(layout, ".")
+	links, ok := result["foo"]
+	if !ok || len(links) != 2 {
+		t.Errorf("VerifyLoadLinksForLayout returned (%s, %s), expected"+
+			" a map of two foo links.", result, err)
+	}
+
+	// Test threshold error, can't find enough links for step
+	keyId3 := "abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca"
+	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{
+		Name: "foo"},
+		Threshold: 3,
+		PubKeys:   []string{keyId1, keyId2, keyId3}}}
+	result, err = LoadLinksForLayout(layout, ".")
+	if err == nil {
+		t.Errorf("VerifyLoadLinksForLayout returned (%s, %s), expected"+
+			" 'not enough links' error.", result, err)
+	}
+}
+
+func TestVerifyLayoutExpiration(t *testing.T) {
+	var mb Metablock
+	mb.Load("demo.layout.template")
+	layout := mb.Signed.(Layout)
+
+	// Test layout expiration check failure:
+	// - invalid date
+	// - expired date
+	expirationDates := []string{"bad date", "1970-01-01T00:00:00Z"}
+	expectedErrors := []string{"cannot parse", "has expired"}
+
+	for i := 0; i < len(expirationDates); i++ {
+		layout.Expires = expirationDates[i]
+		err := VerifyLayoutExpiration(layout)
+		if err == nil || !strings.Contains(err.Error(), expectedErrors[i]) {
+			t.Errorf("VerifyLayoutExpiration returned '%s', expected '%s' error",
+				err, expectedErrors[i])
+		}
+	}
+
+	// Test not (yet) expired layout :)
+	layout.Expires = "3000-01-01T00:00:00Z"
+	err := VerifyLayoutExpiration(layout)
+	if err != nil {
+		t.Errorf("VerifyLayoutExpiration returned '%s', expected nil", err)
+	}
+}
+
+func TestVerifyLayoutSignatures(t *testing.T) {
+	var mbLayout Metablock
+	mbLayout.Load("demo.layout.template")
+	var layoutKey Key
+	layoutKey.LoadPublicKey("alice.pub")
+
+	// Test layout signature verification errors:
+	// - Not verification keys (must be at least one)
+	// - No signature found for verification key
+	layoutKeysList := []map[string]Key{{}, {layoutKey.KeyId: Key{}}}
+	expectedErrors := []string{"at least one key", "No signature found for key"}
+
+	for i := 0; i < len(layoutKeysList); i++ {
+		err := VerifyLayoutSignatures(mbLayout, layoutKeysList[i])
+		if err == nil || !strings.Contains(err.Error(), expectedErrors[i]) {
+			t.Errorf("VerifyLayoutSignatures returned '%s', expected '%s' error",
+				err, expectedErrors[i])
+		}
+	}
+
+	// Test successful layout signature verification
+	err := VerifyLayoutSignatures(mbLayout, map[string]Key{layoutKey.KeyId: layoutKey})
+	if err != nil {
+		t.Errorf("VerifyLayoutSignatures returned '%s', expected nil",
+			err)
+	}
+}
+
+/* Helper to get the string keys of a map as string slice */
+func _stringKeys(m map[string]interface{}) []string {
+	keys := make([]string, len(m))
+	i := 0
+	for k := range m {
+		keys[i] = k
+		i++
+	}
+	return keys
 }
