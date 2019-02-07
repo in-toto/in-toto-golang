@@ -100,7 +100,7 @@ func (k *Key) LoadPublicKey(path string) error {
 	}
 
 	// Canonicalize key and get hex representation of hash
-	keyCanonical, err := encode_canonical(keyToBeHashed)
+	keyCanonical, err := encodeCanonical(keyToBeHashed)
 	if err != nil {
 		return err
 	}

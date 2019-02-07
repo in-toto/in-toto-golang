@@ -12,24 +12,24 @@ import (
 )
 
 /*
-_encode_canonical_string is a helper function to canonicalize the passed string
+_encodeCanonical_string is a helper function to canonicalize the passed string
 according to the OLPC canonical JSON specification for strings (see
 http://wiki.laptop.org/go/Canonical_JSON).  String canonicalization consists of
 escaping backslashes ("\") and double quotes (") and wrapping the resulting
 string in double quotes (").
 */
-func _encode_canonical_string(s string) string {
+func _encodeCanonical_string(s string) string {
 	re := regexp.MustCompile(`([\"\\])`)
 	return fmt.Sprintf("\"%s\"", re.ReplaceAllString(s, "\\$1"))
 }
 
 /*
-_encode_canonical is a helper function to recursively canonicalize the passed
+_encodeCanonical is a helper function to recursively canonicalize the passed
 object according to the OLPC canonical JSON specification (see
 http://wiki.laptop.org/go/Canonical_JSON) and write it to the passed
 *bytes.Buffer.  If canonicalization fails it returns an error.
 */
-func _encode_canonical(obj interface{}, result *bytes.Buffer) (err error) {
+func _encodeCanonical(obj interface{}, result *bytes.Buffer) (err error) {
 	// Since this function is called recursively, we use panic if an error occurs
 	// and recover in a deferred function, which is always called before
 	// returning. There we set the error that is returned eventually.
@@ -41,7 +41,7 @@ func _encode_canonical(obj interface{}, result *bytes.Buffer) (err error) {
 
 	switch objAsserted := obj.(type) {
 	case string:
-		result.WriteString(_encode_canonical_string(objAsserted))
+		result.WriteString(_encodeCanonical_string(objAsserted))
 
 	case bool:
 		if objAsserted {
@@ -65,7 +65,7 @@ func _encode_canonical(obj interface{}, result *bytes.Buffer) (err error) {
 	case []interface{}:
 		result.WriteString("[")
 		for i, val := range objAsserted {
-			_encode_canonical(val, result)
+			_encodeCanonical(val, result)
 			if i < (len(objAsserted) - 1) {
 				result.WriteString(",")
 			}
@@ -85,9 +85,9 @@ func _encode_canonical(obj interface{}, result *bytes.Buffer) (err error) {
 
 		// Canonicalize map
 		for i, key := range mapKeys {
-			_encode_canonical(key, result)
+			_encodeCanonical(key, result)
 			result.WriteString(":")
-			_encode_canonical(objAsserted[key], result)
+			_encodeCanonical(objAsserted[key], result)
 			if i < (len(mapKeys) - 1) {
 				result.WriteString(",")
 			}
@@ -104,12 +104,12 @@ func _encode_canonical(obj interface{}, result *bytes.Buffer) (err error) {
 }
 
 /*
-encode_canonical JSON canonicalizes the passed object and returns it as a byte
+encodeCanonical JSON canonicalizes the passed object and returns it as a byte
 slice.  It uses the OLPC canonical JSON specification (see
 http://wiki.laptop.org/go/Canonical_JSON).  If canonicalization fails the byte
 slice is nil and the second return value contains the error.
 */
-func encode_canonical(obj interface{}) ([]byte, error) {
+func encodeCanonical(obj interface{}) ([]byte, error) {
 	// FIXME: Terrible hack to turn the passed struct into a map, converting
 	// the struct's variable names to the json key names defined in the struct
 	data, err := json.Marshal(obj)
@@ -123,7 +123,7 @@ func encode_canonical(obj interface{}) ([]byte, error) {
 
 	// Create a buffer and write the canonicalized JSON bytes to it
 	var result bytes.Buffer
-	if err := _encode_canonical(jsonMap, &result); err != nil {
+	if err := _encodeCanonical(jsonMap, &result); err != nil {
 		return nil, err
 	}
 
