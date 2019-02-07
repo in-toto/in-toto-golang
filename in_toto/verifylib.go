@@ -567,19 +567,19 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
 func VerifySublayouts(layout Layout, stepsMetadataVerified map[string]map[string]Metablock, superLayoutLinkPath string) (map[string]map[string]Metablock, error) {
     for stepName, linkData := range stepsMetadataVerified {
         for keyId, metadata := range linkData {
-        	switch _ := metadata.Signed.(type) {
-			case Layout:
-				layoutKeys := make(map[string]Key)
-				layoutKeys[keyId] = layout.Keys[keyId]
+            if _, ok := metadata.Signed.(Layout); ok {
+                layoutKeys := make(map[string]Key)
+                layoutKeys[keyId] = layout.Keys[keyId]
 
-				sublayoutLinkDir := fmt.Sprintf(LinkDirFormat, stepName, keyId)
-				sublayoutLinkPath := filepath.Join(superLayoutLinkPath, sublayoutLinkDir)
-				summaryLink, err := InTotoVerify(metadata, layoutKeys, sublayoutLinkPath)
-				if err != nil {
-					return nil, err
-				}
-				linkData[keyId] = summaryLink
-			}
+                sublayoutLinkDir := fmt.Sprintf(LinkDirFormat, stepName, keyId)
+                sublayoutLinkPath := filepath.Join(superLayoutLinkPath, sublayoutLinkDir)
+                summaryLink, err := InTotoVerify(metadata, layoutKeys, sublayoutLinkPath)
+                if err != nil {
+                    return nil, err
+                }
+                linkData[keyId] = summaryLink
+            }
+
         }
     }
     return stepsMetadataVerified, nil
