@@ -1,0 +1,14 @@
+{
+ "signatures": [], "signed": {
+    "_type": "link", "name": "test", "command": [],
+    "byproducts": {},"products": {}, "materials": {},
+    "environment": {
+      "a": "WTF",
+      "b": true,
+      "c": false,
+      "d": null,
+      "e": 1,
+      "f": "\u001b\uFFFFF\\n\""
+    }
+  }
+}
