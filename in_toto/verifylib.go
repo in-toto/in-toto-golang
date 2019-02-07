@@ -577,16 +577,21 @@ Checks if any step has been delegated by the functionary, recurses into
 the delegation and replaces the layout object in the chain_link_dict
 by an equivalent link object.
 */
-func VerifySublayouts(layout Layout, stepsMetadataVerified map[string]map[string]Metablock, superLayoutLinkPath string) (map[string]map[string]Metablock, error) {
+func VerifySublayouts(layout Layout,
+	stepsMetadataVerified map[string]map[string]Metablock,
+	superLayoutLinkPath string) (map[string]map[string]Metablock, error) {
 	for stepName, linkData := range stepsMetadataVerified {
 		for keyId, metadata := range linkData {
 			if _, ok := metadata.Signed.(Layout); ok {
 				layoutKeys := make(map[string]Key)
 				layoutKeys[keyId] = layout.Keys[keyId]
 
-				sublayoutLinkDir := fmt.Sprintf(SublayoutLinkDirFormat, stepName, keyId)
-				sublayoutLinkPath := filepath.Join(superLayoutLinkPath, sublayoutLinkDir)
-				summaryLink, err := InTotoVerify(metadata, layoutKeys, sublayoutLinkPath)
+				sublayoutLinkDir := fmt.Sprintf(SublayoutLinkDirFormat,
+					stepName, keyId)
+				sublayoutLinkPath := filepath.Join(superLayoutLinkPath,
+					sublayoutLinkDir)
+				summaryLink, err := InTotoVerify(metadata, layoutKeys,
+					sublayoutLinkPath)
 				if err != nil {
 					return nil, err
 				}
@@ -655,8 +660,9 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		return temp, err
 	}
 
-	// TODO: Verify sublayouts
-	stepsSublayoutVerified, err := VerifySublayouts(layout, stepsMetadataVerified, linkDir)
+	// Verify and resolve sublayouts
+	stepsSublayoutVerified, err := VerifySublayouts(layout,
+		stepsMetadataVerified, linkDir)
 
 	// Verify command alignment (WARNING only)
 	VerifyStepCommandAlignment(layout, stepsSublayoutVerified)
