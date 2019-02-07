@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -129,5 +130,49 @@ func TestGetSummaryLink(t *testing.T) {
 		t.Errorf("Summary Link return value doesn't match. Expected '%s', returned '%s",
 			packageLink.Signed.(Link).ByProducts["return-value"],
 			summaryLink.Signed.(Link).ByProducts["return-value"])
+	}
+}
+
+func TestVerifySublayouts(t *testing.T) {
+	sublayoutName := "sub_layout"
+	var aliceKey Key
+	if err := aliceKey.LoadPublicKey("alice.pub"); err != nil {
+		t.Errorf("Unable to load Alice's public key.")
+	}
+	sublayoutDirectory := fmt.Sprintf(SublayoutLinkDirFormat, sublayoutName, aliceKey.KeyId)
+	if err := os.Mkdir(sublayoutDirectory, 0700); err != nil {
+		t.Errorf("Unable to create sublayout directory.")
+	}
+	writeCodePath := path.Join(sublayoutDirectory, "write-code.776a00e2.link")
+	if err := os.Link("write-code.776a00e2.link", writeCodePath); err != nil {
+		t.Errorf("Unable to link write-code metadata.")
+	}
+	packagePath := path.Join(sublayoutDirectory, "package.2f89b927.link")
+	if err := os.Link("package.2f89b927.link", packagePath); err != nil {
+		t.Errorf("Unable to link package metadata.")
+	}
+
+	var superLayoutMb Metablock
+	if err := superLayoutMb.Load("super.layout"); err != nil {
+		t.Errorf("Unable to load super layout")
+	}
+
+	stepsMetadata := make(map[string]map[string]Metablock)
+	var err error
+	if stepsMetadata, err = LoadLinksForLayout(superLayoutMb.Signed.(Layout), "."); err != nil {
+		t.Errorf("Unable to load link metadata for super layout.")
+	}
+
+	stepsMetadataVerified := make(map[string]map[string]Metablock)
+	if stepsMetadataVerified, err = VerifyLinkSignatureThesholds(superLayoutMb.Signed.(Layout), stepsMetadata); err != nil {
+		t.Errorf("Unable to verify link threshold values.")
+	}
+
+	if _, err := VerifySublayouts(superLayoutMb.Signed.(Layout), stepsMetadataVerified, sublayoutDirectory); err != nil {
+		t.Errorf("Unable to verify sublayouts.")
+	}
+
+	if err := os.RemoveAll(sublayoutDirectory); err != nil {
+		t.Errorf("Failed to remove sublayout link directory.")
 	}
 }
