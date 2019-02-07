@@ -168,11 +168,12 @@ func TestVerifySublayouts(t *testing.T) {
 		t.Errorf("Unable to verify link threshold values.")
 	}
 
-	if _, err := VerifySublayouts(superLayoutMb.Signed.(Layout), stepsMetadataVerified, sublayoutDirectory); err != nil {
+	if _, err := VerifySublayouts(superLayoutMb.Signed.(Layout), stepsMetadataVerified, "."); err != nil {
 		t.Errorf("Unable to verify sublayouts.")
 	}
 
 	if err := os.RemoveAll(sublayoutDirectory); err != nil {
 		t.Errorf("Failed to remove sublayout link directory.")
 	}
+
 }
