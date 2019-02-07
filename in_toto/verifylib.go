@@ -533,7 +533,16 @@ func VerifyLayoutSignatures(layoutMb Metablock,
 	return nil
 }
 
-// What are the possible errors here?
+/*
+Merges the materials of the first step (as mentioned in the layout)
+and the products of the last step and returns a new link.
+This link reports the materials and products and summarizes the
+overall software supply chain.
+NOTE: The assumption is that the steps mentioned in the layout are
+to be performed sequentially. So, the first step mentioned in the
+layout denotes what comes into the supply chain and the last step
+denotes what goes out.
+*/
 func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (Metablock, error) {
     var summaryLink Link
 	var result Metablock
@@ -564,6 +573,11 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
 }
 
 
+/*
+Checks if any step has been delegated by the functionary, recurses into
+the delegation and replaces the layout object in the chain_link_dict
+by an equivalent link object.
+*/
 func VerifySublayouts(layout Layout, stepsMetadataVerified map[string]map[string]Metablock, superLayoutLinkPath string) (map[string]map[string]Metablock, error) {
     for stepName, linkData := range stepsMetadataVerified {
         for keyId, metadata := range linkData {
