@@ -544,34 +544,33 @@ layout denotes what comes into the supply chain and the last step
 denotes what goes out.
 */
 func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (Metablock, error) {
-    var summaryLink Link
+	var summaryLink Link
 	var result Metablock
-    if len(layout.Steps) > 0 {
-        firstStepLink := stepsMetadataReduced[layout.Steps[0].Name]
-        lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps) - 1].Name]
+	if len(layout.Steps) > 0 {
+		firstStepLink := stepsMetadataReduced[layout.Steps[0].Name]
+		lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps)-1].Name]
 
-        // Move type assertions here and immediately error out?
-        if firstStepLink.Signed.(Link).Type != "link" {
-            return result, fmt.Errorf("Sublayout not expanded")
-        }
-        if lastStepLink.Signed.(Link).Type != "link" {
-            return result, fmt.Errorf("Sublayout not expanded")
-        }
+		// Move type assertions here and immediately error out?
+		if firstStepLink.Signed.(Link).Type != "link" {
+			return result, fmt.Errorf("Sublayout not expanded")
+		}
+		if lastStepLink.Signed.(Link).Type != "link" {
+			return result, fmt.Errorf("Sublayout not expanded")
+		}
 
-        summaryLink.Materials = firstStepLink.Signed.(Link).Materials
-        summaryLink.Name = firstStepLink.Signed.(Link).Name
+		summaryLink.Materials = firstStepLink.Signed.(Link).Materials
+		summaryLink.Name = firstStepLink.Signed.(Link).Name
 		summaryLink.Type = firstStepLink.Signed.(Link).Type
 
-        summaryLink.Products = lastStepLink.Signed.(Link).Products
-        summaryLink.ByProducts = lastStepLink.Signed.(Link).ByProducts
-        summaryLink.Command = lastStepLink.Signed.(Link).Command
-    }
+		summaryLink.Products = lastStepLink.Signed.(Link).Products
+		summaryLink.ByProducts = lastStepLink.Signed.(Link).ByProducts
+		summaryLink.Command = lastStepLink.Signed.(Link).Command
+	}
 
-    result.Signed = summaryLink
+	result.Signed = summaryLink
 
-    return result, nil
+	return result, nil
 }
-
 
 /*
 Checks if any step has been delegated by the functionary, recurses into
@@ -579,24 +578,24 @@ the delegation and replaces the layout object in the chain_link_dict
 by an equivalent link object.
 */
 func VerifySublayouts(layout Layout, stepsMetadataVerified map[string]map[string]Metablock, superLayoutLinkPath string) (map[string]map[string]Metablock, error) {
-    for stepName, linkData := range stepsMetadataVerified {
-        for keyId, metadata := range linkData {
-            if _, ok := metadata.Signed.(Layout); ok {
-                layoutKeys := make(map[string]Key)
-                layoutKeys[keyId] = layout.Keys[keyId]
+	for stepName, linkData := range stepsMetadataVerified {
+		for keyId, metadata := range linkData {
+			if _, ok := metadata.Signed.(Layout); ok {
+				layoutKeys := make(map[string]Key)
+				layoutKeys[keyId] = layout.Keys[keyId]
 
-                sublayoutLinkDir := fmt.Sprintf(SublayoutLinkDirFormat, stepName, keyId)
-                sublayoutLinkPath := filepath.Join(superLayoutLinkPath, sublayoutLinkDir)
-                summaryLink, err := InTotoVerify(metadata, layoutKeys, sublayoutLinkPath)
-                if err != nil {
-                    return nil, err
-                }
-                linkData[keyId] = summaryLink
-            }
+				sublayoutLinkDir := fmt.Sprintf(SublayoutLinkDirFormat, stepName, keyId)
+				sublayoutLinkPath := filepath.Join(superLayoutLinkPath, sublayoutLinkDir)
+				summaryLink, err := InTotoVerify(metadata, layoutKeys, sublayoutLinkPath)
+				if err != nil {
+					return nil, err
+				}
+				linkData[keyId] = summaryLink
+			}
 
-        }
-    }
-    return stepsMetadataVerified, nil
+		}
+	}
+	return stepsMetadataVerified, nil
 }
 
 /*
@@ -657,7 +656,7 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 	}
 
 	// TODO: Verify sublayouts
-    stepsSublayoutVerified, err := VerifySublayouts(layout, stepsMetadataVerified, linkDir)
+	stepsSublayoutVerified, err := VerifySublayouts(layout, stepsMetadataVerified, linkDir)
 
 	// Verify command alignment (WARNING only)
 	VerifyStepCommandAlignment(layout, stepsSublayoutVerified)
@@ -692,10 +691,10 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		return temp, err
 	}
 
-    summaryLink, err := GetSummaryLink(layout, stepsMetadataReduced)
-    if err != nil {
-        return temp, err
-    }
+	summaryLink, err := GetSummaryLink(layout, stepsMetadataReduced)
+	if err != nil {
+		return temp, err
+	}
 
 	return summaryLink, nil
 }
