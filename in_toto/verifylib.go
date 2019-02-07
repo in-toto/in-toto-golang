@@ -571,7 +571,7 @@ func VerifySublayouts(layout Layout, stepsMetadataVerified map[string]map[string
                 layoutKeys := make(map[string]Key)
                 layoutKeys[keyId] = layout.Keys[keyId]
 
-                sublayoutLinkDir := fmt.Sprintf(LinkDirFormat, stepName, keyId)
+                sublayoutLinkDir := fmt.Sprintf(SublayoutLinkDirFormat, stepName, keyId)
                 sublayoutLinkPath := filepath.Join(superLayoutLinkPath, sublayoutLinkDir)
                 summaryLink, err := InTotoVerify(metadata, layoutKeys, sublayoutLinkPath)
                 if err != nil {
