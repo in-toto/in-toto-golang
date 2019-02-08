@@ -198,6 +198,14 @@ func (mb *Metablock) Load(path string) error {
 		return err
 	}
 
+	// Error out on missing `signed` or `signatures` field or if
+	// one of them has a `null` value, which would lead to a nil pointer
+	// dereference in Unmarshal below.
+	if rawMb["signed"] == nil || rawMb["signatures"] == nil {
+		return fmt.Errorf("In-toto metadata requires 'signed' and" +
+			" 'signatures' parts")
+	}
+
 	// Fully unmarshal signatures part
 	if err := json.Unmarshal(*rawMb["signatures"], &mb.Signatures); err != nil {
 		return err
@@ -225,8 +233,8 @@ func (mb *Metablock) Load(path string) error {
 		mb.Signed = layout
 
 	} else {
-		return fmt.Errorf("The '_type' field of the 'signed' part of a metadata" +
-			" file must be one of 'link' or 'layout'")
+		return fmt.Errorf("The '_type' field of the 'signed' part of in-toto" +
+			" metadata must be one of 'link' or 'layout'")
 	}
 
 	return nil
