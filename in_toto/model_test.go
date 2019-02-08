@@ -68,11 +68,12 @@ func TestMetablockDump(t *testing.T) {
 	}
 	expectedErrors := []string{
 		"json: unsupported type",
-		"no such file or directory",
+		"open bad/path",
 	}
 
 	for i := 0; i < len(mbs); i++ {
 		err := mbs[i].Dump(paths[i])
+		fmt.Println(err)
 		if err == nil || !strings.Contains(err.Error(), expectedErrors[i]) {
 			t.Errorf("Metablock.Dump returned '%s', expected '%s'",
 				err, expectedErrors[i])

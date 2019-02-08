@@ -56,16 +56,6 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
 			result, err, os.ErrNotExist)
 	}
-
-	// Test error by recording not readable file (due to permissions)
-	ioutil.WriteFile("file-not-readable", []byte(""), 0000)
-	result, err = RecordArtifacts([]string{"file-not-readable"})
-	if !os.IsPermission(err) {
-		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
-			result, err, os.ErrPermission)
-	}
-	// Remove not readable file
-	os.Remove("file-not-readable")
 }
 
 func TestWaitErrToExitCode(t *testing.T) {
