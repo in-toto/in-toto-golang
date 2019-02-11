@@ -7,7 +7,7 @@ import (
 
 const LayoutPath = "demo.layout.template"
 const LayoutKeyPath = "alice.pub"
-const LinkDirectory = "../test/data"
+const LinkDirectory = "."
 
 func ExampleInTotoVerify() {
 	// Load the layout verification key and create a map as is required by
@@ -25,8 +25,9 @@ func ExampleInTotoVerify() {
 	if err := layoutMb.Load(LayoutPath); err != nil {
 		fmt.Println("Unable to load layout metadata.")
 	}
-	_, err := InTotoVerify(layoutMb, layoutKeys, LinkDirectory)
-	if err != nil {
+	if _, err := InTotoVerify(layoutMb, layoutKeys, LinkDirectory); err != nil {
+		fmt.Printf("In-toto verification failed: %s", err)
+	} else {
 		fmt.Println("In-toto verification succeeded!")
 	}
 
