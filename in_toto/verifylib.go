@@ -663,6 +663,9 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 	// Verify and resolve sublayouts
 	stepsSublayoutVerified, err := VerifySublayouts(layout,
 		stepsMetadataVerified, linkDir)
+	if err != nil {
+		return temp, err
+	}
 
 	// Verify command alignment (WARNING only)
 	VerifyStepCommandAlignment(layout, stepsSublayoutVerified)
