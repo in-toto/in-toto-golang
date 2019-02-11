@@ -23,7 +23,7 @@ func ExampleInTotoVerify() {
 	// test data.
 	var layoutMb Metablock
 	if err := layoutMb.Load(LayoutPath); err != nil {
-		fmt.Println("Unable to load layout metadata.")
+		fmt.Printf("Unable to load layout metadata: %s", err)
 	}
 	if _, err := InTotoVerify(layoutMb, layoutKeys, LinkDirectory); err != nil {
 		fmt.Printf("In-toto verification failed: %s", err)
