@@ -129,12 +129,6 @@ func TestGetSummaryLink(t *testing.T) {
 			"returned '%s", packageLink.Signed.(Link).ByProducts,
 			summaryLink.Signed.(Link).ByProducts)
 	}
-	if !reflect.DeepEqual(summaryLink.Signed.(Link).ByProducts["return-value"],
-		packageLink.Signed.(Link).ByProducts["return-value"]) {
-		t.Errorf("Summary Link return value doesn't match. Expected '%s', "+
-			"returned '%s", packageLink.Signed.(Link).ByProducts["return-value"],
-			summaryLink.Signed.(Link).ByProducts["return-value"])
-	}
 }
 
 func TestVerifySublayouts(t *testing.T) {
