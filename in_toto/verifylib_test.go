@@ -100,8 +100,7 @@ func TestGetSummaryLink(t *testing.T) {
 	if summaryLink.Signed.(Link).Type != codeLink.Signed.(Link).Type {
 		t.Errorf("Summary Link isn't of type Link")
 	}
-	if !reflect.DeepEqual(summaryLink.Signed.(Link).Name,
-		codeLink.Signed.(Link).Name) {
+	if summaryLink.Signed.(Link).Name != codeLink.Signed.(Link).Name {
 		t.Errorf("Summary Link name doesn't match. Expected '%s', returned "+
 			"'%s", codeLink.Signed.(Link).Name, summaryLink.Signed.(Link).Name)
 	}
