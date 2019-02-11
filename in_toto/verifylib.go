@@ -551,10 +551,10 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
 		lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps)-1].Name]
 
 		// Move type assertions here and immediately error out?
-		if firstStepLink.Signed.(Link).Type != "link" {
+		if _, ok := firstStepLink.Signed.(Link); !ok {
 			return result, fmt.Errorf("Sublayout not expanded")
 		}
-		if lastStepLink.Signed.(Link).Type != "link" {
+		if _, ok := lastStepLink.Signed.(Link); !ok {
 			return result, fmt.Errorf("Sublayout not expanded")
 		}
 
