@@ -611,11 +611,11 @@ directory from where it can load link metadata files, which are treated as
 signed evidence for the steps defined in the layout. The verification routine
 is as follows:
 
-1. Load layout
-2. Verify layout signature(s) using passed key(s)
-3. Verify layout expiration date
-4. Load link metadata files for steps of layout
-5. Verify signatures and signature thresholds for steps of layout
+1. Verify layout signature(s) using passed key(s)
+2. Verify layout expiration date
+3. Load link metadata files for steps of layout
+4. Verify signatures and signature thresholds for steps of layout
+5. Verify sublayouts recursively
 6. Verify command alignment for steps of layout (only warns)
 7. Verify artifact rules for steps of layout
 8. Execute inspection commands (generates link metadata for each inspection)
@@ -624,8 +624,8 @@ is as follows:
 If any of the verification routines fail, verification is aborted and an error
 is returned.
 
-NOTE: Parameter substitution, sublayout (recursive) verification and artifact
-rules of type "create", "modify" and "delete" are currently not supported.
+NOTE: Parameter substitution, artifact rules of type "create", "modify"
+and "delete" are currently not supported.
 */
 func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 	linkDir string) (Metablock, error) {
