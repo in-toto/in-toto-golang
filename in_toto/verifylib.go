@@ -573,9 +573,9 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
 }
 
 /*
-Checks if any step has been delegated by the functionary, recurses into
-the delegation and replaces the layout object in the chain_link_dict
-by an equivalent link object.
+Check if any step in the supply chain is a sublayout, and if so,
+recursively resolve it and replace it with a summary link summarizing
+the steps carried out in the sublayout.
 */
 func VerifySublayouts(layout Layout,
 	stepsMetadataVerified map[string]map[string]Metablock,
