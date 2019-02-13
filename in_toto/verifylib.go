@@ -605,9 +605,9 @@ func VerifySublayouts(layout Layout,
 
 /*
 InTotoVerify can be used to verify an entire software supply chain according to
-the in-toto specification.  It requires a path to a root layout, a map that
-contains public keys to verify the root layout signatures, and a path to a
-directory from where it can load link metadata files, which are treated as
+the in-toto specification.  It requires the metadata of the root layout, a map
+that contains public keys to verify the root layout signatures, and a path to
+a directory from where it can load link metadata files, which are treated as
 signed evidence for the steps defined in the layout. The verification routine
 is as follows:
 
