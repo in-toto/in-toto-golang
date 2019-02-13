@@ -630,11 +630,12 @@ and "delete" are currently not supported.
 func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 	linkDir string) (Metablock, error) {
 
-	var temp Metablock
+	var summaryLink Metablock
+	var err error
 
 	// Verify root signatures
 	if err := VerifyLayoutSignatures(layoutMb, layoutKeys); err != nil {
-		return temp, err
+		return summaryLink, err
 	}
 
 	// Extract the layout from its Metablock container (for further processing)
@@ -642,7 +643,7 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 
 	// Verify layout expiration
 	if err := VerifyLayoutExpiration(layout); err != nil {
-		return temp, err
+		return summaryLink, err
 	}
 
 	// TODO: Substitute parameters
@@ -650,21 +651,21 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 	// Load links for layout
 	stepsMetadata, err := LoadLinksForLayout(layout, linkDir)
 	if err != nil {
-		return temp, err
+		return summaryLink, err
 	}
 
 	// Verify link signatures
 	stepsMetadataVerified, err := VerifyLinkSignatureThesholds(layout,
 		stepsMetadata)
 	if err != nil {
-		return temp, err
+		return summaryLink, err
 	}
 
 	// Verify and resolve sublayouts
 	stepsSublayoutVerified, err := VerifySublayouts(layout,
 		stepsMetadataVerified, linkDir)
 	if err != nil {
-		return temp, err
+		return summaryLink, err
 	}
 
 	// Verify command alignment (WARNING only)
@@ -677,17 +678,17 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 	stepsMetadataReduced, err := ReduceStepsMetadata(layout,
 		stepsSublayoutVerified)
 	if err != nil {
-		return temp, err
+		return summaryLink, err
 	}
 
 	// Verify artifact rules
-	if err := VerifyArtifacts(layout.StepsAsInterfaceSlice(), stepsMetadataReduced); err != nil {
-		return temp, err
+	if err = VerifyArtifacts(layout.StepsAsInterfaceSlice(), stepsMetadataReduced); err != nil {
+		return summaryLink, err
 	}
 
 	inspectionMetadata, err := RunInspections(layout)
 	if err != nil {
-		return temp, err
+		return summaryLink, err
 	}
 
 	// Add steps metadata to inspection metadata, because inspection artifact
@@ -696,13 +697,13 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		inspectionMetadata[k] = v
 	}
 
-	if err := VerifyArtifacts(layout.InspectAsInterfaceSlice(), inspectionMetadata); err != nil {
-		return temp, err
+	if err = VerifyArtifacts(layout.InspectAsInterfaceSlice(), inspectionMetadata); err != nil {
+		return summaryLink, err
 	}
 
-	summaryLink, err := GetSummaryLink(layout, stepsMetadataReduced)
+	summaryLink, err = GetSummaryLink(layout, stepsMetadataReduced)
 	if err != nil {
-		return temp, err
+		return summaryLink, err
 	}
 
 	return summaryLink, nil
