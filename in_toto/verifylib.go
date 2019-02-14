@@ -560,7 +560,7 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
 		It's possible to chain together all the step names into a string as follows:
 		"<step_name>, <step_name>...",
 		but this can get very long if we have nested sublayouts.
-		 */
+		*/
 		summaryLink.Name = firstStepLink.Signed.(Link).Name
 		summaryLink.Type = firstStepLink.Signed.(Link).Type
 
