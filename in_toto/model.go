@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
+	"time"
 )
 
 /*
@@ -148,6 +150,30 @@ func (l *Layout) InspectAsInterfaceSlice() []interface{} {
 		inspectionsI[i] = v
 	}
 	return inspectionsI
+}
+
+func (l *Layout) validateType() {
+	if l.Type != "layout" {
+		fmt.Println("Invalid Type value for layout: should be 'layout'")
+	}
+}
+
+func (l *Layout) validateExpires() {
+	if _, err := time.Parse("2006-01-02T15:04:05Z", l.Expires); err != nil {
+		fmt.Println("Expiry time parsed incorrectly - date either out of range or incorrect format")
+	}
+}
+
+func (l *Layout) validateReadme() {
+	if reflect.TypeOf(l.Readme).Kind() != reflect.String {
+		fmt.Println("Readme is not of string format")
+	}
+}
+
+func (l *Layout) validateStepsAndInspections() {
+	if reflect.TypeOf(l.Steps).Kind() != reflect.Array {
+		fmt.Println("Steps field is not an array")
+	}
 }
 
 /*
