@@ -551,11 +551,23 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
 		lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps)-1].Name]
 
 		summaryLink.Materials = firstStepLink.Signed.(Link).Materials
+		/* Using the name of the first link for the summary link can be misleading
+		as it's likely not descriptive of all the steps in the sublayout. The first step
+		of the sublayout may also be rather trivial, such as extracting an archive, and
+		it could also be non-unique. The superlayout and the sublayout may share a similar
+		step which can be confusing.
+
+		It's possible to chain together all the step names into a string as follows:
+		"<step_name>, <step_name>...",
+		but this can get very long if we have nested sublayouts.
+		 */
 		summaryLink.Name = firstStepLink.Signed.(Link).Name
 		summaryLink.Type = firstStepLink.Signed.(Link).Type
 
 		summaryLink.Products = lastStepLink.Signed.(Link).Products
 		summaryLink.ByProducts = lastStepLink.Signed.(Link).ByProducts
+		// Similar to the name above, using the last command of the sublayout as the command
+		// of the summary link can be misleading.
 		summaryLink.Command = lastStepLink.Signed.(Link).Command
 	}
 
