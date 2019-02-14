@@ -139,6 +139,7 @@ func TestVerifySublayouts(t *testing.T) {
 	}
 	sublayoutDirectory := fmt.Sprintf(SublayoutLinkDirFormat, sublayoutName,
 		aliceKey.KeyId)
+	defer os.RemoveAll(sublayoutDirectory)
 	if err := os.Mkdir(sublayoutDirectory, 0700); err != nil {
 		t.Errorf("Unable to create sublayout directory")
 	}
@@ -182,9 +183,4 @@ func TestVerifySublayouts(t *testing.T) {
 			}
 		}
 	}
-
-	if err := os.RemoveAll(sublayoutDirectory); err != nil {
-		t.Errorf("Failed to remove sublayout link directory")
-	}
-
 }
