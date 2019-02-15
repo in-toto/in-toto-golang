@@ -171,8 +171,14 @@ func (l *Layout) validateReadme() {
 }
 
 func (l *Layout) validateStepsAndInspections() {
-	if reflect.TypeOf(l.Steps).Kind() != reflect.Array {
-		fmt.Println("Steps field is not an array")
+	if reflect.TypeOf(l.Steps).Kind() != reflect.Slice {
+		fmt.Println("Steps field is not a slice")
+	}
+
+	for step := range l.Steps {
+		if _, ok := step.(Step); !ok {
+			fmt.Printf("%s is not of type", step.(Step).Name)
+		}
 	}
 }
 
