@@ -69,7 +69,7 @@ func TestInTotoVerifyPass(t *testing.T) {
 	}
 
 	// No error should occur
-	if _, err := InTotoVerify(layoutMb, layouKeys, linkDir); err != nil {
+	if _, err := InTotoVerify(layoutMb, layouKeys, linkDir, ""); err != nil {
 		t.Error(err)
 	}
 }
@@ -94,13 +94,13 @@ func TestGetSummaryLink(t *testing.T) {
 	var summaryLink Metablock
 	var err error
 	if summaryLink, err = GetSummaryLink(demoLayout.Signed.(Layout),
-		demoLink); err != nil {
+		demoLink, ""); err != nil {
 		t.Error(err)
 	}
 	if summaryLink.Signed.(Link).Type != codeLink.Signed.(Link).Type {
 		t.Errorf("Summary Link isn't of type Link")
 	}
-	if summaryLink.Signed.(Link).Name != codeLink.Signed.(Link).Name {
+	if summaryLink.Signed.(Link).Name != "" {
 		t.Errorf("Summary Link name doesn't match. Expected '%s', returned "+
 			"'%s", codeLink.Signed.(Link).Name, summaryLink.Signed.(Link).Name)
 	}

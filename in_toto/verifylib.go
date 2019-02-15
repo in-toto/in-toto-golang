@@ -543,7 +543,8 @@ to be performed sequentially. So, the first step mentioned in the
 layout denotes what comes into the supply chain and the last step
 denotes what goes out.
 */
-func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (Metablock, error) {
+func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock,
+	stepName string) (Metablock, error) {
 	var summaryLink Link
 	var result Metablock
 	if len(layout.Steps) > 0 {
@@ -561,7 +562,7 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock) (M
 		"<step_name>, <step_name>...",
 		but this can get very long if we have nested sublayouts.
 		*/
-		summaryLink.Name = firstStepLink.Signed.(Link).Name
+		summaryLink.Name = stepName
 		summaryLink.Type = firstStepLink.Signed.(Link).Type
 
 		summaryLink.Products = lastStepLink.Signed.(Link).Products
@@ -595,7 +596,7 @@ func VerifySublayouts(layout Layout,
 				sublayoutLinkPath := filepath.Join(superLayoutLinkPath,
 					sublayoutLinkDir)
 				summaryLink, err := InTotoVerify(metadata, layoutKeys,
-					sublayoutLinkPath)
+					sublayoutLinkPath, stepName)
 				if err != nil {
 					return nil, err
 				}
@@ -632,7 +633,7 @@ NOTE: Parameter substitution, artifact rules of type "create", "modify"
 and "delete" are currently not supported.
 */
 func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
-	linkDir string) (Metablock, error) {
+	linkDir string, stepName string) (Metablock, error) {
 
 	var summaryLink Metablock
 	var err error
@@ -705,7 +706,7 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		return summaryLink, err
 	}
 
-	summaryLink, err = GetSummaryLink(layout, stepsMetadataReduced)
+	summaryLink, err = GetSummaryLink(layout, stepsMetadataReduced, stepName)
 	if err != nil {
 		return summaryLink, err
 	}
