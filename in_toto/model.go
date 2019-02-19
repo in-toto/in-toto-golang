@@ -160,7 +160,8 @@ func (l *Layout) validateType() {
 
 func (l *Layout) validateExpires() {
 	if _, err := time.Parse("2006-01-02T15:04:05Z", l.Expires); err != nil {
-		fmt.Println("Expiry time parsed incorrectly - date either out of range or incorrect format")
+		fmt.Println("Expiry time parsed incorrectly - date either invalid or"+
+			" of incorrect format")
 	}
 }
 
@@ -170,17 +171,6 @@ func (l *Layout) validateReadme() {
 	}
 }
 
-func (l *Layout) validateStepsAndInspections() {
-	if reflect.TypeOf(l.Steps).Kind() != reflect.Slice {
-		fmt.Println("Steps field is not a slice")
-	}
-
-	for step := range l.Steps {
-		if _, ok := step.(Step); !ok {
-			fmt.Printf("%s is not of type", step.(Step).Name)
-		}
-	}
-}
 
 /*
 Metablock is a generic container for signable in-toto objects such as Layout
