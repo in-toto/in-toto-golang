@@ -534,42 +534,106 @@ func VerifyLayoutSignatures(layoutMb Metablock,
 }
 
 /*
-InTotoVerify can be used to verify an entire software supply chain according to
-the in-toto specification.  It requires a path to a root layout, a map that
-contains public keys to verify the root layout signatures, and a path to a
-directory from where it can load link metadata files, which are treated as
-signed evidence for the steps defined in the layout. The verification routine
-is as follows:
+GetSummaryLink merges the materials of the first step (as mentioned in the
+layout) and the products of the last step and returns a new link. This link
+reports the materials and products and summarizes the overall software supply
+chain.
+NOTE: The assumption is that the steps mentioned in the layout are to be
+performed sequentially. So, the first step mentioned in the layout denotes what
+comes into the supply chain and the last step denotes what goes out.
+*/
+func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock,
+	stepName string) (Metablock, error) {
+	var summaryLink Link
+	var result Metablock
+	if len(layout.Steps) > 0 {
+		firstStepLink := stepsMetadataReduced[layout.Steps[0].Name]
+		lastStepLink := stepsMetadataReduced[layout.Steps[len(layout.Steps)-1].Name]
 
-1. Load layout
-2. Verify layout signature(s) using passed key(s)
-3. Verify layout expiration date
-4. Load link metadata files for steps of layout
-5. Verify signatures and signature thresholds for steps of layout
+		summaryLink.Materials = firstStepLink.Signed.(Link).Materials
+		summaryLink.Name = stepName
+		summaryLink.Type = firstStepLink.Signed.(Link).Type
+
+		summaryLink.Products = lastStepLink.Signed.(Link).Products
+		summaryLink.ByProducts = lastStepLink.Signed.(Link).ByProducts
+		// Using the last command of the sublayout as the command
+		// of the summary link can be misleading. Is it necessary to
+		// include all the commands executed as part of sublayout?
+		summaryLink.Command = lastStepLink.Signed.(Link).Command
+	}
+
+	result.Signed = summaryLink
+
+	return result, nil
+}
+
+/*
+VerifySublayouts checks if any step in the supply chain is a sublayout, and if
+so, recursively resolves it and replaces it with a summary link summarizing the
+steps carried out in the sublayout.
+*/
+func VerifySublayouts(layout Layout,
+	stepsMetadataVerified map[string]map[string]Metablock,
+	superLayoutLinkPath string) (map[string]map[string]Metablock, error) {
+	for stepName, linkData := range stepsMetadataVerified {
+		for keyId, metadata := range linkData {
+			if _, ok := metadata.Signed.(Layout); ok {
+				layoutKeys := make(map[string]Key)
+				layoutKeys[keyId] = layout.Keys[keyId]
+
+				sublayoutLinkDir := fmt.Sprintf(SublayoutLinkDirFormat,
+					stepName, keyId)
+				sublayoutLinkPath := filepath.Join(superLayoutLinkPath,
+					sublayoutLinkDir)
+				summaryLink, err := InTotoVerify(metadata, layoutKeys,
+					sublayoutLinkPath, stepName)
+				if err != nil {
+					return nil, err
+				}
+				linkData[keyId] = summaryLink
+			}
+
+		}
+	}
+	return stepsMetadataVerified, nil
+}
+
+/*
+InTotoVerify can be used to verify an entire software supply chain according to
+the in-toto specification.  It requires the metadata of the root layout, a map
+that contains public keys to verify the root layout signatures, a path to a
+directory from where it can load link metadata files, which are treated as
+signed evidence for the steps defined in the layout, and a step name. The step
+name only matters for sublayouts, where it's important to associate the summary
+of that step with a unique name. The verification routine is as follows:
+
+1. Verify layout signature(s) using passed key(s)
+2. Verify layout expiration date
+3. Load link metadata files for steps of layout
+4. Verify signatures and signature thresholds for steps of layout
+5. Verify sublayouts recursively
 6. Verify command alignment for steps of layout (only warns)
 7. Verify artifact rules for steps of layout
 8. Execute inspection commands (generates link metadata for each inspection)
 9. Verify artifact rules for inspections of layout
 
-If any of the verification routines fail, verification is aborted and an error
-is returned.
+InTotoVerify returns a summary link wrapped in a Metablock object and an error
+value. If any of the verification routines fail, verification is aborted and
+error is returned. In such an instance, the first value remains an empty
+Metablock object.
 
-NOTE: Parameter substitution, sublayout (recursive) verification and artifact
-rules of type "create", "modify" and "delete" are currently not supported.
+NOTE: Parameter substitution, artifact rules of type "create", "modify"
+and "delete" are currently not supported.
 */
-func InTotoVerify(layoutPath string, layoutKeys map[string]Key,
-	linkDir string) error {
+func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
+	linkDir string, stepName string) (Metablock, error) {
 
-	var layoutMb Metablock
-
-	// Load layout
-	if err := layoutMb.Load(layoutPath); err != nil {
-		return err
-	}
+	var summaryLink Metablock
+	var err error
 
 	// Verify root signatures
 	if err := VerifyLayoutSignatures(layoutMb, layoutKeys); err != nil {
-		return err
+		return summaryLink, err
 	}
 
 	// Extract the layout from its Metablock container (for further processing)
@@ -577,7 +641,7 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key,
 
 	// Verify layout expiration
 	if err := VerifyLayoutExpiration(layout); err != nil {
-		return err
+		return summaryLink, err
 	}
 
 	// TODO: Substitute parameters
@@ -585,39 +649,45 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key,
 	// Load links for layout
 	stepsMetadata, err := LoadLinksForLayout(layout, linkDir)
 	if err != nil {
-		return err
+		return summaryLink, err
 	}
 
 	// Verify link signatures
 	stepsMetadataVerified, err := VerifyLinkSignatureThesholds(layout,
 		stepsMetadata)
 	if err != nil {
-		return err
+		return summaryLink, err
 	}
 
-	// TODO: Verify sublayouts
+	// Verify and resolve sublayouts
+	stepsSublayoutVerified, err := VerifySublayouts(layout,
+		stepsMetadataVerified, linkDir)
+	if err != nil {
+		return summaryLink, err
+	}
 
 	// Verify command alignment (WARNING only)
-	VerifyStepCommandAlignment(layout, stepsMetadataVerified)
+	VerifyStepCommandAlignment(layout, stepsSublayoutVerified)
 
 	// Given that signature thresholds have been checked above and the rest of
 	// the relevant link properties, i.e. materials and products, have to be
 	// exactly equal, we can reduce the map of steps metadata. However, we error
 	// if the relevant properties are not equal among links of a step.
 	stepsMetadataReduced, err := ReduceStepsMetadata(layout,
-		stepsMetadataVerified)
+		stepsSublayoutVerified)
 	if err != nil {
-		return err
+		return summaryLink, err
 	}
 
 	// Verify artifact rules
-	if err := VerifyArtifacts(layout.StepsAsInterfaceSlice(), stepsMetadataReduced); err != nil {
-		return err
+	if err = VerifyArtifacts(layout.StepsAsInterfaceSlice(),
+		stepsMetadataReduced); err != nil {
+		return summaryLink, err
 	}
 
 	inspectionMetadata, err := RunInspections(layout)
 	if err != nil {
-		return err
+		return summaryLink, err
 	}
 
 	// Add steps metadata to inspection metadata, because inspection artifact
@@ -626,9 +696,15 @@ func InTotoVerify(layoutPath string, layoutKeys map[string]Key,
 		inspectionMetadata[k] = v
 	}
 
-	if err := VerifyArtifacts(layout.InspectAsInterfaceSlice(), inspectionMetadata); err != nil {
-		return err
+	if err = VerifyArtifacts(layout.InspectAsInterfaceSlice(),
+		inspectionMetadata); err != nil {
+		return summaryLink, err
 	}
 
-	return nil
+	summaryLink, err = GetSummaryLink(layout, stepsMetadataReduced, stepName)
+	if err != nil {
+		return summaryLink, err
+	}
+
+	return summaryLink, nil
 }

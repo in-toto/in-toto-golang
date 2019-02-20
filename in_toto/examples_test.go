@@ -5,9 +5,18 @@ import (
 	"os"
 )
 
-const LayoutPath = "../test/data/demo.layout.template"
-const LayoutKeyPath = "../test/data/alice.pub"
-const LinkDirectory = "../test/data/"
+/*
+NOTE: The example code requires the following files to be in the current
+working directory: `demo.layout.template` (root layout), `alice.pub` (layout
+signature verification key), `write-code.776a00e2.link` and
+`package.2f89b927.link` (link metadata files), and `foo.tar.gz` (target file of
+final product). You can copy these files from
+https://github.com/in-toto/in-toto-golang/tree/master/test/data.
+*/
+
+const LayoutPath = "demo.layout.template"
+const LayoutKeyPath = "alice.pub"
+const LinkDirectory = "."
 
 func ExampleInTotoVerify() {
 	// Load the layout verification key and create a map as is required by
@@ -21,8 +30,13 @@ func ExampleInTotoVerify() {
 
 	// Perform in-toto software supply chain verification, using the provided
 	// test data.
-	err := InTotoVerify(LayoutPath, layoutKeys, LinkDirectory)
-	if err != nil {
+	var layoutMb Metablock
+	if err := layoutMb.Load(LayoutPath); err != nil {
+		fmt.Printf("Unable to load layout metadata: %s", err)
+	}
+	if _, err := InTotoVerify(layoutMb, layoutKeys, LinkDirectory, ""); err != nil {
+		fmt.Printf("In-toto verification failed: %s", err)
+	} else {
 		fmt.Println("In-toto verification succeeded!")
 	}
 

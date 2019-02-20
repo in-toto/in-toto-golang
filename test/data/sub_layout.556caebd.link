@@ -1,0 +1,136 @@
+{
+ "signatures": [
+  {
+   "keyid": "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b588f3e9cc48b35",
+   "sig": "02813858670c66647c17802d84f06453589f41850013a544609e9d33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af9836ca218b584f51eb0eaacbb1c9bb57448101b07d058dec04d525551d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053cd93e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb227127178d52328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe595804f3e47c4fc98434c44e914445f7cb773439ebf813de8849dd1b533958f99f671d4e023d34c110d4b169cc02c12a3755ebe537147ff2479d244daaf719e24cf6b2fa6f47d0410d52d67217bcf4d4d4c2c7c0b92cd2bcd321edc69bc1430f78a188e712b8cb1fff0c14550cd01c41dae377256f31211fd249c5031bfee86e638bce6aa36aca349b787cef48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65aa626d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63bbea61be732207f0f5b58d056f118c830981747cb2b245d1377e17"
+  }
+ ],
+ "signed": {
+  "_type": "layout",
+  "expires": "2020-11-18T16:06:36Z",
+  "inspect": [
+   {
+    "_type": "inspection",
+    "expected_materials": [
+     [
+      "MATCH",
+      "foo.tar.gz",
+      "WITH",
+      "PRODUCTS",
+      "FROM",
+      "package"
+     ],
+     [
+      "DISALLOW",
+      "foo.tar.gz"
+     ]
+    ],
+    "expected_products": [
+     [
+      "MATCH",
+      "foo.py",
+      "WITH",
+      "PRODUCTS",
+      "FROM",
+      "write-code"
+     ],
+     [
+      "DISALLOW",
+      "foo.py"
+     ]
+    ],
+    "name": "untar",
+    "run": [
+     "tar",
+     "xfz",
+     "foo.tar.gz"
+    ]
+   }
+  ],
+  "keys": {
+   "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498": {
+    "keyid": "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498",
+    "keyid_hash_algorithms": [
+     "sha256",
+     "sha512"
+    ],
+    "keytype": "rsa",
+    "keyval": {
+     "private": "",
+     "public": "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAzgLBsMFSgwBiWTBmVsyW\n5KbJwLFSodAzdUhU2Bq6SdRz/W6UOBGdojZXibxupjRtAaEQW/eXDe+1CbKg6ENZ\nGt2D9HGFCQZgQS8ONgNDQGiNxgApMA0T21AaUhru0vEofzdN1DfEF4CAGv5AkcgK\nsalhTyONervFIjFEdXGelFZ7dVMV3Pp5WkZPG0jFQWjnmDZhUrtSxEtqbVghc3kK\nAUj9Ll/3jyi2wS92Z1j5ueN8X62hWX2xBqQ6nViOMzdujkoiYCRSwuMLRqzW2CbT\nL8hF1+S5KWKFzxl5sCVfpPe7V5HkgEHjwCILXTbCn2fCMKlaSbJ/MG2lW7qSY2Ro\nwVXWkp1wDrsJ6Ii9f2dErv9vJeOVZeO9DsooQ5EuzLCfQLEU5mn7ul7bU7rFsb8J\nxYOeudkNBatnNCgVMAkmDPiNA7E33bmL5ARRwU0iZicsqLQR32pmwdap8PjofxqQ\nk7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=\n-----END PUBLIC KEY-----"
+    },
+    "scheme": "rsassa-pss-sha256"
+   },
+   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5": {
+    "keyid": "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+    "keyid_hash_algorithms": [
+     "sha256",
+     "sha512"
+    ],
+    "keytype": "rsa",
+    "keyval": {
+     "private": "",
+     "public": "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA0Zfzonp3/FScaIP+KKuz\nB+OZNFpjbVGWjm3leqnFqHYLqrLcCw5KhlXpycJqoSvZBpO+PFCksUx8U/ryklHG\nVoDiB84pRkvZtBoVaA4b4IHDIhz1K5NqkJgieya4fwReTxmCW0a9gH7AnDicHBCX\nlzMxqEdt6OKMV5g4yjKaxf8lW72O1gSI46GSIToo+Z7UUgs3ofaM5UFIcczgCpUa\n5kEKocB6cSZ9U8PKRLSs0xO0ROjrcOTsfxMs8eV4bsRCWY5mAq1WM9EHDSV9WO8g\nqrRmanC4enNqa8jU4O3zhgJVegP9A01r9AwNt6AqgPSikwhXN/P4v1FMYV+R6N3b\nS1lsVWRAnwBq5RFz5zVvcY88JEkHbrcBqP/A4909NXae1VMXmnoJb4EzGAkyUySB\na+fHXAVJgzwyv3I48d/OIjH8NWcVmM/DQL7FtcJk3tp0YUjY5wNpcbQTnLzURtlU\nsd+MtGuvdlDxUUvtUYCIVKRdS8UzYnTPjI2xzeoSHZ2ZAgMBAAE=\n-----END PUBLIC KEY-----"
+    },
+    "scheme": "rsassa-pss-sha256"
+   }
+  },
+  "readme": "",
+  "steps": [
+   {
+    "_type": "step",
+    "expected_command": [],
+    "expected_materials": [],
+    "expected_products": [
+     [
+      "ALLOW",
+      "foo.py"
+     ]
+    ],
+    "name": "write-code",
+    "pubkeys": [
+     "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
+    ],
+    "threshold": 1
+   },
+   {
+    "_type": "step",
+    "expected_command": [
+     "tar",
+     "zcvf",
+     "foo.tar.gz",
+     "foo.py"
+    ],
+    "expected_materials": [
+     [
+      "MATCH",
+      "foo.py",
+      "WITH",
+      "PRODUCTS",
+      "FROM",
+      "write-code"
+     ],
+     [
+      "DISALLOW",
+      "*"
+     ]
+    ],
+    "expected_products": [
+     [
+      "ALLOW",
+      "foo.tar.gz"
+     ],
+     [
+      "ALLOW",
+      "foo.py"
+     ]
+    ],
+    "name": "package",
+    "pubkeys": [
+     "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498"
+    ],
+    "threshold": 1
+   }
+  ]
+ }
+}

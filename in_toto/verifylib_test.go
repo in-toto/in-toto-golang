@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -52,6 +54,11 @@ func TestInTotoVerifyPass(t *testing.T) {
 	pubKeyPath := "alice.pub"
 	linkDir := "."
 
+	var layoutMb Metablock
+	if err := layoutMb.Load(layoutPath); err != nil {
+		t.Error(err)
+	}
+
 	var pubKey Key
 	if err := pubKey.LoadPublicKey(pubKeyPath); err != nil {
 		t.Error(err)
@@ -62,16 +69,118 @@ func TestInTotoVerifyPass(t *testing.T) {
 	}
 
 	// No error should occur
-	if err := InTotoVerify(layoutPath, layouKeys, linkDir); err != nil {
+	if _, err := InTotoVerify(layoutMb, layouKeys, linkDir, ""); err != nil {
 		t.Error(err)
 	}
 }
 
-func TestInTotoVerifyLayoutDoesNotExist(t *testing.T) {
-	err := InTotoVerify("layout/does/not/exist", map[string]Key{},
-		"link/dir/does/not/matter")
-	// Asssert error type to PathError
-	if _, ok := err.(*os.PathError); ok == false {
-		t.Fail()
+func TestGetSummaryLink(t *testing.T) {
+	var demoLayout Metablock
+	if err := demoLayout.Load("demo.layout.template"); err != nil {
+		t.Error(err)
+	}
+	var codeLink Metablock
+	if err := codeLink.Load("write-code.776a00e2.link"); err != nil {
+		t.Error(err)
+	}
+	var packageLink Metablock
+	if err := packageLink.Load("package.2f89b927.link"); err != nil {
+		t.Error(err)
+	}
+	demoLink := make(map[string]Metablock)
+	demoLink["write-code"] = codeLink
+	demoLink["package"] = packageLink
+
+	var summaryLink Metablock
+	var err error
+	if summaryLink, err = GetSummaryLink(demoLayout.Signed.(Layout),
+		demoLink, ""); err != nil {
+		t.Error(err)
+	}
+	if summaryLink.Signed.(Link).Type != codeLink.Signed.(Link).Type {
+		t.Errorf("Summary Link isn't of type Link")
+	}
+	if summaryLink.Signed.(Link).Name != "" {
+		t.Errorf("Summary Link name doesn't match. Expected '%s', returned "+
+			"'%s", codeLink.Signed.(Link).Name, summaryLink.Signed.(Link).Name)
+	}
+	if !reflect.DeepEqual(summaryLink.Signed.(Link).Materials,
+		codeLink.Signed.(Link).Materials) {
+		t.Errorf("Summary Link materials don't match. Expected '%s', "+
+			"returned '%s", codeLink.Signed.(Link).Materials,
+			summaryLink.Signed.(Link).Materials)
+	}
+
+	if !reflect.DeepEqual(summaryLink.Signed.(Link).Products,
+		packageLink.Signed.(Link).Products) {
+		t.Errorf("Summary Link products don't match. Expected '%s', "+
+			"returned '%s", packageLink.Signed.(Link).Products,
+			summaryLink.Signed.(Link).Products)
+	}
+	if !reflect.DeepEqual(summaryLink.Signed.(Link).Command,
+		packageLink.Signed.(Link).Command) {
+		t.Errorf("Summary Link command doesn't match. Expected '%s', "+
+			"returned '%s", packageLink.Signed.(Link).Command,
+			summaryLink.Signed.(Link).Command)
+	}
+	if !reflect.DeepEqual(summaryLink.Signed.(Link).ByProducts,
+		packageLink.Signed.(Link).ByProducts) {
+		t.Errorf("Summary Link by-products don't match. Expected '%s', "+
+			"returned '%s", packageLink.Signed.(Link).ByProducts,
+			summaryLink.Signed.(Link).ByProducts)
+	}
+}
+
+func TestVerifySublayouts(t *testing.T) {
+	sublayoutName := "sub_layout"
+	var aliceKey Key
+	if err := aliceKey.LoadPublicKey("alice.pub"); err != nil {
+		t.Errorf("Unable to load Alice's public key")
+	}
+	sublayoutDirectory := fmt.Sprintf(SublayoutLinkDirFormat, sublayoutName,
+		aliceKey.KeyId)
+	defer os.RemoveAll(sublayoutDirectory)
+	if err := os.Mkdir(sublayoutDirectory, 0700); err != nil {
+		t.Errorf("Unable to create sublayout directory")
+	}
+	writeCodePath := path.Join(sublayoutDirectory, "write-code.776a00e2.link")
+	if err := os.Link("write-code.776a00e2.link", writeCodePath); err != nil {
+		t.Errorf("Unable to link write-code metadata.")
+	}
+	packagePath := path.Join(sublayoutDirectory, "package.2f89b927.link")
+	if err := os.Link("package.2f89b927.link", packagePath); err != nil {
+		t.Errorf("Unable to link package metadata")
+	}
+
+	var superLayoutMb Metablock
+	if err := superLayoutMb.Load("super.layout"); err != nil {
+		t.Errorf("Unable to load super layout")
+	}
+
+	stepsMetadata := make(map[string]map[string]Metablock)
+	var err error
+	if stepsMetadata, err = LoadLinksForLayout(superLayoutMb.Signed.(Layout),
+		"."); err != nil {
+		t.Errorf("Unable to load link metadata for super layout")
+	}
+
+	stepsMetadataVerified := make(map[string]map[string]Metablock)
+	if stepsMetadataVerified, err = VerifyLinkSignatureThesholds(
+		superLayoutMb.Signed.(Layout), stepsMetadata); err != nil {
+		t.Errorf("Unable to verify link threshold values")
+	}
+
+	result, err := VerifySublayouts(superLayoutMb.Signed.(Layout),
+		stepsMetadataVerified, ".")
+	if err != nil {
+		t.Errorf("Unable to verify sublayouts")
+	}
+
+	for _, stepData := range result {
+		for _, metadata := range stepData {
+			if _, ok := metadata.Signed.(Link); !ok {
+				t.Errorf("Sublayout expansion error: found non link")
+			}
+		}
 	}
 }
