@@ -602,10 +602,11 @@ func VerifySublayouts(layout Layout,
 /*
 InTotoVerify can be used to verify an entire software supply chain according to
 the in-toto specification.  It requires the metadata of the root layout, a map
-that contains public keys to verify the root layout signatures, and a path to
+that contains public keys to verify the root layout signatures, a path to
 a directory from where it can load link metadata files, which are treated as
-signed evidence for the steps defined in the layout. The verification routine
-is as follows:
+signed evidence for the steps defined in the layout, and a step name. The
+step name only matters for sublayouts, where it's important to associate the
+summary of that step with a unique name. The verification routine is as follows:
 
 1. Verify layout signature(s) using passed key(s)
 2. Verify layout expiration date
@@ -617,8 +618,10 @@ is as follows:
 8. Execute inspection commands (generates link metadata for each inspection)
 9. Verify artifact rules for inspections of layout
 
-If any of the verification routines fail, verification is aborted and an error
-is returned.
+InTotoVerify returns a summary link wrapped in a Metablock object and an error
+value. If any of the verification routines fail, verification is aborted and
+error is returned. In such an instance, the first value remains an empty
+Metablock object.
 
 NOTE: Parameter substitution, artifact rules of type "create", "modify"
 and "delete" are currently not supported.
