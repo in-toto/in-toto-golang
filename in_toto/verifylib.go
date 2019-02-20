@@ -680,7 +680,8 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 	}
 
 	// Verify artifact rules
-	if err = VerifyArtifacts(layout.StepsAsInterfaceSlice(), stepsMetadataReduced); err != nil {
+	if err = VerifyArtifacts(layout.StepsAsInterfaceSlice(),
+		stepsMetadataReduced); err != nil {
 		return summaryLink, err
 	}
 
@@ -695,7 +696,8 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		inspectionMetadata[k] = v
 	}
 
-	if err = VerifyArtifacts(layout.InspectAsInterfaceSlice(), inspectionMetadata); err != nil {
+	if err = VerifyArtifacts(layout.InspectAsInterfaceSlice(),
+		inspectionMetadata); err != nil {
 		return summaryLink, err
 	}
 
