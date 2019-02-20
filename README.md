@@ -45,7 +45,6 @@ func main() {
 
 
 ## Not (yet) supported
-* Sublayout verification
 * Artifact rules of type `CREATE`, `DELETE` or `MODIFY`
 * Signature schemes, other than `rsassa-pss-sha256`
 * GPG keys
