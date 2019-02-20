@@ -534,14 +534,13 @@ func VerifyLayoutSignatures(layoutMb Metablock,
 }
 
 /*
-Merges the materials of the first step (as mentioned in the layout)
-and the products of the last step and returns a new link.
-This link reports the materials and products and summarizes the
-overall software supply chain.
-NOTE: The assumption is that the steps mentioned in the layout are
-to be performed sequentially. So, the first step mentioned in the
-layout denotes what comes into the supply chain and the last step
-denotes what goes out.
+GetSummaryLink merges the materials of the first step (as mentioned in the
+layout) and the products of the last step and returns a new link. This link
+reports the materials and products and summarizes the overall software supply
+chain.
+NOTE: The assumption is that the steps mentioned in the layout are to be
+performed sequentially. So, the first step mentioned in the layout denotes what
+comes into the supply chain and the last step denotes what goes out.
 */
 func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock,
 	stepName string) (Metablock, error) {
@@ -569,9 +568,9 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metablock,
 }
 
 /*
-Check if any step in the supply chain is a sublayout, and if so,
-recursively resolve it and replace it with a summary link summarizing
-the steps carried out in the sublayout.
+VerifySublayouts checks if any step in the supply chain is a sublayout, and if
+so, recursively resolves it and replaces it with a summary link summarizing the
+steps carried out in the sublayout.
 */
 func VerifySublayouts(layout Layout,
 	stepsMetadataVerified map[string]map[string]Metablock,
@@ -602,11 +601,11 @@ func VerifySublayouts(layout Layout,
 /*
 InTotoVerify can be used to verify an entire software supply chain according to
 the in-toto specification.  It requires the metadata of the root layout, a map
-that contains public keys to verify the root layout signatures, a path to
-a directory from where it can load link metadata files, which are treated as
-signed evidence for the steps defined in the layout, and a step name. The
-step name only matters for sublayouts, where it's important to associate the
-summary of that step with a unique name. The verification routine is as follows:
+that contains public keys to verify the root layout signatures, a path to a
+directory from where it can load link metadata files, which are treated as
+signed evidence for the steps defined in the layout, and a step name. The step
+name only matters for sublayouts, where it's important to associate the summary
+of that step with a unique name. The verification routine is as follows:
 
 1. Verify layout signature(s) using passed key(s)
 2. Verify layout expiration date
