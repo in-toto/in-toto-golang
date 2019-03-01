@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"regexp"
 	"time"
 )
 
@@ -168,6 +169,27 @@ func (l *Layout) validateExpires() {
 func (l *Layout) validateReadme() {
 	if reflect.TypeOf(l.Readme).Kind() != reflect.String {
 		fmt.Println("Readme is not of string format")
+	}
+}
+
+func (l *Layout) validateKeys() {
+	for keyId, key := range l.Keys {
+
+		keyIdFormatCheck, err := regexp.MatchString("[a-fA-F0-9]+", keyId)
+		if err != nil {
+			fmt.Println("Unable to check if key ID has valid format")
+		}
+		if !keyIdFormatCheck {
+			fmt.Println("Key ID has invalid format")
+		}
+
+		if key.KeyId != keyId {
+			fmt.Println("Invalid key found")
+		}
+		// SSL Sets this to be optional. Can it ever be non empty?
+		if key.KeyVal.Private != "" {
+			fmt.Println("Private key found")
+		}
 	}
 }
 
