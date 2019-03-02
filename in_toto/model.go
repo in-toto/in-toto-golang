@@ -193,6 +193,24 @@ func (l *Layout) validateKeys() {
 	}
 }
 
+func (l *Layout) validateStepsAndInspections() {
+	var namesSeen = make(map[string]bool)
+	for step := range l.Steps {
+		if namesSeen[step.Name] {
+			fmt.Println("Non unique step or inspection name found")
+		} else {
+			namesSeen[step.Name] = true
+		}
+	}
+	for inspection := range l.Inspect {
+		if namesSeen[inspection.Name] {
+			fmt.Println("Non unique step or inspection name found")
+		} else {
+			namesSeen[inspection.Name] = true
+		}
+	}
+}
+
 
 /*
 Metablock is a generic container for signable in-toto objects such as Layout
