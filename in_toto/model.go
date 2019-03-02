@@ -60,6 +60,12 @@ type Link struct {
 	Environment map[string]interface{} `json:"environment"`
 }
 
+func (l *Link) validateType() {
+	if l.Type != "link" {
+		fmt.Println("Invalid type for link: should be 'link'")
+	}
+}
+
 /*
 LinkNameFormat represents a format string used to create the filename for a
 signed Link (wrapped in a Metablock). It consists of the name of the link and
