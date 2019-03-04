@@ -240,6 +240,7 @@ func (l *Layout) validateStepsAndInspections() {
 		} else {
 			namesSeen[step.Name] = true
 		}
+		step.validate()
 	}
 	for _, inspection := range l.Inspect {
 		if namesSeen[inspection.Name] {
