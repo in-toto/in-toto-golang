@@ -127,6 +127,18 @@ func (s *Step) validateType() {
 	}
 }
 
+func (s *Step) validatePubkeys() {
+	for _, keyId := range s.PubKeys {
+		keyIdFormatCheck, err := regexp.MatchString("[a-fA-F0-9]+", keyId)
+		if err != nil {
+			fmt.Println("Unable to check if key ID has valid format")
+		}
+		if !keyIdFormatCheck {
+			fmt.Println("Key ID has invalid format")
+		}
+	}
+}
+
 /*
 Layout represents the definition of a software supply chain.  It lists the
 sequence of steps required in the software supply chain and the functionaries
