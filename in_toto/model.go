@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"regexp"
 	"time"
 )
@@ -221,14 +220,14 @@ func (l *Layout) validateKeys() {
 
 func (l *Layout) validateStepsAndInspections() {
 	var namesSeen = make(map[string]bool)
-	for step := range l.Steps {
+	for _, step := range l.Steps {
 		if namesSeen[step.Name] {
 			fmt.Println("Non unique step or inspection name found")
 		} else {
 			namesSeen[step.Name] = true
 		}
 	}
-	for inspection := range l.Inspect {
+	for _, inspection := range l.Inspect {
 		if namesSeen[inspection.Name] {
 			fmt.Println("Non unique step or inspection name found")
 		} else {
