@@ -177,6 +177,14 @@ func (l *Layout) InspectAsInterfaceSlice() []interface{} {
 	return inspectionsI
 }
 
+func (l *Layout) validate() {
+	validateFunctions := []func(){l.validateType, l.validateExpires,
+		l.validateKeys, l.validateStepsAndInspections}
+	for _, f := range validateFunctions {
+		f()
+	}
+}
+
 func (l *Layout) validateType() {
 	if l.Type != "layout" {
 		fmt.Println("Invalid Type value for layout: should be 'layout'")
@@ -187,12 +195,6 @@ func (l *Layout) validateExpires() {
 	if _, err := time.Parse("2006-01-02T15:04:05Z", l.Expires); err != nil {
 		fmt.Println("Expiry time parsed incorrectly - date either invalid or"+
 			" of incorrect format")
-	}
-}
-
-func (l *Layout) validateReadme() {
-	if reflect.TypeOf(l.Readme).Kind() != reflect.String {
-		fmt.Println("Readme is not of string format")
 	}
 }
 
