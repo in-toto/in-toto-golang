@@ -121,6 +121,12 @@ type Step struct {
 	SupplyChainItem
 }
 
+func (s *Step) validateType() {
+	if s.Type != "step" {
+		fmt.Println("Invalid Type value for step: should be 'step'")
+	}
+}
+
 /*
 Layout represents the definition of a software supply chain.  It lists the
 sequence of steps required in the software supply chain and the functionaries
