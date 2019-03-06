@@ -206,7 +206,7 @@ func (l *Layout) validateType() {
 
 func (l *Layout) validateExpires() {
 	if _, err := time.Parse("2006-01-02T15:04:05Z", l.Expires); err != nil {
-		fmt.Println("Expiry time parsed incorrectly - date either invalid or"+
+		fmt.Println("Expiry time parsed incorrectly - date either invalid or" +
 			" of incorrect format")
 	}
 }
@@ -250,7 +250,6 @@ func (l *Layout) validateStepsAndInspections() {
 		}
 	}
 }
-
 
 /*
 Metablock is a generic container for signable in-toto objects such as Layout
