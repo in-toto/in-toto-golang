@@ -59,17 +59,23 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 	for _, path := range paths {
 		err := filepath.Walk(path,
 			func(path string, info os.FileInfo, err error) error {
+				// Abort if Walk function has a problem, e.g. path does not exist)
+				if err != nil {
+					return err
+				}
 				// Don't hash directories
 				if info.IsDir() {
 					return nil
 				}
 				artifact, err := RecordArtifact(path)
+				// Abort if artifact can't be recorded, e.g. due to file permissions
 				if err != nil {
 					return err
 				}
 				artifacts[path] = artifact
 				return nil
 			})
+
 		if err != nil {
 			return nil, err
 		}
@@ -154,7 +160,7 @@ inspections of an in-toto layout, and creates and returns corresponding link
 metadata.  Link metadata contains recorded products at the passed productPaths
 and materials at the passed materialPaths.  The returned link is wrapped in a
 Metablock object.  If command execution or artifact recording fails the first
-return value is nil and the second return value is the error.
+return value is an empty Metablock and the second return value is the error.
 NOTE: Currently InTotoRun cannot be used to sign Link metadata.
 */
 func InTotoRun(name string, materialPaths []string, productPaths []string,

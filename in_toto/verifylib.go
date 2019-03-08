@@ -27,8 +27,8 @@ returned.  The format is:
     ...
   }
 If executing the inspection command fails, or if the executed command has a
-non-zero exit code, the first return value is nil and the second return value
-is the error.
+non-zero exit code, the first return value is an empty Metablock map and the
+second return value is the error.
 */
 func RunInspections(layout Layout) (map[string]Metablock, error) {
 	inspectionMetadata := make(map[string]Metablock)
@@ -96,6 +96,74 @@ func FnFilter(pattern string, names []string) []string {
 	return namesFiltered
 }
 
+// verifyMatchRule is a helper function to process artifact rules of
+// type MATCH. See VerifyArtifacts for more details.
+func verifyMatchRule(ruleData map[string]string,
+	srcArtifacts map[string]interface{}, srcArtifactQueue []string,
+	itemsMetadata map[string]Metablock) []string {
+	// Get destination link metadata
+	dstLinkMb, exists := itemsMetadata[ruleData["dstName"]]
+	if !exists {
+		// Destination link does not exist, rule can't consume any
+		// artifacts
+		return srcArtifactQueue
+	}
+
+	// Get artifacts from destination link metadata
+	var dstArtifacts map[string]interface{}
+	switch ruleData["dstType"] {
+	case "materials":
+		dstArtifacts = dstLinkMb.Signed.(Link).Materials
+
+	case "products":
+		dstArtifacts = dstLinkMb.Signed.(Link).Products
+	}
+
+	// Normalize optional source and destination prefixes, i.e. if
+	// there is a prefix, then add a trailing slash if not there yet
+	for _, prefix := range []string{"srcPrefix", "dstPrefix"} {
+		if ruleData[prefix] != "" &&
+			!strings.HasSuffix(ruleData[prefix], "/") {
+			ruleData[prefix] += "/"
+		}
+	}
+	// Iterate over queue and mark consumed artifacts
+	var consumed []string
+	for _, srcPath := range srcArtifactQueue {
+		// Remove optional source prefix from source artifact path
+		// Noop if prefix is empty, or artifact does not have it
+		srcBasePath := strings.TrimPrefix(srcPath, ruleData["srcPrefix"])
+
+		// Ignore artifacts not matched by rule pattern
+		matched, err := filepath.Match(ruleData["pattern"], srcBasePath)
+		if err != nil || !matched {
+			continue
+		}
+
+		// Construct corresponding destination artifact path, i.e.
+		// an optional destination prefix plus the source base path
+		dstPath := osPath.Join(ruleData["dstPrefix"], srcBasePath)
+
+		// Try to find the corresponding destination artifact
+		dstArtifact, exists := dstArtifacts[dstPath]
+		// Ignore artifacts without corresponding destination artifact
+		if !exists {
+			continue
+		}
+
+		// Ignore artifact pairs with no matching hashes
+		if !reflect.DeepEqual(srcArtifacts[srcPath], dstArtifact) {
+			continue
+		}
+
+		// Only if a source and destination artifact pair was found and
+		// their hashes are equal, will we mark the source artifact as
+		// successfully consumed, i.e. it will be removed from the queue
+		consumed = append(consumed, srcPath)
+	}
+	return Subtract(srcArtifactQueue, consumed)
+}
+
 /*
 VerifyArtifacts iteratively applies the material and product rules of the
 passed items (step or inspection) to enforce and authorize artifacts (materials
@@ -119,34 +187,40 @@ func VerifyArtifacts(items []interface{},
 		// The layout item (interface) must be a Link or an Inspection we are only
 		// interested in the name and the expected materials and products
 		var itemName string
-		var expected_materials [][]string
-		var expected_products [][]string
+		var expectedMaterials [][]string
+		var expectedProducts [][]string
 
 		switch item := itemI.(type) {
 		case Step:
 			itemName = item.Name
-			expected_materials = item.ExpectedMaterials
-			expected_products = item.ExpectedProducts
+			expectedMaterials = item.ExpectedMaterials
+			expectedProducts = item.ExpectedProducts
 
 		case Inspection:
 			itemName = item.Name
-			expected_materials = item.ExpectedMaterials
-			expected_products = item.ExpectedProducts
+			expectedMaterials = item.ExpectedMaterials
+			expectedProducts = item.ExpectedProducts
 
 		default: // Something's wrong
-			return fmt.Errorf("VerifyArtifact received an item of invalid type,"+
+			return fmt.Errorf("VerifyArtifacts received an item of invalid type,"+
 				" elements of passed slice 'items' must be one of 'Step' or"+
 				" 'Inspection', got: '%s'", reflect.TypeOf(item))
 		}
-		srcLinkMb := itemsMetadata[itemName]
+		srcLinkMb, exists := itemsMetadata[itemName]
+		if !exists {
+			return fmt.Errorf("VerifyArtifacts could not find metadata"+
+				" for item '%s', got: '%s'", itemName, itemsMetadata)
+		}
 
 		verificationDataList := []map[string]interface{}{
 			map[string]interface{}{
-				"rules":     expected_materials,
+				"srcType":   "materials",
+				"rules":     expectedMaterials,
 				"artifacts": srcLinkMb.Signed.(Link).Materials,
 			},
 			map[string]interface{}{
-				"rules":     expected_products,
+				"srcType":   "products",
+				"rules":     expectedProducts,
 				"artifacts": srcLinkMb.Signed.(Link).Products,
 			},
 		}
@@ -182,67 +256,7 @@ func VerifyArtifacts(items []interface{},
 				// "disallow"
 				switch ruleData["type"] {
 				case "match":
-					// Get destination link metadata
-					dstLinkMb, exists := itemsMetadata[ruleData["dstName"]]
-					if !exists {
-						// Destination link does not exist, rule can't consume any
-						// artifacts
-						continue
-					}
-
-					// Get artifacts from destination link metadata
-					var dstArtifacts map[string]interface{}
-					switch ruleData["dstType"] {
-					case "materials":
-						dstArtifacts = dstLinkMb.Signed.(Link).Materials
-
-					case "products":
-						dstArtifacts = dstLinkMb.Signed.(Link).Products
-					}
-
-					// Normalize optional source and destination prefixes, i.e. if
-					// there is a prefix, then add a trailing slash if not there yet
-					for _, prefix := range []string{"srcPrefix", "dstPrefix"} {
-						if ruleData[prefix] != "" &&
-							!strings.HasSuffix(ruleData[prefix], "/") {
-							ruleData[prefix] += "/"
-						}
-					}
-					// Iterate over queue and mark consumed artifacts
-					var consumed []string
-					for _, srcPath := range queue {
-						// Remove optional source prefix from source artifact path
-						// Noop if prefix is empty, or artifact does not have it
-						srcBasePath := strings.TrimPrefix(srcPath, ruleData["srcPrefix"])
-
-						// Ignore artifacts not matched by rule pattern
-						matched, err := filepath.Match(ruleData["pattern"], srcBasePath)
-						if err != nil || !matched {
-							continue
-						}
-
-						// Construct corresponding destination artifact path, i.e.
-						// an optional destination prefix plus the source base path
-						dstPath := osPath.Join(ruleData["dstPrefix"], srcBasePath)
-
-						// Try to find the corresponding destination artifact
-						dstArtifact, exists := dstArtifacts[dstPath]
-						// Ignore artifacts without corresponding destination artifact
-						if !exists {
-							continue
-						}
-
-						// Ignore artifact pairs with no matching hashes
-						if !reflect.DeepEqual(artifacts[srcPath], dstArtifact) {
-							continue
-						}
-
-						// Only if a source and destination artifact pair was found and
-						// their hashes are equal, will we mark the source artifact as
-						// successfully consumed, i.e. it will be removed from the queue
-						consumed = append(consumed, srcPath)
-					}
-					queue = Subtract(queue, consumed)
+					queue = verifyMatchRule(ruleData, artifacts, queue, itemsMetadata)
 
 				case "allow":
 					consumed := FnFilter(ruleData["pattern"], queue)
@@ -251,16 +265,13 @@ func VerifyArtifacts(items []interface{},
 				case "disallow":
 					disallowed := FnFilter(ruleData["pattern"], queue)
 					if len(disallowed) > 0 {
-						return fmt.Errorf("Artifact verification failed for %s '%s'."+
-							" Artifact(s) %s disallowed by rule %s.",
-							reflect.TypeOf(itemI), itemName, disallowed, rule)
+						return fmt.Errorf("Artifact verification failed for %s '%s',"+
+							" %s %s disallowed by rule %s.",
+							reflect.TypeOf(itemI).Name(), itemName, verificationData["srcType"],
+							disallowed, rule)
 					}
 
-				// TODO: Support create, modify, delete rules
-				default:
-					return fmt.Errorf("Cannot process artifact rule '%s'. We"+
-						" don't support rules of type '%s'", rule,
-						strings.ToUpper(ruleData["type"]))
+					// TODO: Support create, modify, delete rules
 				}
 			}
 		}
@@ -281,8 +292,8 @@ step.  The function returns a map with one Metablock (link) per step:
     ...
   }
 If links corresponding to the same step report different Materials or different
-Products, the first return value is nil and the second return value is the
-error.
+Products, the first return value is an empty Metablock map and the second
+return value is the error.
 */
 func ReduceStepsMetadata(layout Layout,
 	stepsMetadata map[string]map[string]Metablock) (map[string]Metablock,
@@ -384,7 +395,8 @@ links with valid signatures from distinct functionaries and has the format:
     ...
   }
 If for any step of the layout there are not enough links available, the first
-return value is nil and the second return value is the error.
+return value is an empty map of Metablock maps and the second return value is
+the error.
 */
 func VerifyLinkSignatureThesholds(layout Layout,
 	stepsMetadata map[string]map[string]Metablock) (
@@ -464,7 +476,7 @@ format:
 If a link cannot be loaded at a constructed link name or is invalid, it is
 ignored. Only a preliminary threshold check is performed, that is, if there
 aren't at least Threshold links for any given step, the first return value
-is nil and the second return value is the error.
+is an empty map of Metablock maps and the second return value is the error.
 */
 func LoadLinksForLayout(layout Layout, linkDir string) (
 	map[string]map[string]Metablock, error) {
