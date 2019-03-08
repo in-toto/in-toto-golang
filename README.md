@@ -5,56 +5,27 @@
 Basic Go implementation of in-toto supply chain verification, based on the
 [in-toto Python reference implementation](https://github.com/in-toto/in-toto).
 
+## Docs
 
-## Basic usage of `InTotoVerify`
-```go
-package main
+To read the documentation along with some examples, run:
 
-import (
-  "fmt"
-  "github.com/in-toto/in-toto-golang/in_toto"
-)
-
-
-func main() {
-  layoutPath := "path/to/root.layout"
-  pubKeyPath := "path/to/layout/signature/verification/public/key"
-  linkDir := "path/to/dir/with/link/metadata/"
-
-
-  // Load an RSA public key in PEM format used to verify the layout signature
-  var pubKey in_toto.Key
-  if err := pubKey.LoadPublicKey(pubKeyPath); err != nil {
-    panic(err)
-  }
-
-  // Add public key to a key map, where the key id is used as map key
-  // Add additional keys if the layout has multiple signatures
-  var layouKeys = map[string]in_toto.Key{
-    pubKey.KeyId: pubKey,
-  }
-
-  // Run all in-toto verification routines
-  if err := in_toto.InTotoVerify(layoutPath, layouKeys, linkDir); err != nil {
-    fmt.Println("Verification failed: ", err)
-  } else {
-    fmt.Println("Verification passed")
-  }
-}
+```bash
+godoc -http :8080
 ```
+
+and navigate to `localhost:8080/pkg/github.com/in-toto/in-toto-golang/in_toto/`
 
 
 ## Not (yet) supported
-* Artifact rules of type `CREATE`, `DELETE` or `MODIFY`
-* Signature schemes, other than `rsassa-pss-sha256`
-* GPG keys
-* Layout parameter substitution
-* in-toto-run functionality
+* [Artifact rules of type `CREATE`, `DELETE` or `MODIFY`](https://github.com/in-toto/in-toto-golang/issues/28)
+* [Signature schemes, other than `rsassa-pss-sha256`](https://github.com/in-toto/in-toto-golang/issues/27)
+* [GPG keys](https://github.com/in-toto/in-toto-golang/issues/26)
+* [Layout parameter substitution](https://github.com/in-toto/in-toto-golang/issues/29)
+* [in-toto-run functionality](https://github.com/in-toto/in-toto-golang/issues/30)
   *Note: A basic `runlib` does exist, however it is only used to execute the
   inspection commands in a layout and create the corresponding metadata. It
   cannot be used to create signed evidence (link metadata) for steps in a
   layout.*
-* Hashing algorithms, other than `sha256` (in artifact recording)
-* Symbolic links (in artifact recording)
-* Exclude patterns (in artifact recording)
-* Non-\*nix systems *(probably)*
+* [Hashing algorithms, other than `sha256` (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/31)
+* [Symbolic links (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/32)
+* [Exclude patterns (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/33)
