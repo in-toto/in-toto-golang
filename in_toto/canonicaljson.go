@@ -12,13 +12,13 @@ import (
 )
 
 /*
-_encodeCanonical_string is a helper function to canonicalize the passed string
+_encodeCanonicalString is a helper function to canonicalize the passed string
 according to the OLPC canonical JSON specification for strings (see
 http://wiki.laptop.org/go/Canonical_JSON).  String canonicalization consists of
 escaping backslashes ("\") and double quotes (") and wrapping the resulting
 string in double quotes (").
 */
-func _encodeCanonical_string(s string) string {
+func _encodeCanonicalString(s string) string {
 	re := regexp.MustCompile(`([\"\\])`)
 	return fmt.Sprintf("\"%s\"", re.ReplaceAllString(s, "\\$1"))
 }
@@ -41,7 +41,7 @@ func _encodeCanonical(obj interface{}, result *bytes.Buffer) (err error) {
 
 	switch objAsserted := obj.(type) {
 	case string:
-		result.WriteString(_encodeCanonical_string(objAsserted))
+		result.WriteString(_encodeCanonicalString(objAsserted))
 
 	case bool:
 		if objAsserted {
