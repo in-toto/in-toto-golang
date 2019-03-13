@@ -360,19 +360,21 @@ func TestVerifyMatchRule(t *testing.T) {
 		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 	}
-	expected := [][]string{
-		{},
-		{"foo.py"},
-		nil,
-		nil,
-		nil,
-		{"foo.py"},
-		{"bar.py"},
+	expected := []Set{
+		NewSet(),
+		NewSet(),
+		NewSet("foo.py"),
+		NewSet("foo.py"),
+		NewSet("foo.d/foo.py"),
+		NewSet(),
+		NewSet(),
 	}
 
 	for i := 0; i < len(ruleData); i++ {
-		result := verifyMatchRule(ruleData[i], srcArtifacts[i],
-			_stringKeys(srcArtifacts[i]), itemsMetadata[i])
+
+		queue := NewSet(_stringKeys(srcArtifacts[i])...)
+		result := verifyMatchRule(ruleData[i], srcArtifacts[i], queue,
+			itemsMetadata[i])
 		if !reflect.DeepEqual(result, expected[i]) {
 			t.Errorf("verifyMatchRule returned '%s', expected '%s'", result,
 				expected[i])

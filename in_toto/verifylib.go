@@ -99,14 +99,15 @@ func FnFilter(pattern string, names []string) []string {
 // verifyMatchRule is a helper function to process artifact rules of
 // type MATCH. See VerifyArtifacts for more details.
 func verifyMatchRule(ruleData map[string]string,
-	srcArtifacts map[string]interface{}, srcArtifactQueue []string,
-	itemsMetadata map[string]Metablock) []string {
+	srcArtifacts map[string]interface{}, srcArtifactQueue Set,
+	itemsMetadata map[string]Metablock) Set {
+	consumed := NewSet()
 	// Get destination link metadata
 	dstLinkMb, exists := itemsMetadata[ruleData["dstName"]]
 	if !exists {
 		// Destination link does not exist, rule can't consume any
 		// artifacts
-		return srcArtifactQueue
+		return consumed
 	}
 
 	// Get artifacts from destination link metadata
@@ -128,8 +129,7 @@ func verifyMatchRule(ruleData map[string]string,
 		}
 	}
 	// Iterate over queue and mark consumed artifacts
-	var consumed []string
-	for _, srcPath := range srcArtifactQueue {
+	for srcPath := range srcArtifactQueue {
 		// Remove optional source prefix from source artifact path
 		// Noop if prefix is empty, or artifact does not have it
 		srcBasePath := strings.TrimPrefix(srcPath, ruleData["srcPrefix"])
@@ -159,9 +159,9 @@ func verifyMatchRule(ruleData map[string]string,
 		// Only if a source and destination artifact pair was found and
 		// their hashes are equal, will we mark the source artifact as
 		// successfully consumed, i.e. it will be removed from the queue
-		consumed = append(consumed, srcPath)
+		consumed.Add(srcPath)
 	}
-	return Subtract(srcArtifactQueue, consumed)
+	return consumed
 }
 
 /*
@@ -238,9 +238,9 @@ func VerifyArtifacts(items []interface{},
 			// applying a DISALLOW rule eventually, verification may return an error,
 			// if the rule matches any artifacts in the queue that should have been
 			// consumed earlier.
-			var queue []string
+			queue := NewSet()
 			for name, _ := range artifacts {
-				queue = append(queue, name)
+				queue.Add(name)
 			}
 
 			// Verify rules sequentially
@@ -254,25 +254,27 @@ func VerifyArtifacts(items []interface{},
 				// Process rules according to rule type
 				// TODO: Currently we only process rules of type "match", "allow" or
 				// "disallow"
+				var consumed Set
 				switch ruleData["type"] {
 				case "match":
-					queue = verifyMatchRule(ruleData, artifacts, queue, itemsMetadata)
+					consumed = verifyMatchRule(ruleData, artifacts, queue, itemsMetadata)
 
 				case "allow":
-					consumed := FnFilter(ruleData["pattern"], queue)
-					queue = Subtract(queue, consumed)
+					consumed = queue.Filter(ruleData["pattern"])
 
 				case "disallow":
-					disallowed := FnFilter(ruleData["pattern"], queue)
+					disallowed := queue.Filter(ruleData["pattern"])
 					if len(disallowed) > 0 {
 						return fmt.Errorf("Artifact verification failed for %s '%s',"+
 							" %s %s disallowed by rule %s.",
 							reflect.TypeOf(itemI).Name(), itemName, verificationData["srcType"],
-							disallowed, rule)
+							disallowed.Slice(), rule)
 					}
 
 					// TODO: Support create, modify, delete rules
 				}
+				// Update queue
+				queue = queue.Difference(consumed)
 			}
 		}
 	}
