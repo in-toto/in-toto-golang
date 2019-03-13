@@ -238,28 +238,6 @@ func TestRunInspections(t *testing.T) {
 	}
 }
 
-func TestFnFilter(t *testing.T) {
-	// tests[0] = pattern, tests[1] = names, tests[2] = expected result
-	// Tests:
-	// - match
-	// - match with wildcard,
-	// - no match
-	// - no match (due to invalid pattern)
-	tests := [][][]string{
-		{{"foo"}, {"foo", "foobar", "bar"}, {"foo"}},
-		{{"foo*"}, {"foo", "foobar", "bar"}, {"foo", "foobar"}},
-		{{"foo"}, {"bar"}, nil},
-		{{"["}, {"["}, nil},
-	}
-
-	for _, test := range tests {
-		result := FnFilter(test[0][0], test[1])
-		if !reflect.DeepEqual(result, test[2]) {
-			t.Errorf("FnFilter returned '%s', expected '%s'.", result, test[2])
-		}
-	}
-}
-
 func TestVerifyArtifacts(t *testing.T) {
 	// Test error cases for combinations of Step and Inspection items and
 	// material and product rules:

@@ -57,45 +57,6 @@ func RunInspections(layout Layout) (map[string]Metablock, error) {
 	return inspectionMetadata, nil
 }
 
-// Subtract is a helper function that performs set subtraction
-// TODO: This function has O(n**2), consider using maps (in linear-time)
-// https://siongui.github.io/2018/03/14/go-set-difference-of-two-arrays/, or
-// find a proper set library.
-func Subtract(a []string, b []string) []string {
-	var result []string
-	for _, valA := range a {
-		valInB := false
-		for _, valB := range b {
-			if valA == valB {
-				valInB = true
-				break
-			}
-		}
-		if !valInB {
-			result = append(result, valA)
-		}
-	}
-	return result
-}
-
-// FnFilter is a helper function that mimics fnmatch.filter from the Python
-// standard library using Go Match from the path/filepath package.
-func FnFilter(pattern string, names []string) []string {
-	var namesFiltered []string
-	for _, name := range names {
-		matched, err := filepath.Match(pattern, name)
-		if err != nil {
-			// The pattern was invalid. We treat it as no match.
-			// TODO: Maybe we should inform the caller at least with a warning?
-			continue
-		}
-		if matched {
-			namesFiltered = append(namesFiltered, name)
-		}
-	}
-	return namesFiltered
-}
-
 // verifyMatchRule is a helper function to process artifact rules of
 // type MATCH. See VerifyArtifacts for more details.
 func verifyMatchRule(ruleData map[string]string,
