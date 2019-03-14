@@ -153,6 +153,12 @@ func (s *Step) validatePubkeys() {
 }
 
 /*
+ISO8601DateSchema defines the format string of a timestamp following the
+ISO 8601 standard.
+ */
+const ISO8601DateSchema = "2006-01-02T15:04:05Z"
+
+/*
 Layout represents the definition of a software supply chain.  It lists the
 sequence of steps required in the software supply chain and the functionaries
 authorized to perform these steps.  Functionaries are identified by their
@@ -205,7 +211,7 @@ func (l *Layout) validateType() {
 }
 
 func (l *Layout) validateExpires() {
-	if _, err := time.Parse("2006-01-02T15:04:05Z", l.Expires); err != nil {
+	if _, err := time.Parse(ISO8601DateSchema, l.Expires); err != nil {
 		fmt.Println("Expiry time parsed incorrectly - date either invalid or" +
 			" of incorrect format")
 	}
