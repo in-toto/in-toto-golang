@@ -241,18 +241,13 @@ func (l *Layout) validateExpires() error {
 func (l *Layout) validateKeys() error {
 	for keyId, key := range l.Keys {
 
-		keyIdFormatCheck, err := regexp.MatchString("[a-fA-F0-9]+", keyId)
-		if err != nil {
-			return fmt.Errorf("Unable to check if key ID has valid format")
-		}
-		if !keyIdFormatCheck {
-			return fmt.Errorf("Key ID has invalid format")
+		if err := _validateKeyIdFormat(keyId); err != nil {
+			return err
 		}
 
 		if key.KeyId != keyId {
 			return fmt.Errorf("Invalid key found")
 		}
-		// SSL Sets this to be optional. Can it ever be non empty?
 		if key.KeyVal.Private != "" {
 			return fmt.Errorf("Private key found")
 		}
