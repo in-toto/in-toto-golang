@@ -215,10 +215,14 @@ func VerifyArtifacts(items []interface{},
 				"artifactPaths": productPaths,
 			},
 		}
+		// TODO: Add logging library (see in-toto/in-toto-golang#4)
+		// fmt.Printf("Verifying %s '%s' ", reflect.TypeOf(itemI), itemName)
 
 		// Process all material rules using the corresponding materials and all
 		// product rules using the corresponding products
 		for _, verificationData := range verificationDataList {
+			// TODO: Add logging library (see in-toto/in-toto-golang#4)
+			// fmt.Printf("%s...\n", verificationData["srcType"])
 
 			rules := verificationData["rules"].([][]string)
 			artifacts := verificationData["artifacts"].(map[string]interface{})
@@ -230,6 +234,10 @@ func VerifyArtifacts(items []interface{},
 			// if the rule matches any artifacts in the queue that should have been
 			// consumed earlier.
 			queue := verificationData["artifactPaths"].(Set)
+
+			// TODO: Add logging library (see in-toto/in-toto-golang#4)
+			// fmt.Printf("Initial state\nMaterials: %s\nProducts: %s\nQueue: %s\n\n",
+			// 	materialPaths.Slice(), productPaths.Slice(), queue.Slice())
 
 			// Verify rules sequentially
 			for _, rule := range rules {
@@ -277,6 +285,8 @@ func VerifyArtifacts(items []interface{},
 				}
 				// Update queue by removing consumed artifacts
 				queue = queue.Difference(consumed)
+				// TODO: Add logging library (see in-toto/in-toto-golang#4)
+				// fmt.Printf("Rule: %s\nQueue: %s\n\n", rule, queue.Slice())
 			}
 		}
 	}
