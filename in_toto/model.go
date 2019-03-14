@@ -33,6 +33,16 @@ type Key struct {
 	Scheme              string   `json:"scheme"`
 }
 
+func _validateKeyIdFormat(keyId string) (error) {
+	keyIdFormatCheck, err := regexp.MatchString("[a-fA-F0-9]+", keyId)
+	if err != nil {
+		return fmt.Errorf("unable to check if key ID has valid format")
+	}
+	if !keyIdFormatCheck {
+		return fmt.Errorf("'Key ID' has invalid format")
+	}
+}
+
 /*
 Signature represents a generic in-toto signature that contains the identifier
 of the Key, which was used to create the signature and the signature data.  The
