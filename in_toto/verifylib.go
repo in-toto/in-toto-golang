@@ -162,40 +162,46 @@ func VerifyArtifacts(items []interface{},
 			expectedMaterials = item.ExpectedMaterials
 			expectedProducts = item.ExpectedProducts
 
-		default: // Something's wrong
+		default: // Something wrong
 			return fmt.Errorf("VerifyArtifacts received an item of invalid type,"+
 				" elements of passed slice 'items' must be one of 'Step' or"+
 				" 'Inspection', got: '%s'", reflect.TypeOf(item))
 		}
+
+		// Use the item's name to extract the corresponding link
 		srcLinkMb, exists := itemsMetadata[itemName]
 		if !exists {
 			return fmt.Errorf("VerifyArtifacts could not find metadata"+
 				" for item '%s', got: '%s'", itemName, itemsMetadata)
 		}
 
+		// Create shortcuts to materials and products (including hashes) reported
+		// by the item's link, required to verify "match" rules
+		materials := srcLinkMb.Signed.(Link).Materials
+		products := srcLinkMb.Signed.(Link).Products
 		verificationDataList := []map[string]interface{}{
 			map[string]interface{}{
 				"srcType":   "materials",
 				"rules":     expectedMaterials,
-				"artifacts": srcLinkMb.Signed.(Link).Materials,
+				"artifacts": materials,
 			},
 			map[string]interface{}{
 				"srcType":   "products",
 				"rules":     expectedProducts,
-				"artifacts": srcLinkMb.Signed.(Link).Products,
+				"artifacts": products,
 			},
 		}
 
-		// Process all material rules using the corresponding materials
-		// and all product rules using the corresponding products
+		// Process all material rules using the corresponding materials and all
+		// product rules using the corresponding products
 		for _, verificationData := range verificationDataList {
 
 			rules := verificationData["rules"].([][]string)
 			artifacts := verificationData["artifacts"].(map[string]interface{})
 
-			// Create a queue of artifact names (paths).  Each rule only operates on
-			// artifacts in that queue.  If a rule consumes an artifact (i.e. can be
-			// applied successfully), the artifact is removed from the queue.  By
+			// Use artifacts (without hashes) as base queue. Each rule only operates
+			// on artifacts in that queue.  If a rule consumes an artifact (i.e. can
+			// be applied successfully), the artifact is removed from the queue. By
 			// applying a DISALLOW rule eventually, verification may return an error,
 			// if the rule matches any artifacts in the queue that should have been
 			// consumed earlier.
@@ -206,7 +212,8 @@ func VerifyArtifacts(items []interface{},
 
 			// Verify rules sequentially
 			for _, rule := range rules {
-				// Parse rule
+				// Parse rule and error out if it is malformed
+				// NOTE: the rule format should have been validated before
 				ruleData, err := UnpackRule(rule)
 				if err != nil {
 					return err
@@ -215,26 +222,32 @@ func VerifyArtifacts(items []interface{},
 				// Process rules according to rule type
 				// TODO: Currently we only process rules of type "match", "allow" or
 				// "disallow"
+				// Apply rule pattern to filter queued artifacts that are up for rule
+				// specific consumption
+				filtered := queue.Filter(ruleData["pattern"])
+
 				var consumed Set
 				switch ruleData["type"] {
 				case "match":
+					// Note: here we need to perform more elaborate filtering
 					consumed = verifyMatchRule(ruleData, artifacts, queue, itemsMetadata)
 
 				case "allow":
-					consumed = queue.Filter(ruleData["pattern"])
+					// Consumes all filtered artifacts
+					consumed = filtered
 
 				case "disallow":
-					disallowed := queue.Filter(ruleData["pattern"])
-					if len(disallowed) > 0 {
+					// Does not consume but errors out if artifacts were filtered
+					if len(filtered) > 0 {
 						return fmt.Errorf("Artifact verification failed for %s '%s',"+
 							" %s %s disallowed by rule %s.",
-							reflect.TypeOf(itemI).Name(), itemName, verificationData["srcType"],
-							disallowed.Slice(), rule)
+							reflect.TypeOf(itemI).Name(), itemName,
+							verificationData["srcType"], filtered.Slice(), rule)
 					}
 
 					// TODO: Support create, modify, delete rules
 				}
-				// Update queue
+				// Update queue by removing consumed artifacts
 				queue = queue.Difference(consumed)
 			}
 		}
