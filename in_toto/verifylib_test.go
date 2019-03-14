@@ -186,8 +186,8 @@ func TestRunInspections(t *testing.T) {
 		sort.Strings(availableFiles)
 		// Compare material and products (only file names) to files that were
 		// in the directory before calling RunInspections
-		materialNames := _stringKeys(result[inspectionName].Signed.(Link).Materials)
-		productNames := _stringKeys(result[inspectionName].Signed.(Link).Products)
+		materialNames := InterfaceKeyStrings(result[inspectionName].Signed.(Link).Materials)
+		productNames := InterfaceKeyStrings(result[inspectionName].Signed.(Link).Products)
 		sort.Strings(materialNames)
 		sort.Strings(productNames)
 		if !reflect.DeepEqual(materialNames, availableFiles) ||
@@ -328,7 +328,7 @@ func TestVerifyMatchRule(t *testing.T) {
 		{"foo.py": map[string]interface{}{"sha265": "dead"}},
 		{"bar.py": map[string]interface{}{"sha265": "abc"}},
 	}
-	// queue[i] = _stringKeys(srcArtifacts[i])
+	// queue[i] = InterfaceKeyStrings(srcArtifacts[i])
 	itemsMetadata := []map[string]Metablock{
 		{},
 		{},
@@ -350,7 +350,7 @@ func TestVerifyMatchRule(t *testing.T) {
 
 	for i := 0; i < len(ruleData); i++ {
 
-		queue := NewSet(_stringKeys(srcArtifacts[i])...)
+		queue := NewSet(InterfaceKeyStrings(srcArtifacts[i])...)
 		result := verifyMatchRule(ruleData[i], srcArtifacts[i], queue,
 			itemsMetadata[i])
 		if !reflect.DeepEqual(result, expected[i]) {
@@ -614,15 +614,4 @@ func TestVerifyLayoutSignatures(t *testing.T) {
 		t.Errorf("VerifyLayoutSignatures returned '%s', expected nil",
 			err)
 	}
-}
-
-/* Helper to get the string keys of a map as string slice */
-func _stringKeys(m map[string]interface{}) []string {
-	keys := make([]string, len(m))
-	i := 0
-	for k := range m {
-		keys[i] = k
-		i++
-	}
-	return keys
 }
