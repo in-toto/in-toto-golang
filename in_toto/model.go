@@ -33,7 +33,7 @@ type Key struct {
 	Scheme              string   `json:"scheme"`
 }
 
-func _validateKeyIdFormat(keyId string) (error) {
+func _validateKeyIdFormat(keyId string) error {
 	keyIdFormatCheck, err := regexp.MatchString("[a-fA-F0-9]+", keyId)
 	if err != nil {
 		return fmt.Errorf("unable to check if key ID has valid format")
@@ -41,6 +41,7 @@ func _validateKeyIdFormat(keyId string) (error) {
 	if !keyIdFormatCheck {
 		return fmt.Errorf("'Key ID' has invalid format")
 	}
+	return nil
 }
 
 /*
@@ -69,17 +70,22 @@ type Link struct {
 	Environment map[string]interface{} `json:"environment"`
 }
 
-func (l *Link) validate() {
-	validateFunctions := []func(){l.validateType}
+func (l *Link) validate() error {
+	validateFunctions := []func() error{l.validateType}
 	for _, f := range validateFunctions {
-		f()
+		err := f()
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (l *Link) validateType() {
+func (l *Link) validateType() error {
 	if l.Type != "link" {
-		fmt.Println("Invalid type for link: should be 'link'")
+		return fmt.Errorf("invalid type for link: should be 'link'")
 	}
+	return nil
 }
 
 /*
@@ -137,29 +143,35 @@ type Step struct {
 	SupplyChainItem
 }
 
-func (s *Step) validate() {
-	validateFunctions := []func(){s.validateType, s.validatePubkeys}
+func (s *Step) validate() error {
+	validateFunctions := []func() error{s.validateType, s.validatePubkeys}
 	for _, f := range validateFunctions {
-		f()
+		err := f()
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (s *Step) validateType() {
+func (s *Step) validateType() error {
 	if s.Type != "step" {
-		fmt.Println("Invalid Type value for step: should be 'step'")
+		return fmt.Errorf("invalid Type value for step: should be 'step'")
 	}
+	return nil
 }
 
-func (s *Step) validatePubkeys() {
+func (s *Step) validatePubkeys() error {
 	for _, keyId := range s.PubKeys {
 		keyIdFormatCheck, err := regexp.MatchString("[a-fA-F0-9]+", keyId)
 		if err != nil {
-			fmt.Println("Unable to check if key ID has valid format")
+			return fmt.Errorf("unable to check if key ID has valid format")
 		}
 		if !keyIdFormatCheck {
-			fmt.Println("Key ID has invalid format")
+			return fmt.Errorf("key ID has invalid format")
 		}
 	}
+	return nil
 }
 
 /*
@@ -206,65 +218,76 @@ func (l *Layout) InspectAsInterfaceSlice() []interface{} {
 	return inspectionsI
 }
 
-func (l *Layout) validate() {
-	validateFunctions := []func(){l.validateType, l.validateExpires,
+func (l *Layout) validate() error {
+	validateFunctions := []func() error{l.validateType, l.validateExpires,
 		l.validateKeys, l.validateStepsAndInspections}
 	for _, f := range validateFunctions {
-		f()
+		err := f()
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (l *Layout) validateType() {
+func (l *Layout) validateType() error {
 	if l.Type != "layout" {
-		fmt.Println("Invalid Type value for layout: should be 'layout'")
+		return fmt.Errorf("Invalid Type value for layout: should be 'layout'")
 	}
+	return nil
 }
 
-func (l *Layout) validateExpires() {
+func (l *Layout) validateExpires() error {
 	if _, err := time.Parse(ISO8601DateSchema, l.Expires); err != nil {
-		fmt.Println("Expiry time parsed incorrectly - date either invalid or" +
-			" of incorrect format")
+		return fmt.Errorf("expiry time parsed incorrectly - date either" +
+			" invalid or of incorrect format")
 	}
+	return nil
 }
 
-func (l *Layout) validateKeys() {
+func (l *Layout) validateKeys() error {
 	for keyId, key := range l.Keys {
 
 		keyIdFormatCheck, err := regexp.MatchString("[a-fA-F0-9]+", keyId)
 		if err != nil {
-			fmt.Println("Unable to check if key ID has valid format")
+			return fmt.Errorf("Unable to check if key ID has valid format")
 		}
 		if !keyIdFormatCheck {
-			fmt.Println("Key ID has invalid format")
+			return fmt.Errorf("Key ID has invalid format")
 		}
 
 		if key.KeyId != keyId {
-			fmt.Println("Invalid key found")
+			return fmt.Errorf("Invalid key found")
 		}
 		// SSL Sets this to be optional. Can it ever be non empty?
 		if key.KeyVal.Private != "" {
-			fmt.Println("Private key found")
+			return fmt.Errorf("Private key found")
 		}
 	}
+	return nil
 }
 
-func (l *Layout) validateStepsAndInspections() {
+func (l *Layout) validateStepsAndInspections() error {
 	var namesSeen = make(map[string]bool)
 	for _, step := range l.Steps {
 		if namesSeen[step.Name] {
-			fmt.Println("Non unique step or inspection name found")
+			return fmt.Errorf("Non unique step or inspection name found")
 		} else {
 			namesSeen[step.Name] = true
 		}
-		step.validate()
+		err := step.validate()
+		if err != nil {
+			return err
+		}
 	}
 	for _, inspection := range l.Inspect {
 		if namesSeen[inspection.Name] {
-			fmt.Println("Non unique step or inspection name found")
+			return fmt.Errorf("Non unique step or inspection name found")
 		} else {
 			namesSeen[inspection.Name] = true
 		}
 	}
+	return nil
 }
 
 /*
