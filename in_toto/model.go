@@ -171,7 +171,7 @@ func (s *Step) validatePubkeys() error {
 /*
 ISO8601DateSchema defines the format string of a timestamp following the
 ISO 8601 standard.
- */
+*/
 const ISO8601DateSchema = "2006-01-02T15:04:05Z"
 
 /*
