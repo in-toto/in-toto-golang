@@ -131,13 +131,14 @@ passed items (step or inspection) to enforce and authorize artifacts (materials
 or products) reported by the corresponding link and to guarantee that
 artifacts are linked together across links.  In the beginning all artifacts are
 placed in a queue according to their type.  If an artifact gets consumed by a
-rule it is removed from the queue.  An artifact can only be consumed once by
-one set of rules.
+rule it is removed from the queue.  An artifact can only be consumed once in
+the course of processing the set of rules in ExpectedMaterials or
+ExpectedProducts.
 
-Rules of type MATCH, ALLOW and DISALLOW are supported.
+Rules of type MATCH, ALLOW, CREATE, DELETE, MODIFY and DISALLOW are supported.
 
-MATCH and ALLOW remove artifacts from the corresponding queues on success, and
-leave the queue unchanged on failure.  Hence, it is left to a subsequent
+All rules except for DISALLOW consume queued artifacts on success, and
+leave the queue unchanged on failure.  Hence, it is left to a terminal
 DISALLOW rule to fail overall verification, if artifacts are left in the queue
 that should have been consumed by preceding rules.
 */
