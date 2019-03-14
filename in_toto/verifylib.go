@@ -179,16 +179,40 @@ func VerifyArtifacts(items []interface{},
 		// by the item's link, required to verify "match" rules
 		materials := srcLinkMb.Signed.(Link).Materials
 		products := srcLinkMb.Signed.(Link).Products
+
+		// All other rules only require the material or product paths (without
+		// hashes). We extract them from the corresponding maps and store them as
+		// sets for convenience in further processing
+		materialPaths := NewSet(InterfaceKeyStrings(materials)...)
+		productPaths := NewSet(InterfaceKeyStrings(products)...)
+
+		// For `create`, `delete` and `modify` rules we prepare sets of artifacts
+		// (without hashes) that were created, deleted or modified in the current
+		// step or inspection
+		created := productPaths.Difference(materialPaths)
+		deleted := materialPaths.Difference(productPaths)
+		remained := materialPaths.Intersection(productPaths)
+		modified := NewSet()
+		for name := range remained {
+			if !reflect.DeepEqual(materials[name], products[name]) {
+				modified.Add(name)
+			}
+		}
+
+		// For each item we have to run rule verification, once per artifact type.
+		// Here we prepare the corresponding data for each round.
 		verificationDataList := []map[string]interface{}{
 			map[string]interface{}{
-				"srcType":   "materials",
-				"rules":     expectedMaterials,
-				"artifacts": materials,
+				"srcType":       "materials",
+				"rules":         expectedMaterials,
+				"artifacts":     materials,
+				"artifactPaths": materialPaths,
 			},
 			map[string]interface{}{
-				"srcType":   "products",
-				"rules":     expectedProducts,
-				"artifacts": products,
+				"srcType":       "products",
+				"rules":         expectedProducts,
+				"artifacts":     products,
+				"artifactPaths": productPaths,
 			},
 		}
 
@@ -205,10 +229,7 @@ func VerifyArtifacts(items []interface{},
 			// applying a DISALLOW rule eventually, verification may return an error,
 			// if the rule matches any artifacts in the queue that should have been
 			// consumed earlier.
-			queue := NewSet()
-			for name, _ := range artifacts {
-				queue.Add(name)
-			}
+			queue := verificationData["artifactPaths"].(Set)
 
 			// Verify rules sequentially
 			for _, rule := range rules {
@@ -219,9 +240,6 @@ func VerifyArtifacts(items []interface{},
 					return err
 				}
 
-				// Process rules according to rule type
-				// TODO: Currently we only process rules of type "match", "allow" or
-				// "disallow"
 				// Apply rule pattern to filter queued artifacts that are up for rule
 				// specific consumption
 				filtered := queue.Filter(ruleData["pattern"])
@@ -236,6 +254,18 @@ func VerifyArtifacts(items []interface{},
 					// Consumes all filtered artifacts
 					consumed = filtered
 
+				case "create":
+					// Consumes filtered artifacts that were created
+					consumed = filtered.Intersection(created)
+
+				case "delete":
+					// Consumes filtered artifacts that were deleted
+					consumed = filtered.Intersection(deleted)
+
+				case "modify":
+					// Consumes filtered artifacts that were modified
+					consumed = filtered.Intersection(modified)
+
 				case "disallow":
 					// Does not consume but errors out if artifacts were filtered
 					if len(filtered) > 0 {
@@ -244,8 +274,6 @@ func VerifyArtifacts(items []interface{},
 							reflect.TypeOf(itemI).Name(), itemName,
 							verificationData["srcType"], filtered.Slice(), rule)
 					}
-
-					// TODO: Support create, modify, delete rules
 				}
 				// Update queue by removing consumed artifacts
 				queue = queue.Difference(consumed)
