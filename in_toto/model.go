@@ -73,8 +73,7 @@ type Link struct {
 func (l *Link) validate() error {
 	validateFunctions := []func() error{l.validateType}
 	for _, f := range validateFunctions {
-		err := f()
-		if err != nil {
+		if err := f(); err != nil {
 			return err
 		}
 	}
@@ -146,8 +145,7 @@ type Step struct {
 func (s *Step) validate() error {
 	validateFunctions := []func() error{s.validateType, s.validatePubkeys}
 	for _, f := range validateFunctions {
-		err := f()
-		if err != nil {
+		if err := f(); err != nil {
 			return err
 		}
 	}
@@ -163,12 +161,8 @@ func (s *Step) validateType() error {
 
 func (s *Step) validatePubkeys() error {
 	for _, keyId := range s.PubKeys {
-		keyIdFormatCheck, err := regexp.MatchString("[a-fA-F0-9]+", keyId)
-		if err != nil {
-			return fmt.Errorf("unable to check if key ID has valid format")
-		}
-		if !keyIdFormatCheck {
-			return fmt.Errorf("key ID has invalid format")
+		if err := _validateKeyIdFormat(keyId); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -222,8 +216,7 @@ func (l *Layout) validate() error {
 	validateFunctions := []func() error{l.validateType, l.validateExpires,
 		l.validateKeys, l.validateStepsAndInspections}
 	for _, f := range validateFunctions {
-		err := f()
-		if err != nil {
+		if err := f(); err != nil {
 			return err
 		}
 	}
@@ -275,8 +268,7 @@ func (l *Layout) validateStepsAndInspections() error {
 		} else {
 			namesSeen[step.Name] = true
 		}
-		err := step.validate()
-		if err != nil {
+		if err := step.validate(); err != nil {
 			return err
 		}
 	}
