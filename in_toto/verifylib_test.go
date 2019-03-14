@@ -239,6 +239,55 @@ func TestRunInspections(t *testing.T) {
 }
 
 func TestVerifyArtifacts(t *testing.T) {
+	items := []interface{}{
+		Step{
+			SupplyChainItem: SupplyChainItem{
+				Name: "foo",
+				ExpectedMaterials: [][]string{
+					{"DELETE", "foo-delete"},
+					{"MODIFY", "foo-modify"},
+					{"MATCH", "foo-match", "WITH", "MATERIALS", "FROM", "foo"}, // not-modify
+					{"ALLOW", "foo-allow"},
+					{"DISALLOW", "*"},
+				},
+				ExpectedProducts: [][]string{
+					{"CREATE", "foo-create"},
+					{"MODIFY", "foo-modify"},
+					{"MATCH", "foo-match", "WITH", "MATERIALS", "FROM", "foo"}, // not-modify
+					{"ALLOW", "foo-allow"},
+					{"DISALLOW", "*"},
+				},
+			},
+		},
+	}
+
+	itemsMetadata := map[string]Metablock{
+		"foo": {
+			Signed: Link{
+				Name: "foo",
+				Materials: map[string]interface{}{
+					"foo-delete": map[string]interface{}{"sha265": "abc"},
+					"foo-modify": map[string]interface{}{"sha265": "abc"},
+					"foo-match":  map[string]interface{}{"sha265": "abc"},
+					"foo-allow":  map[string]interface{}{"sha265": "abc"},
+				},
+				Products: map[string]interface{}{
+					"foo-create": map[string]interface{}{"sha265": "abc"},
+					"foo-modify": map[string]interface{}{"sha265": "abcdef"},
+					"foo-match":  map[string]interface{}{"sha265": "abc"},
+					"foo-allow":  map[string]interface{}{"sha265": "abc"},
+				},
+			},
+		},
+	}
+
+	err := VerifyArtifacts(items, itemsMetadata)
+	if err != nil {
+		t.Errorf("VerifyArtifacts returned '%s', expected no error", err)
+	}
+}
+
+func TestVerifyArtifactErrors(t *testing.T) {
 	// Test error cases for combinations of Step and Inspection items and
 	// material and product rules:
 	// - Item must be one of step or inspection
