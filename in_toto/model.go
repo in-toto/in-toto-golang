@@ -222,6 +222,15 @@ func (l *Layout) InspectAsInterfaceSlice() []interface{} {
 func (l *Layout) validate() error {
 	validateFunctions := []func() error{l.validateType, l.validateExpires,
 		l.validateKeys, l.validateStepsAndInspections}
+
+	validateFields := make(map[string]string)
+	validateFields["_type"] = "required"
+	validateFields["steps"] = "required"
+	validateFields["inspect"] = "required"
+	validateFields["keys"] = "required"
+	validateFields["expires"] = "required"
+	validateFields["readme"] = "required"
+
 	for _, f := range validateFunctions {
 		if err := f(); err != nil {
 			return err
