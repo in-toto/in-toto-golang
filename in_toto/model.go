@@ -44,6 +44,13 @@ func validateKeyIdFormat(keyId string) error {
 	return nil
 }
 
+func validatePubKey(key Key) error {
+	if key.KeyVal.Private != "" {
+		return fmt.Errorf("private key found")
+	}
+	return nil
+}
+
 /*
 Signature represents a generic in-toto signature that contains the identifier
 of the Key, which was used to create the signature and the signature data.  The
@@ -143,7 +150,7 @@ type Step struct {
 }
 
 func (s *Step) validate() error {
-	validateFunctions := []func() error{s.validateType, s.validatePubkeys}
+	validateFunctions := []func() error{s.validateType, s.validatePubKeys}
 	for _, f := range validateFunctions {
 		if err := f(); err != nil {
 			return err
@@ -159,7 +166,7 @@ func (s *Step) validateType() error {
 	return nil
 }
 
-func (s *Step) validatePubkeys() error {
+func (s *Step) validatePubKeys() error {
 	for _, keyId := range s.PubKeys {
 		if err := validateKeyIdFormat(keyId); err != nil {
 			return err
@@ -248,8 +255,8 @@ func (l *Layout) validateKeys() error {
 		if key.KeyId != keyId {
 			return fmt.Errorf("Invalid key found")
 		}
-		if key.KeyVal.Private != "" {
-			return fmt.Errorf("Private key found")
+		if err := validatePubKey(key); err != nil {
+			return err
 		}
 	}
 	return nil
