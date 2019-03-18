@@ -354,6 +354,27 @@ func (mb *Metablock) Load(path string) error {
 	}
 
 	if signed["_type"] == "link" {
+		validateFields := make(map[string]string)
+		validateFields["_type"] = "required"
+		validateFields["name"] = "required"
+		validateFields["materials"] = "required"
+		validateFields["products"] = "required"
+		validateFields["byproducts"] = "required"
+		validateFields["command"] = "required"
+		validateFields["environment"] = "required"
+		for key, value := range validateFields {
+			if value == "required" {
+				if _, ok := signed[key]; !ok {
+					return fmt.Errorf("required field %s missing", key)
+				}
+			}
+		}
+		for key := range signed {
+			if _, ok := validateFields[key]; !ok {
+				return fmt.Errorf("unexpected field %s in metadata", key)
+			}
+		}
+
 		var link Link
 		if err := json.Unmarshal(*rawMb["signed"], &link); err != nil {
 			return err
