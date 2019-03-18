@@ -223,14 +223,6 @@ func (l *Layout) validate() error {
 	validateFunctions := []func() error{l.validateType, l.validateExpires,
 		l.validateKeys, l.validateStepsAndInspections}
 
-	validateFields := make(map[string]string)
-	validateFields["_type"] = "required"
-	validateFields["steps"] = "required"
-	validateFields["inspect"] = "required"
-	validateFields["keys"] = "required"
-	validateFields["expires"] = "required"
-	validateFields["readme"] = "required"
-
 	for _, f := range validateFunctions {
 		if err := f(); err != nil {
 			return err
@@ -369,6 +361,26 @@ func (mb *Metablock) Load(path string) error {
 		mb.Signed = link
 
 	} else if signed["_type"] == "layout" {
+		validateFields := make(map[string]string)
+		validateFields["_type"] = "required"
+		validateFields["steps"] = "required"
+		validateFields["inspect"] = "required"
+		validateFields["keys"] = "required"
+		validateFields["expires"] = "required"
+		validateFields["readme"] = "required"
+		for key, value := range validateFields {
+			if value == "required" {
+				if _, ok := signed[key]; !ok {
+					return fmt.Errorf("required field %s missing", key)
+				}
+			}
+		}
+		for key := range signed {
+			if _, ok := validateFields[key]; !ok {
+				return fmt.Errorf("unexpected field %s in metadata", key)
+			}
+		}
+
 		var layout Layout
 		if err := json.Unmarshal(*rawMb["signed"], &layout); err != nil {
 			return err
