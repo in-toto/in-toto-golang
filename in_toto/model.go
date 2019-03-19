@@ -77,6 +77,13 @@ type Link struct {
 	Environment map[string]interface{} `json:"environment"`
 }
 
+func validateLink(link Link) error {
+	if link.Type != "link" {
+		return fmt.Errorf("invalid type for link: should be 'link'")
+	}
+	return nil
+}
+
 func (l *Link) validate() error {
 	validateFunctions := []func() error{l.validateType}
 	for _, f := range validateFunctions {
@@ -147,6 +154,18 @@ type Step struct {
 	ExpectedCommand []string `json:"expected_command"`
 	Threshold       int      `json:"threshold"`
 	SupplyChainItem
+}
+
+func validateStep(step Step) error {
+	if step.Type != "step" {
+		return fmt.Errorf("invalid Type value for step: should be 'step'")
+	}
+	for _, keyId := range step.PubKeys {
+		if err := validateKeyIdFormat(keyId); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Step) validate() error {
