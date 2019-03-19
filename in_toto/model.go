@@ -233,7 +233,7 @@ func (l *Layout) validate() error {
 
 func (l *Layout) validateType() error {
 	if l.Type != "layout" {
-		return fmt.Errorf("Invalid Type value for layout: should be 'layout'")
+		return fmt.Errorf("invalid Type value for layout: should be 'layout'")
 	}
 	return nil
 }
@@ -254,7 +254,7 @@ func (l *Layout) validateKeys() error {
 		}
 
 		if key.KeyId != keyId {
-			return fmt.Errorf("Invalid key found")
+			return fmt.Errorf("invalid key found")
 		}
 		if err := validatePubKey(key); err != nil {
 			return err
@@ -267,7 +267,7 @@ func (l *Layout) validateStepsAndInspections() error {
 	var namesSeen = make(map[string]bool)
 	for _, step := range l.Steps {
 		if namesSeen[step.Name] {
-			return fmt.Errorf("Non unique step or inspection name found")
+			return fmt.Errorf("non unique step or inspection name found")
 		} else {
 			namesSeen[step.Name] = true
 		}
@@ -277,7 +277,7 @@ func (l *Layout) validateStepsAndInspections() error {
 	}
 	for _, inspection := range l.Inspect {
 		if namesSeen[inspection.Name] {
-			return fmt.Errorf("Non unique step or inspection name found")
+			return fmt.Errorf("non unique step or inspection name found")
 		} else {
 			namesSeen[inspection.Name] = true
 		}
