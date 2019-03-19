@@ -219,6 +219,51 @@ func (l *Layout) InspectAsInterfaceSlice() []interface{} {
 	return inspectionsI
 }
 
+func validateLayout(layout Layout) error {
+	if layout.Type != "layout" {
+		return fmt.Errorf("invalid Type value for layout: should be 'layout'")
+	}
+
+	if _, err := time.Parse(ISO8601DateSchema, layout.Expires); err != nil {
+		return fmt.Errorf("expiry time parsed incorrectly - date either" +
+			" invalid or of incorrect format")
+	}
+
+	for keyId, key := range layout.Keys {
+
+		if err := validateKeyIdFormat(keyId); err != nil {
+			return err
+		}
+
+		if key.KeyId != keyId {
+			return fmt.Errorf("invalid key found")
+		}
+		if err := validatePubKey(key); err != nil {
+			return err
+		}
+	}
+
+	var namesSeen = make(map[string]bool)
+	for _, step := range layout.Steps {
+		if namesSeen[step.Name] {
+			return fmt.Errorf("non unique step or inspection name found")
+		} else {
+			namesSeen[step.Name] = true
+		}
+		if err := validateStep(step); err != nil {
+			return err
+		}
+	}
+	for _, inspection := range layout.Inspect {
+		if namesSeen[inspection.Name] {
+			return fmt.Errorf("non unique step or inspection name found")
+		} else {
+			namesSeen[inspection.Name] = true
+		}
+	}
+	return nil
+}
+
 func (l *Layout) validate() error {
 	validateFunctions := []func() error{l.validateType, l.validateExpires,
 		l.validateKeys, l.validateStepsAndInspections}
