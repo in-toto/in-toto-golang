@@ -84,23 +84,6 @@ func validateLink(link Link) error {
 	return nil
 }
 
-func (l *Link) validate() error {
-	validateFunctions := []func() error{l.validateType}
-	for _, f := range validateFunctions {
-		if err := f(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (l *Link) validateType() error {
-	if l.Type != "link" {
-		return fmt.Errorf("invalid type for link: should be 'link'")
-	}
-	return nil
-}
-
 /*
 LinkNameFormat represents a format string used to create the filename for a
 signed Link (wrapped in a Metablock). It consists of the name of the link and
@@ -161,32 +144,6 @@ func validateStep(step Step) error {
 		return fmt.Errorf("invalid Type value for step: should be 'step'")
 	}
 	for _, keyId := range step.PubKeys {
-		if err := validateKeyIdFormat(keyId); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Step) validate() error {
-	validateFunctions := []func() error{s.validateType, s.validatePubKeys}
-	for _, f := range validateFunctions {
-		if err := f(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Step) validateType() error {
-	if s.Type != "step" {
-		return fmt.Errorf("invalid Type value for step: should be 'step'")
-	}
-	return nil
-}
-
-func (s *Step) validatePubKeys() error {
-	for _, keyId := range s.PubKeys {
 		if err := validateKeyIdFormat(keyId); err != nil {
 			return err
 		}
@@ -274,72 +231,6 @@ func validateLayout(layout Layout) error {
 		}
 	}
 	for _, inspection := range layout.Inspect {
-		if namesSeen[inspection.Name] {
-			return fmt.Errorf("non unique step or inspection name found")
-		} else {
-			namesSeen[inspection.Name] = true
-		}
-	}
-	return nil
-}
-
-func (l *Layout) validate() error {
-	validateFunctions := []func() error{l.validateType, l.validateExpires,
-		l.validateKeys, l.validateStepsAndInspections}
-
-	for _, f := range validateFunctions {
-		if err := f(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (l *Layout) validateType() error {
-	if l.Type != "layout" {
-		return fmt.Errorf("invalid Type value for layout: should be 'layout'")
-	}
-	return nil
-}
-
-func (l *Layout) validateExpires() error {
-	if _, err := time.Parse(ISO8601DateSchema, l.Expires); err != nil {
-		return fmt.Errorf("expiry time parsed incorrectly - date either" +
-			" invalid or of incorrect format")
-	}
-	return nil
-}
-
-func (l *Layout) validateKeys() error {
-	for keyId, key := range l.Keys {
-
-		if err := validateKeyIdFormat(keyId); err != nil {
-			return err
-		}
-
-		if key.KeyId != keyId {
-			return fmt.Errorf("invalid key found")
-		}
-		if err := validatePubKey(key); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (l *Layout) validateStepsAndInspections() error {
-	var namesSeen = make(map[string]bool)
-	for _, step := range l.Steps {
-		if namesSeen[step.Name] {
-			return fmt.Errorf("non unique step or inspection name found")
-		} else {
-			namesSeen[step.Name] = true
-		}
-		if err := step.validate(); err != nil {
-			return err
-		}
-	}
-	for _, inspection := range l.Inspect {
 		if namesSeen[inspection.Name] {
 			return fmt.Errorf("non unique step or inspection name found")
 		} else {
