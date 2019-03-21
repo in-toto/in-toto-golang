@@ -26,8 +26,13 @@ func TestMetablockLoad(t *testing.T) {
 		[]byte(`{"signatures": "string", "signed": {}}`),
 		[]byte(`{"signatures": [], "signed": []}`),
 		[]byte(`{"signatures": [], "signed": {"_type": "something else"}}`),
-		[]byte(`{"signatures": [], "signed": {"_type": "link", "materials": "invalid", "name": "some name", "products": "invalid", "byproducts": "invalid", "command": "some command", "environment": "some list"}}`),
-		[]byte(`{"signatures": [], "signed": {"_type": "layout", "steps": "invalid", "inspect": "invalid", "readme": "some readme", "keys": "some keys", "expires": "some date"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"materials": "invalid", "name": "some name", "products": "invalid",
+			"byproducts": "invalid", "command": "some command",
+			"environment": "some list"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
+			"keys": "some keys", "expires": "some date"}}`),
 	}
 
 	expectedErrors := []string{
