@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"path/filepath"
 )
 
 func TestRecordArtifact(t *testing.T) {
@@ -30,6 +31,19 @@ func TestRecordArtifact(t *testing.T) {
 func TestRecordArtifacts(t *testing.T) {
 	// Test successfully record multiple artifacts including temporary subdir
 	os.Mkdir("tmpdir", 0700)
+
+
+	// Folder Creation for Symlink Test
+	path1 := "tmpdir/New Folder"
+    	path2 := "tmpdir/"
+    	target := filepath.Join(path1, "test_symlink.txt")
+    	os.MkdirAll(path1, 0755)
+    	ioutil.WriteFile(target, []byte("Hello\n"), 0644)
+    	symlink := filepath.Join(path2, "this_is_symlink")
+    	os.Symlink("New Folder", symlink)
+	// Folder Creation for symlink test END
+
+
 	ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400)
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
 		"demo.layout.template", "tmpdir/tmpfile"})
@@ -48,7 +62,7 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
-	os.RemoveAll("tmpdir")
+	//os.RemoveAll("tmpdir")
 
 	// Test error by recording inexistent artifact
 	result, err = RecordArtifacts([]string{"file-does-not-exist"})
