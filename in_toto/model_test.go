@@ -33,6 +33,21 @@ func TestMetablockLoad(t *testing.T) {
 		[]byte(`{"signatures": [], "signed": {"_type": "layout",
 			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
 			"keys": "some keys", "expires": "some date"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"inspect": "invalid", "readme": "some readme", "keys": "some keys",
+			"expires": "some date"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "readme": "some readme", "keys": "some keys",
+			"expires": "some date"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
+			"expires": "some date"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
+			"keys": "some keys"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "inspect": "invalid",
+			"keys": "some keys", "expires": "some date"}}`),
 	}
 
 	expectedErrors := []string{
@@ -44,6 +59,11 @@ func TestMetablockLoad(t *testing.T) {
 		"metadata must be one of 'link' or 'layout'",
 		"cannot unmarshal string into Go struct field Link.materials",
 		"cannot unmarshal string into Go struct field Layout.steps",
+		"required field steps missing",
+		"required field inspect missing",
+		"required field keys missing",
+		"required field expires missing",
+		"required field readme missing",
 	}
 
 	for i := 0; i < len(invalidJsonBytes); i++ {
