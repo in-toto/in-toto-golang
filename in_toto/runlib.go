@@ -69,11 +69,22 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 		err := filepath.Walk(path,
 			func(path string, info os.FileInfo, err error) error {
 				// Abort if Walk function has a problem, e.g. path does not exist)
+				//fmt.Println(path, info)
+				//if true{
+				//	fmt.Println("path",path,"modesymlink: ", os.ModeSymlink)
+				//}				
 				if err != nil {
 					return err
 				}
 				// Don't hash directories
 				if info.IsDir() {
+					return nil
+				}
+				//Code to verify for symlinks	
+				if info.Mode() & os.ModeSymlink != 0{
+					fmt.Println("symlink found")
+					sym_path, sym_err := os.Readlink(path) 
+					fmt.Println("symlink path", sym_path,sym_err)
 					return nil
 				}
 				artifact, err := RecordArtifact(path)
@@ -89,7 +100,10 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 			return nil, err
 		}
 	}
-
+	//Looking at the artifacts
+	//for key, value := range artifacts{
+	//	fmt.Println("key", key, "value", value)	
+	//}
 	return artifacts, nil
 }
 
