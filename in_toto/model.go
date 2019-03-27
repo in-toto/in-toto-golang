@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"time"
 	"reflect"
+	"strings"
 )
 
 /*
@@ -325,9 +326,16 @@ func (mb *Metablock) Load(path string) error {
 			}
 		}
 
-		if err := json.Unmarshal(*rawMb["signed"], &link); err != nil {
+		data, err := rawMb["signed"].MarshalJSON()
+		if err != nil {
 			return err
 		}
+		decoder := json.NewDecoder(strings.NewReader(string(data)))
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&link); err != nil {
+			return err
+		}
+
 		mb.Signed = link
 
 	} else if signed["_type"] == "layout" {
@@ -346,9 +354,16 @@ func (mb *Metablock) Load(path string) error {
 			}
 		}
 
-		if err := json.Unmarshal(*rawMb["signed"], &layout); err != nil {
+		data, err := rawMb["signed"].MarshalJSON()
+		if err != nil {
 			return err
 		}
+		decoder := json.NewDecoder(strings.NewReader(string(data)))
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&layout); err != nil {
+			return err
+		}
+
 		mb.Signed = layout
 
 	} else {
