@@ -35,7 +35,7 @@ type Key struct {
 	Scheme              string   `json:"scheme"`
 }
 
-func validateKeyIdFormat(keyId string) error {
+func validateKeyId(keyId string) error {
 	keyIdFormatCheck, err := regexp.MatchString("[a-fA-F0-9]+", keyId)
 	if err != nil {
 		return fmt.Errorf("unable to check if key ID has valid format")
@@ -146,7 +146,7 @@ func validateStep(step Step) error {
 		return fmt.Errorf("invalid Type value for step: should be 'step'")
 	}
 	for _, keyId := range step.PubKeys {
-		if err := validateKeyIdFormat(keyId); err != nil {
+		if err := validateKeyId(keyId); err != nil {
 			return err
 		}
 	}
@@ -209,7 +209,7 @@ func validateLayout(layout Layout) error {
 
 	for keyId, key := range layout.Keys {
 
-		if err := validateKeyIdFormat(keyId); err != nil {
+		if err := validateKeyId(keyId); err != nil {
 			return err
 		}
 
