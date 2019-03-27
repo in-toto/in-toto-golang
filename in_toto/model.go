@@ -36,10 +36,7 @@ type Key struct {
 }
 
 func validateKeyId(keyId string) error {
-	keyIdFormatCheck, err := regexp.MatchString("[a-fA-F0-9]+", keyId)
-	if err != nil {
-		return fmt.Errorf("unable to check if key ID has valid format")
-	}
+	keyIdFormatCheck, _ := regexp.MatchString("[a-fA-F0-9]+", keyId)
 	if !keyIdFormatCheck {
 		return fmt.Errorf("'Key ID' has invalid format")
 	}
