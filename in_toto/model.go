@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"time"
+	"reflect"
 )
 
 /*
@@ -309,55 +310,42 @@ func (mb *Metablock) Load(path string) error {
 	}
 
 	if signed["_type"] == "link" {
-		validateFields := make(map[string]string)
-		validateFields["_type"] = "required"
-		validateFields["name"] = "required"
-		validateFields["materials"] = "required"
-		validateFields["products"] = "required"
-		validateFields["byproducts"] = "required"
-		validateFields["command"] = "required"
-		validateFields["environment"] = "required"
-		for key, value := range validateFields {
-			if value == "required" {
-				if _, ok := signed[key]; !ok {
-					return fmt.Errorf("required field %s missing", key)
-				}
-			}
+		var link Link
+		reflection := reflect.TypeOf(link)
+		attributeCount := reflection.NumField()
+		allFields := make([]string, 0)
+
+		for i := 0; i < attributeCount; i++ {
+			allFields = append(allFields, reflection.Field(i).Tag.Get("json"))
 		}
-		for key := range signed {
-			if _, ok := validateFields[key]; !ok {
-				return fmt.Errorf("unexpected field %s in metadata", key)
+
+		for _, field := range allFields {
+			if _, ok := signed[field]; !ok {
+				return fmt.Errorf("required field %s missing", field)
 			}
 		}
 
-		var link Link
 		if err := json.Unmarshal(*rawMb["signed"], &link); err != nil {
 			return err
 		}
 		mb.Signed = link
 
 	} else if signed["_type"] == "layout" {
-		validateFields := make(map[string]string)
-		validateFields["_type"] = "required"
-		validateFields["steps"] = "required"
-		validateFields["inspect"] = "required"
-		validateFields["keys"] = "required"
-		validateFields["expires"] = "required"
-		validateFields["readme"] = "required"
-		for key, value := range validateFields {
-			if value == "required" {
-				if _, ok := signed[key]; !ok {
-					return fmt.Errorf("required field %s missing", key)
-				}
-			}
+		var layout Layout
+		reflection := reflect.TypeOf(layout)
+		attributeCount := reflection.NumField()
+		allFields := make([]string, 0)
+
+		for i := 0; i < attributeCount; i++ {
+			allFields = append(allFields, reflection.Field(i).Tag.Get("json"))
 		}
-		for key := range signed {
-			if _, ok := validateFields[key]; !ok {
-				return fmt.Errorf("unexpected field %s in metadata", key)
+
+		for _, field := range allFields {
+			if _, ok := signed[field]; !ok {
+				return fmt.Errorf("required field %s missing", field)
 			}
 		}
 
-		var layout Layout
 		if err := json.Unmarshal(*rawMb["signed"], &layout); err != nil {
 			return err
 		}
