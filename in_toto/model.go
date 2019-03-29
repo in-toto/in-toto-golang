@@ -76,6 +76,14 @@ type Link struct {
 	Environment map[string]interface{} `json:"environment"`
 }
 
+func validateMaterialOrProductHash(value string) error {
+	hashSchemaCheck, _ := regexp.MatchString("[a-fA-F0-9]+", value)
+	if !hashSchemaCheck {
+		return fmt.Errorf("hash value has invalid format")
+	}
+	return nil
+}
+
 func validateLink(link Link) error {
 	if link.Type != "link" {
 		return fmt.Errorf("invalid type for link: should be 'link'")
@@ -85,9 +93,8 @@ func validateLink(link Link) error {
 		materialValue := reflect.ValueOf(material).MapRange()
 		for materialValue.Next() {
 			value := materialValue.Value().Interface().(string)
-			hashSchemaCheck, _ := regexp.MatchString("[a-fA-F0-9]+", value)
-			if !hashSchemaCheck {
-				return fmt.Errorf("hash value has invalid format")
+			if err := validateMaterialOrProductHash(value); err != nil {
+				return err
 			}
 		}
 	}
@@ -96,9 +103,8 @@ func validateLink(link Link) error {
 		productValue := reflect.ValueOf(product).MapRange()
 		for productValue.Next() {
 			value := productValue.Value().Interface().(string)
-			hashSchemaCheck, _ := regexp.MatchString("[a-fA-F0-9]+", value)
-			if !hashSchemaCheck {
-				return fmt.Errorf("hash value has invalid format")
+			if err := validateMaterialOrProductHash(value); err != nil {
+				return err
 			}
 		}
 	}
