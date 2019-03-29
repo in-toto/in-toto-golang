@@ -85,7 +85,17 @@ func validateLink(link Link) error {
 		materialValue := reflect.ValueOf(material).MapRange()
 		for materialValue.Next() {
 			value := materialValue.Value().Interface().(string)
-			fmt.Println(value)
+			hashSchemaCheck, _ := regexp.MatchString("[a-fA-F0-9]+", value)
+			if !hashSchemaCheck {
+				return fmt.Errorf("hash value has invalid format")
+			}
+		}
+	}
+
+	for _, product := range link.Products {
+		productValue := reflect.ValueOf(product).MapRange()
+		for productValue.Next() {
+			value := productValue.Value().Interface().(string)
 			hashSchemaCheck, _ := regexp.MatchString("[a-fA-F0-9]+", value)
 			if !hashSchemaCheck {
 				return fmt.Errorf("hash value has invalid format")
