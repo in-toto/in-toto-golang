@@ -36,7 +36,7 @@ type Key struct {
 }
 
 func validateKeyId(keyId string) error {
-	keyIdFormatCheck, _ := regexp.MatchString("[a-fA-F0-9]+", keyId)
+	keyIdFormatCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", keyId)
 	if !keyIdFormatCheck {
 		return fmt.Errorf("'Key ID' has invalid format")
 	}
@@ -80,7 +80,7 @@ type Link struct {
 }
 
 func validateMaterialOrProductHash(value string) error {
-	hashSchemaCheck, _ := regexp.MatchString("[a-fA-F0-9]+", value)
+	hashSchemaCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", value)
 	if !hashSchemaCheck {
 		return fmt.Errorf("hash value has invalid format")
 	}
