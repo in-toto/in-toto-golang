@@ -48,9 +48,9 @@ func TestMetablockLoad(t *testing.T) {
 		[]byte(`{"signatures": [], "signed": {"_type": "layout",
 			"steps": "invalid", "inspect": "invalid",
 			"keys": "some keys", "expires": "some date"}}`),
-		[]byte(`{"signatures": [], "signed": {"_type": "layout",
-			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
-			"keys": "some keys", "expires": "some date", "foo": "bar"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout", "steps": [],
+			"inspect": [], "readme": "some readme", "keys": {},
+			"expires": "some date", "foo": "bar"}}`),
 		[]byte(`{"signatures": [], "signed": {"_type": "link",
 			"materials": "invalid", "products": "invalid",
 			"byproducts": "invalid", "command": "some command",
@@ -73,10 +73,9 @@ func TestMetablockLoad(t *testing.T) {
 		[]byte(`{"signatures": [], "signed": {"_type": "link",
 			"materials": "invalid", "name": "some name", "products": "invalid",
 			"byproducts": "invalid", "command": "some command"}}`),
-		[]byte(`{"signatures": [], "signed": {"_type": "link",
-			"materials": "invalid", "name": "some name", "products": "invalid",
-			"byproducts": "invalid", "command": "some command",
-			"environment": "some list", "foo": "bar"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link", "materials": {},
+			"name": "some name", "products": {}, "byproducts": {},
+			"command": [], "environment": {}, "foo": "bar"}}`),
 	}
 
 	expectedErrors := []string{
@@ -93,14 +92,14 @@ func TestMetablockLoad(t *testing.T) {
 		"required field keys missing",
 		"required field expires missing",
 		"required field readme missing",
-		"unexpected field foo in metadata",
+		"json: unknown field \"foo\"",
 		"required field name missing",
 		"required field materials missing",
 		"required field products missing",
 		"required field byproducts missing",
 		"required field command missing",
 		"required field environment missing",
-		"unexpected field foo in metadata",
+		"json: unknown field \"foo\"",
 	}
 
 	for i := 0; i < len(invalidJsonBytes); i++ {
