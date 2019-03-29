@@ -2,6 +2,7 @@ package in_toto
 
 import (
 	"crypto/sha256"
+	"crypto/sha512"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -21,20 +22,58 @@ using sha256 and returns a map in the following format:
 If reading the file fails, the first return value is nil and the second return
 value is the error.
 */
+
+//this code is printing map that holds values for various hash functions, this
+//is the reason for code failure. It will be removed once the code is completed.
+
 func RecordArtifact(path string) (map[string]interface{}, error) {
 	// Read file from passed path
 	content, err := ioutil.ReadFile(path)
+	retMap := make(map[string]interface{})
+
 	if err != nil {
 		return nil, err
 	}
 
 	// Create its sha 256 hash (currently we only support sha256 here)
+	hash_func := []string{"sha256", "sha512"}
+	for _, element := range hash_func {
+    	//retMap[element] = createHash(element,content)
+    	switch element {
+    	case "sha256":
+        	
+    		retMap[element] = sha256.Sum256(content)
+        	//fmt.Println("sha256:   ", sha256.Sum256(content))
+    	case "sha512":
+        	retMap[element] = sha512.Sum512(content)
+    	}
+	}
+
+	for key, value := range retMap {
+    	fmt.Println("Key:", key, "Value:", value)
+	}
+
 	hashed := sha256.Sum256(content)
 
 	// Return it in a format that is conformant with link metadata artifacts
 	return map[string]interface{}{
 		"sha256": fmt.Sprintf("%x", hashed),
 	}, nil
+}
+
+
+
+func createHash(algorithm string, content []byte)(hashedVal [32]byte){
+
+	var hash [32]byte
+	switch algorithm {
+    case "sha256":
+        hash = sha256.Sum256(content)
+    // case "sha512":
+    //     hash = sha512.Sum512(content)
+    }
+
+    return hash
 }
 
 /*
