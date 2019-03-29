@@ -47,6 +47,9 @@ func validatePubKey(key Key) error {
 	if key.KeyVal.Private != "" {
 		return fmt.Errorf("private key found")
 	}
+	if key.KeyVal.Public == "" {
+		return fmt.Errorf("public key cannot be empty")
+	}
 	return nil
 }
 
