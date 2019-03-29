@@ -80,6 +80,19 @@ func validateLink(link Link) error {
 	if link.Type != "link" {
 		return fmt.Errorf("invalid type for link: should be 'link'")
 	}
+
+	for _, material := range link.Materials {
+		materialValue := reflect.ValueOf(material).MapRange()
+		for materialValue.Next() {
+			value := materialValue.Value().Interface().(string)
+			fmt.Println(value)
+			hashSchemaCheck, _ := regexp.MatchString("[a-fA-F0-9]+", value)
+			if !hashSchemaCheck {
+				return fmt.Errorf("hash value has invalid format")
+			}
+		}
+	}
+
 	return nil
 }
 
