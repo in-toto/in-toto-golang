@@ -270,3 +270,13 @@ func TestMetablockVerifySignature(t *testing.T) {
 		t.Errorf("Metablock.VerifySignature returned '%s', expected nil", err)
 	}
 }
+
+func TestValidateLink(t *testing.T) {
+	var mb Metablock
+	if err := mb.Load("package.2f89b927.link"); err != nil {
+		t.Errorf("Metablock load returned '%s'", err)
+	}
+	if err := validateLink(mb.Signed.(Link)); err != nil {
+		t.Errorf("Link metadata validation failed, returned '%s'", err)
+	}
+}
