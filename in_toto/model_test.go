@@ -279,4 +279,105 @@ func TestValidateLink(t *testing.T) {
 	if err := validateLink(mb.Signed.(Link)); err != nil {
 		t.Errorf("Link metadata validation failed, returned '%s'", err)
 	}
+
+	testMb := Metablock{
+		Signed: Link{
+			Type: "invalid",
+			Name: "test_type",
+			Command: []string{
+				"tar",
+				"zcvf",
+				"foo.tar.gz",
+				"foo.py",
+			},
+			Materials: map[string]interface{}{
+				"foo.py": map[string]interface{}{
+					"sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549",
+				},
+			},
+			Products: map[string]interface{}{
+				"foo.tar.gz": map[string]interface{}{
+					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+				},
+			},
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
+			},
+			Environment: map[string]interface{}{},
+		},
+	}
+
+	err := validateLink(testMb.Signed.(Link))
+	if err.Error() != "invalid type for link: should be 'link'" {
+		t.Error("validateLink error - incorrect type not detected")
+	}
+
+	testMb = Metablock{
+		Signed: Link{
+			Type: "link",
+			Name: "test_material_hash",
+			Command: []string{
+				"tar",
+				"zcvf",
+				"foo.tar.gz",
+				"foo.py",
+			},
+			Materials: map[string]interface{}{
+				"foo.py": map[string]interface{}{
+					"sha256": "!@#$%",
+				},
+			},
+			Products: map[string]interface{}{
+				"foo.tar.gz": map[string]interface{}{
+					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+				},
+			},
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
+			},
+			Environment: map[string]interface{}{},
+		},
+	}
+
+	err = validateLink(testMb.Signed.(Link))
+	if err.Error() != "hash value has invalid format" {
+		t.Error("validateLink error - invalid hashes not detected")
+	}
+
+	testMb = Metablock{
+		Signed: Link{
+			Type: "link",
+			Name: "test_product_hash",
+			Command: []string{
+				"tar",
+				"zcvf",
+				"foo.tar.gz",
+				"foo.py",
+			},
+			Materials: map[string]interface{}{
+				"foo.py": map[string]interface{}{
+					"sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549",
+				},
+			},
+			Products: map[string]interface{}{
+				"foo.tar.gz": map[string]interface{}{
+					"sha256": "!@#$%",
+				},
+			},
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
+			},
+			Environment: map[string]interface{}{},
+		},
+	}
+	err = validateLink(testMb.Signed.(Link))
+	if err.Error() != "hash value has invalid format" {
+		t.Error("validateLink error - invalid hashes not detected")
+	}
 }
