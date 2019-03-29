@@ -376,8 +376,35 @@ func TestValidateLink(t *testing.T) {
 			Environment: map[string]interface{}{},
 		},
 	}
+
 	err = validateLink(testMb.Signed.(Link))
 	if err.Error() != "hash value has invalid format" {
 		t.Error("validateLink error - invalid hashes not detected")
+	}
+}
+
+func TestValidateLayout(t *testing.T) {
+	var mb Metablock
+	if err := mb.Load("demo.layout.template"); err != nil {
+		t.Errorf("Metablock load returned '%s'", err)
+	}
+	if err := validateLayout(mb.Signed.(Layout)); err != nil {
+		t.Errorf("Layout metadata validation failed, returned '%s'", err)
+	}
+
+	testMb := Metablock{
+		Signed: Layout{
+			Type: "invalid",
+			Expires: "2020-11-18T16:06:36Z",
+			Readme: "some readme text",
+			Steps: []Step{},
+			Inspect: []Inspection{},
+			Keys: map[string]Key{},
+		},
+	}
+
+	err := validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "invalid Type value for layout: should be 'layout'" {
+		t.Error("validateLink error - invalid type not detected")
 	}
 }
