@@ -6,6 +6,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"syscall"
+	"bytes"
+	"strings"
+	ps "github.com/xanzy/go-pathspec"
+
 )
 
 /*
@@ -62,8 +66,13 @@ the following format:
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
-func RecordArtifacts(paths []string) (map[string]interface{}, error) {
+func RecordArtifacts(paths []string,exclude_patterns_optional ...[]string) (map[string]interface{}, error) {
 	artifacts := make(map[string]interface{})
+	var exclude_patterns string
+	if len(exclude_patterns_optional)>0{
+		temp:=exclude_patterns_optional[0]
+		exclude_patterns = strings.Join(temp,"\n")
+	}
 	// NOTE: Walk cannot follow symlinks
 	for _, path := range paths {
 		err := filepath.Walk(path,
@@ -76,20 +85,38 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 				if info.IsDir() {
 					return nil
 				}
-				artifact, err := RecordArtifact(path)
-				// Abort if artifact can't be recorded, e.g. due to file permissions
-				if err != nil {
+				if len(exclude_patterns)>0{
+					match, err := ps.GitIgnore(bytes.NewReader([]byte(exclude_patterns)), path)
+					if err != nil {
 					return err
+					}
+					if match == false{
+						artifact, err := RecordArtifact(path)
+						// Abort if artifact can't be recorded, e.g. due to file permissions
+						if err != nil {
+							return err
+						}
+					artifacts[path] = artifact
+					}		
+				} else{
+					artifact, err := RecordArtifact(path)
+						// Abort if artifact can't be recorded, e.g. due to file permissions
+						if err != nil {
+							return err
+						}
+						artifacts[path] = artifact
 				}
-				artifacts[path] = artifact
-				return nil
+				return nil	
+				// Abort if artifact can't be recorded, e.g. due to file permissions
 			})
 
 		if err != nil {
 			return nil, err
 		}
 	}
-
+	// for key,value:=range artifacts {
+	// 	fmt.Println(key,value)
+	// }
 	return artifacts, nil
 }
 
@@ -173,25 +200,23 @@ return value is an empty Metablock and the second return value is the error.
 NOTE: Currently InTotoRun cannot be used to sign Link metadata.
 */
 func InTotoRun(name string, materialPaths []string, productPaths []string,
-	cmdArgs []string) (Metablock, error) {
+	cmdArgs []string,exclude_patterns_optional ...[]string) (Metablock, error) {
 	var linkMb Metablock
-	materials, err := RecordArtifacts(materialPaths)
-	if err != nil {
-		return linkMb, err
-	}
-
-	byProducts, err := RunCommand(cmdArgs)
-	if err != nil {
-		return linkMb, err
-	}
-
-	products, err := RecordArtifacts(productPaths)
-	if err != nil {
-		return linkMb, err
-	}
-
-	linkMb.Signatures = []Signature{}
-	linkMb.Signed = Link{
+	if len(exclude_patterns_optional)>0{
+		materials, err := RecordArtifacts(materialPaths,exclude_patterns_optional[0])
+		if err != nil {
+			return linkMb, err
+		}
+		byProducts, err := RunCommand(cmdArgs)
+		if err != nil {
+			return linkMb, err
+		}
+		products, err := RecordArtifacts(productPaths,exclude_patterns_optional[0])
+		if err != nil {
+			return linkMb, err
+		}
+		linkMb.Signatures = []Signature{}
+		linkMb.Signed = Link{
 		Type:        "link",
 		Name:        name,
 		Materials:   materials,
@@ -200,6 +225,29 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		Command:     cmdArgs,
 		Environment: map[string]interface{}{},
 	}
-
+	}else{
+		materials, err := RecordArtifacts(materialPaths)
+		if err != nil {
+			return linkMb, err
+		}
+		byProducts, err := RunCommand(cmdArgs)
+		if err != nil {
+			return linkMb, err
+		}
+		products, err := RecordArtifacts(productPaths)
+		if err != nil {
+		return linkMb, err
+		}
+		linkMb.Signatures = []Signature{}
+		linkMb.Signed = Link{
+		Type:        "link",
+		Name:        name,
+		Materials:   materials,
+		Products:    products,
+		ByProducts:  byProducts,
+		Command:     cmdArgs,
+		Environment: map[string]interface{}{},
+	}
+	}
 	return linkMb, nil
 }
