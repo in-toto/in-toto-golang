@@ -331,7 +331,8 @@ func TestValidateLink(t *testing.T) {
 			},
 			Products: map[string]interface{}{
 				"foo.tar.gz": map[string]interface{}{
-					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e69" +
+						"36c1e5aabb7c98514f355",
 				},
 			},
 			ByProducts: map[string]interface{}{
@@ -405,6 +406,131 @@ func TestValidateLayout(t *testing.T) {
 
 	err := validateLayout(testMb.Signed.(Layout))
 	if err.Error() != "invalid Type value for layout: should be 'layout'" {
-		t.Error("validateLink error - invalid type not detected")
+		t.Error("validateLayout error - invalid type not detected")
+	}
+
+	testMb = Metablock{
+		Signed: Layout{
+			Type: "layout",
+			Expires: "2020-02-31T18:03:43Z",
+			Readme: "some readme text",
+			Steps: []Step{},
+			Inspect: []Inspection{},
+			Keys: map[string]Key{},
+		},
+	}
+
+	err = validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "expiry time parsed incorrectly - date either invalid " +
+		"or of incorrect format" {
+		t.Error("validateLayout error - invalid date not detected")
+	}
+
+	testMb = Metablock{
+		Signed: Layout{
+			Type: "layout",
+			Expires: "2020-02-27T18:03:43Zinvalid",
+			Readme: "some readme text",
+			Steps: []Step{},
+			Inspect: []Inspection{},
+			Keys: map[string]Key{},
+		},
+	}
+
+	err = validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "expiry time parsed incorrectly - date either invalid " +
+		"or of incorrect format" {
+		t.Error("validateLayout error - invalid date not detected")
+	}
+
+	testMb = Metablock{
+		Signed: Layout{
+			Type: "layout",
+			Expires: "2020-02-27T18:03:43Z",
+			Readme: "some readme text",
+			Steps: []Step{
+				{
+					Type: "step",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+				{
+					Type: "step",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+			},
+			Inspect: []Inspection{},
+			Keys: map[string]Key{},
+		},
+	}
+
+	err = validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "non unique step or inspection name found" {
+		t.Error("validateLayout error - duplicate step/inspection name not " +
+			"detected")
+	}
+
+	testMb = Metablock{
+		Signed: Layout{
+			Type: "layout",
+			Expires: "2020-02-27T18:03:43Z",
+			Readme: "some readme text",
+			Steps: []Step{
+				{
+					Type: "step",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+			},
+			Inspect: []Inspection{
+				{
+					Type: "inspection",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+			},
+			Keys: map[string]Key{},
+		},
+	}
+
+	err = validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "non unique step or inspection name found" {
+		t.Error("validateLayout error - duplicate step/inspection name not " +
+			"detected")
+	}
+
+	testMb = Metablock{
+		Signed: Layout{
+			Type: "layout",
+			Expires: "2020-02-27T18:03:43Z",
+			Readme: "some readme text",
+			Steps: []Step{},
+			Inspect: []Inspection{
+				{
+					Type: "inspection",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+				{
+					Type: "inspection",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+			},
+			Keys: map[string]Key{},
+		},
+	}
+
+	err = validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "non unique step or inspection name found" {
+		t.Error("validateLayout error - duplicate step/inspection name not " +
+			"detected")
 	}
 }
