@@ -533,4 +533,56 @@ func TestValidateLayout(t *testing.T) {
 		t.Error("validateLayout error - duplicate step/inspection name not " +
 			"detected")
 	}
+
+	testMb = Metablock{
+		Signed: Layout{
+			Type: "layout",
+			Expires: "2020-02-27T18:03:43Z",
+			Readme: "some readme text",
+			Steps: []Step{
+				{
+					Type: "invalid",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+			},
+			Inspect: []Inspection{},
+			Keys: map[string]Key{},
+		},
+	}
+
+	err = validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "invalid Type value for step: should be 'step'" {
+		t.Error("validateLayout - validateStep error - invalid step type not" +
+			"detected")
+	}
+}
+
+func TestValidateStep(t *testing.T) {
+	testStep := Step{
+		Type: "invalid",
+		SupplyChainItem: SupplyChainItem{
+			Name: "foo",
+		},
+	}
+	err := validateStep(testStep)
+	if err.Error() != "invalid Type value for step: should be 'step'" {
+		t.Error("validateStep error - invalid type not detected")
+	}
+}
+
+func TestValidateKeyId(t *testing.T) {
+	testKeyId := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
+		"08453f5"
+	if err := validateKeyId(testKeyId); err != nil {
+		t.Errorf("Error validating key ID: %s", err)
+	}
+
+	testKeyId = "Z776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
+		"08453f5"
+	err := validateKeyId(testKeyId)
+	if err.Error() != "'Key ID' has invalid format" {
+		t.Errorf("validateKeyId error - invalid key ID not detected")
+	}
 }
