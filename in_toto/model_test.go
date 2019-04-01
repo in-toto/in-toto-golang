@@ -395,12 +395,12 @@ func TestValidateLayout(t *testing.T) {
 
 	testMb := Metablock{
 		Signed: Layout{
-			Type: "invalid",
+			Type:    "invalid",
 			Expires: "2020-11-18T16:06:36Z",
-			Readme: "some readme text",
-			Steps: []Step{},
+			Readme:  "some readme text",
+			Steps:   []Step{},
 			Inspect: []Inspection{},
-			Keys: map[string]Key{},
+			Keys:    map[string]Key{},
 		},
 	}
 
@@ -411,43 +411,43 @@ func TestValidateLayout(t *testing.T) {
 
 	testMb = Metablock{
 		Signed: Layout{
-			Type: "layout",
+			Type:    "layout",
 			Expires: "2020-02-31T18:03:43Z",
-			Readme: "some readme text",
-			Steps: []Step{},
+			Readme:  "some readme text",
+			Steps:   []Step{},
 			Inspect: []Inspection{},
-			Keys: map[string]Key{},
+			Keys:    map[string]Key{},
 		},
 	}
 
 	err = validateLayout(testMb.Signed.(Layout))
-	if err.Error() != "expiry time parsed incorrectly - date either invalid " +
+	if err.Error() != "expiry time parsed incorrectly - date either invalid "+
 		"or of incorrect format" {
 		t.Error("validateLayout error - invalid date not detected")
 	}
 
 	testMb = Metablock{
 		Signed: Layout{
-			Type: "layout",
+			Type:    "layout",
 			Expires: "2020-02-27T18:03:43Zinvalid",
-			Readme: "some readme text",
-			Steps: []Step{},
+			Readme:  "some readme text",
+			Steps:   []Step{},
 			Inspect: []Inspection{},
-			Keys: map[string]Key{},
+			Keys:    map[string]Key{},
 		},
 	}
 
 	err = validateLayout(testMb.Signed.(Layout))
-	if err.Error() != "expiry time parsed incorrectly - date either invalid " +
+	if err.Error() != "expiry time parsed incorrectly - date either invalid "+
 		"or of incorrect format" {
 		t.Error("validateLayout error - invalid date not detected")
 	}
 
 	testMb = Metablock{
 		Signed: Layout{
-			Type: "layout",
+			Type:    "layout",
 			Expires: "2020-02-27T18:03:43Z",
-			Readme: "some readme text",
+			Readme:  "some readme text",
 			Steps: []Step{
 				{
 					Type: "step",
@@ -463,7 +463,7 @@ func TestValidateLayout(t *testing.T) {
 				},
 			},
 			Inspect: []Inspection{},
-			Keys: map[string]Key{},
+			Keys:    map[string]Key{},
 		},
 	}
 
@@ -475,9 +475,9 @@ func TestValidateLayout(t *testing.T) {
 
 	testMb = Metablock{
 		Signed: Layout{
-			Type: "layout",
+			Type:    "layout",
 			Expires: "2020-02-27T18:03:43Z",
-			Readme: "some readme text",
+			Readme:  "some readme text",
 			Steps: []Step{
 				{
 					Type: "step",
@@ -506,10 +506,10 @@ func TestValidateLayout(t *testing.T) {
 
 	testMb = Metablock{
 		Signed: Layout{
-			Type: "layout",
+			Type:    "layout",
 			Expires: "2020-02-27T18:03:43Z",
-			Readme: "some readme text",
-			Steps: []Step{},
+			Readme:  "some readme text",
+			Steps:   []Step{},
 			Inspect: []Inspection{
 				{
 					Type: "inspection",
@@ -536,9 +536,9 @@ func TestValidateLayout(t *testing.T) {
 
 	testMb = Metablock{
 		Signed: Layout{
-			Type: "layout",
+			Type:    "layout",
 			Expires: "2020-02-27T18:03:43Z",
-			Readme: "some readme text",
+			Readme:  "some readme text",
 			Steps: []Step{
 				{
 					Type: "invalid",
@@ -548,7 +548,7 @@ func TestValidateLayout(t *testing.T) {
 				},
 			},
 			Inspect: []Inspection{},
-			Keys: map[string]Key{},
+			Keys:    map[string]Key{},
 		},
 	}
 
@@ -589,7 +589,7 @@ func TestValidateKeyId(t *testing.T) {
 
 func TestValidatePubKey(t *testing.T) {
 	testKey := Key{
-		KeyId: "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
 		KeyType: "rsa",
 		KeyVal: KeyVal{
 			Private: "",
@@ -613,7 +613,7 @@ func TestValidatePubKey(t *testing.T) {
 	}
 
 	testKey = Key{
-		KeyId: "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
 		KeyType: "rsa",
 		KeyVal: KeyVal{
 			Private: "invalid",
@@ -638,11 +638,11 @@ func TestValidatePubKey(t *testing.T) {
 	}
 
 	testKey = Key{
-		KeyId: "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
 		KeyType: "rsa",
 		KeyVal: KeyVal{
 			Private: "",
-			Public: "",
+			Public:  "",
 		},
 		Scheme: "rsassa-pss-sha256",
 	}
