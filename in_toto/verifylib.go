@@ -10,6 +10,7 @@ import (
 	osPath "path"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -633,14 +634,17 @@ func VerifySublayouts(layout Layout,
 	return stepsMetadataVerified, nil
 }
 
-func SubstituteParameters(layout Layout, parameterDictionary map[string]string) Layout {
-
-	// TODO verify format of dictionary
+func SubstituteParameters(layout Layout, parameterDictionary map[string]string) (Layout, error) {
 
 	parameters := make([]string, len(parameterDictionary) * 2)
 	i := 0
 
 	for parameter, value := range parameterDictionary {
+		parameterFormatCheck, _ := regexp.MatchString("^[a-zA-Z0-9_-]+$", parameter)
+		if !parameterFormatCheck {
+			return layout, fmt.Errorf("invalid format for parameter")
+		}
+
 		parameters[i] = parameter
 		parameters[i + 1] = value
 		i += 2
@@ -702,7 +706,7 @@ func SubstituteParameters(layout Layout, parameterDictionary map[string]string) 
 		inspection.Run = newRun
 	}
 
-	return layout
+	return layout, nil
 }
 
 /*
