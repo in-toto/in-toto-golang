@@ -633,6 +633,49 @@ func VerifySublayouts(layout Layout,
 	return stepsMetadataVerified, nil
 }
 
+func SubstituteParameters(layoutMb Metablock, parameterDictionary map[string]string) {
+
+	// TODO verify format of dictionary
+
+	layout := layoutMb.Signed.(Layout)
+
+	parameters := make([]string, len(parameterDictionary) * 2)
+	i := 0
+
+	for parameter, value := range parameterDictionary {
+		parameters[i] = parameter
+		parameters[i + 1] = value
+		i += 2
+	}
+
+	for _, step := range layout.Steps {
+		newMaterialRules := make([][]string, 0)
+		for _, rule := range step.ExpectedMaterials {
+			newRule := make([]string, 0)
+			for _, stanza := range rule {
+				newRule = append(newRule, strings.NewReplacer(parameters...).Replace(stanza))
+			}
+			newMaterialRules = append(newMaterialRules, newRule)
+		}
+		newProductRules := make([][]string, 0)
+		for _, rule := range step.ExpectedProducts {
+			newRule := make([]string, 0)
+			for _, stanza := range rule {
+				newRule = append(newRule, strings.NewReplacer(parameters...).Replace(stanza))
+			}
+			newProductRules = append(newProductRules, newRule)
+		}
+		newExpectedCommand := make([]string, 0)
+		for _, argv := range step.ExpectedCommand {
+			newExpectedCommand = append(newExpectedCommand, strings.NewReplacer(parameters...).Replace(argv))
+		}
+
+		step.ExpectedMaterials = newMaterialRules
+		step.ExpectedProducts = newProductRules
+		step.ExpectedCommand = newExpectedCommand
+	}
+}
+
 /*
 InTotoVerify can be used to verify an entire software supply chain according to
 the in-toto specification.  It requires the metadata of the root layout, a map
