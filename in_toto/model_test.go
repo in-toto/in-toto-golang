@@ -570,6 +570,20 @@ func TestValidateStep(t *testing.T) {
 	if err.Error() != "invalid Type value for step: should be 'step'" {
 		t.Error("validateStep error - invalid type not detected")
 	}
+
+	testStep = Step{
+		Type: "step",
+		PubKeys: []string{"776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f4Z" +
+			"41132b345b08453f5"},
+		SupplyChainItem: SupplyChainItem{
+			Name: "foo",
+		},
+	}
+	err = validateStep(testStep)
+	if err.Error() != "'Key ID' has invalid format" {
+		t.Error("validateStep - validateKeyId error - invalid key ID not " +
+			"detected")
+	}
 }
 
 func TestValidateKeyId(t *testing.T) {
