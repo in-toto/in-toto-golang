@@ -646,12 +646,14 @@ func SubstituteParameters(layout Layout, parameterDictionary map[string]string) 
 		i += 2
 	}
 
+	replacer := strings.NewReplacer(parameters...)
+
 	for _, step := range layout.Steps {
 		newMaterialRules := make([][]string, 0)
 		for _, rule := range step.ExpectedMaterials {
 			newRule := make([]string, 0)
 			for _, stanza := range rule {
-				newRule = append(newRule, strings.NewReplacer(parameters...).Replace(stanza))
+				newRule = append(newRule, replacer.Replace(stanza))
 			}
 			newMaterialRules = append(newMaterialRules, newRule)
 		}
@@ -659,13 +661,13 @@ func SubstituteParameters(layout Layout, parameterDictionary map[string]string) 
 		for _, rule := range step.ExpectedProducts {
 			newRule := make([]string, 0)
 			for _, stanza := range rule {
-				newRule = append(newRule, strings.NewReplacer(parameters...).Replace(stanza))
+				newRule = append(newRule, replacer.Replace(stanza))
 			}
 			newProductRules = append(newProductRules, newRule)
 		}
 		newExpectedCommand := make([]string, 0)
 		for _, argv := range step.ExpectedCommand {
-			newExpectedCommand = append(newExpectedCommand, strings.NewReplacer(parameters...).Replace(argv))
+			newExpectedCommand = append(newExpectedCommand, replacer.Replace(argv))
 		}
 
 		step.ExpectedMaterials = newMaterialRules
@@ -678,7 +680,7 @@ func SubstituteParameters(layout Layout, parameterDictionary map[string]string) 
 		for _, rule := range inspection.ExpectedMaterials {
 			newRule := make([]string, 0)
 			for _, stanza := range rule {
-				newRule = append(newRule, strings.NewReplacer(parameters...).Replace(stanza))
+				newRule = append(newRule, replacer.Replace(stanza))
 			}
 			newMaterialRules = append(newMaterialRules, newRule)
 		}
@@ -686,13 +688,13 @@ func SubstituteParameters(layout Layout, parameterDictionary map[string]string) 
 		for _, rule := range inspection.ExpectedProducts {
 			newRule := make([]string, 0)
 			for _, stanza := range rule {
-				newRule = append(newRule, strings.NewReplacer(parameters...).Replace(stanza))
+				newRule = append(newRule, replacer.Replace(stanza))
 			}
 			newProductRules = append(newProductRules, newRule)
 		}
 		newRun := make([]string, 0)
 		for _, argv := range inspection.Run {
-			newRun = append(newRun, strings.NewReplacer(parameters...).Replace(argv))
+			newRun = append(newRun, replacer.Replace(argv))
 		}
 
 		inspection.ExpectedMaterials = newMaterialRules
