@@ -633,7 +633,7 @@ func VerifySublayouts(layout Layout,
 	return stepsMetadataVerified, nil
 }
 
-func SubstituteParameters(layout Layout, parameterDictionary map[string]string) (Layout, error) {
+func SubstituteParameters(layout Layout, parameterDictionary map[string]string) Layout {
 
 	// TODO verify format of dictionary
 
@@ -672,6 +672,35 @@ func SubstituteParameters(layout Layout, parameterDictionary map[string]string) 
 		step.ExpectedProducts = newProductRules
 		step.ExpectedCommand = newExpectedCommand
 	}
+
+	for _, inspection := range layout.Inspect {
+		newMaterialRules := make([][]string, 0)
+		for _, rule := range inspection.ExpectedMaterials {
+			newRule := make([]string, 0)
+			for _, stanza := range rule {
+				newRule = append(newRule, strings.NewReplacer(parameters...).Replace(stanza))
+			}
+			newMaterialRules = append(newMaterialRules, newRule)
+		}
+		newProductRules := make([][]string, 0)
+		for _, rule := range inspection.ExpectedProducts {
+			newRule := make([]string, 0)
+			for _, stanza := range rule {
+				newRule = append(newRule, strings.NewReplacer(parameters...).Replace(stanza))
+			}
+			newProductRules = append(newProductRules, newRule)
+		}
+		newRun := make([]string, 0)
+		for _, argv := range inspection.Run {
+			newRun = append(newRun, strings.NewReplacer(parameters...).Replace(argv))
+		}
+
+		inspection.ExpectedMaterials = newMaterialRules
+		inspection.ExpectedProducts = newProductRules
+		inspection.Run = newRun
+	}
+
+	return layout
 }
 
 /*
