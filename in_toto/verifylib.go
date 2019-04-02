@@ -633,11 +633,9 @@ func VerifySublayouts(layout Layout,
 	return stepsMetadataVerified, nil
 }
 
-func SubstituteParameters(layoutMb Metablock, parameterDictionary map[string]string) {
+func SubstituteParameters(layout Layout, parameterDictionary map[string]string) (Layout, error) {
 
 	// TODO verify format of dictionary
-
-	layout := layoutMb.Signed.(Layout)
 
 	parameters := make([]string, len(parameterDictionary) * 2)
 	i := 0
