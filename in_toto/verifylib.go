@@ -636,8 +636,7 @@ func VerifySublayouts(layout Layout,
 
 func SubstituteParameters(layout Layout, parameterDictionary map[string]string) (Layout, error) {
 
-	parameters := make([]string, len(parameterDictionary) * 2)
-	i := 0
+	parameters := make([]string, 0)
 
 	for parameter, value := range parameterDictionary {
 		parameterFormatCheck, _ := regexp.MatchString("^[a-zA-Z0-9_-]+$", parameter)
@@ -645,9 +644,8 @@ func SubstituteParameters(layout Layout, parameterDictionary map[string]string) 
 			return layout, fmt.Errorf("invalid format for parameter")
 		}
 
-		parameters[i] = parameter
-		parameters[i + 1] = value
-		i += 2
+		parameters = append(parameters, parameter)
+		parameters = append(parameters, value)
 	}
 
 	replacer := strings.NewReplacer(parameters...)
