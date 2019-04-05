@@ -2,7 +2,6 @@ package in_toto
 
 import (
 	"crypto/sha256"
-	"crypto/sha512"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -28,6 +27,13 @@ value is the error.
 
 func RecordArtifact(path string) (map[string]interface{}, error) {
 	// Read file from passed path
+	
+	mapper := map[string]interface{Compute(content []uint8) (string)}{
+	        "sha256"  : &sha_256_Hash{},
+	        "sha512"  : &sha_512_Hash{},
+	        "md5"  	  : &md5_Hash{},
+		}
+
 	content, err := ioutil.ReadFile(path)
 	retMap := make(map[string]interface{})
 
@@ -36,22 +42,12 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 	}
 
 	// Create its sha 256 hash (currently we only support sha256 here)
-	hash_func := []string{"sha256", "sha512"}
+	hash_func := []string{"sha256"}
 	for _, element := range hash_func {
-    	//retMap[element] = createHash(element,content)
-    	switch element {
-    	case "sha256":
-        	
-    		retMap[element] = sha256.Sum256(content)
-        	//fmt.Println("sha256:   ", sha256.Sum256(content))
-    	case "sha512":
-        	retMap[element] = sha512.Sum512(content)
-    	}
+		retMap[element] = mapper[element].Compute([] uint8(content))
 	}
 
-	for key, value := range retMap {
-    	fmt.Println("Key:", key, "Value:", value)
-	}
+	fmt.Println(retMap)
 
 	hashed := sha256.Sum256(content)
 
@@ -59,21 +55,6 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"sha256": fmt.Sprintf("%x", hashed),
 	}, nil
-}
-
-
-
-func createHash(algorithm string, content []byte)(hashedVal [32]byte){
-
-	var hash [32]byte
-	switch algorithm {
-    case "sha256":
-        hash = sha256.Sum256(content)
-    // case "sha512":
-    //     hash = sha512.Sum512(content)
-    }
-
-    return hash
 }
 
 /*
