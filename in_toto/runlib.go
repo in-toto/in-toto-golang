@@ -1,8 +1,6 @@
 package in_toto
 
 import (
-	"crypto/sha256"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -28,11 +26,7 @@ value is the error.
 func RecordArtifact(path string) (map[string]interface{}, error) {
 	// Read file from passed path
 	
-	mapper := map[string]interface{Compute(content []uint8) (string)}{
-	        "sha256"  : &sha_256_Hash{},
-	        "sha512"  : &sha_512_Hash{},
-	        "md5"  	  : &md5_Hash{},
-		}
+	mapper := createMap()
 
 	content, err := ioutil.ReadFile(path)
 	retMap := make(map[string]interface{})
@@ -42,19 +36,13 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 	}
 
 	// Create its sha 256 hash (currently we only support sha256 here)
-	hash_func := []string{"sha256"}
+	hash_func := createList()
 	for _, element := range hash_func {
 		retMap[element] = mapper[element].Compute([] uint8(content))
 	}
 
-	fmt.Println(retMap)
-
-	hashed := sha256.Sum256(content)
-
 	// Return it in a format that is conformant with link metadata artifacts
-	return map[string]interface{}{
-		"sha256": fmt.Sprintf("%x", hashed),
-	}, nil
+	return retMap, nil
 }
 
 /*

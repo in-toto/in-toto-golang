@@ -39,3 +39,19 @@ func (hash *md5_Hash) Compute(content []uint8) (string){
 	n := fmt.Sprintf("%x", hashed)
 	return n
 }
+
+func createMap() map[string]interface{Compute(content []uint8) (string)}{
+	mapper := map[string]interface{Compute(content []uint8) (string)}{
+	        "sha256"  : &sha_256_Hash{},
+	        "sha512"  : &sha_512_Hash{},
+	        "md5"  	  : &md5_Hash{},
+		}
+		return mapper
+}
+
+
+func createList() []string{
+
+	hash_func := []string{"sha256"}
+	return hash_func
+}
