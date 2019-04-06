@@ -34,7 +34,8 @@ func ExampleInTotoVerify() {
 	if err := layoutMb.Load(LayoutPath); err != nil {
 		fmt.Printf("Unable to load layout metadata: %s", err)
 	}
-	if _, err := InTotoVerify(layoutMb, layoutKeys, LinkDirectory, ""); err != nil {
+	if _, err := InTotoVerify(layoutMb, layoutKeys, LinkDirectory, "",
+		make(map[string]string)); err != nil {
 		fmt.Printf("In-toto verification failed: %s", err)
 	} else {
 		fmt.Println("In-toto verification succeeded!")

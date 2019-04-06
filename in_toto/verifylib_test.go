@@ -33,7 +33,8 @@ func TestInTotoVerifyPass(t *testing.T) {
 	}
 
 	// No error should occur
-	if _, err := InTotoVerify(layoutMb, layouKeys, linkDir, ""); err != nil {
+	if _, err := InTotoVerify(layoutMb, layouKeys, linkDir, "",
+		make(map[string]string)); err != nil {
 		t.Error(err)
 	}
 }

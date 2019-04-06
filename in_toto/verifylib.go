@@ -622,7 +622,7 @@ func VerifySublayouts(layout Layout,
 				sublayoutLinkPath := filepath.Join(superLayoutLinkPath,
 					sublayoutLinkDir)
 				summaryLink, err := InTotoVerify(metadata, layoutKeys,
-					sublayoutLinkPath, stepName)
+					sublayoutLinkPath, stepName, make(map[string]string))
 				if err != nil {
 					return nil, err
 				}
