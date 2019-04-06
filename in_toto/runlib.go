@@ -6,10 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"syscall"
-	"bytes"
-	"strings"
-	ps "github.com/xanzy/go-pathspec"
-
+	. "gopkg.in/src-d/go-git.v4/plumbing/format/gitignore"
 )
 
 /*
@@ -68,10 +65,15 @@ return value is the error.
 */
 func RecordArtifacts(paths []string,exclude_patterns_optional ...[]string) (map[string]interface{}, error) {
 	artifacts := make(map[string]interface{})
-	var exclude_patterns string
+	// fmt.Println("*********************************")
+	var exclude_patterns []string
+	var ps[]Pattern
 	if len(exclude_patterns_optional)>0{
-		temp:=exclude_patterns_optional[0]
-		exclude_patterns = strings.Join(temp,"\n")
+		exclude_patterns=exclude_patterns_optional[0]
+    	for _,element:= range exclude_patterns{
+    		temp:=ParsePattern(element,nil)
+    		ps = append(ps,temp)
+    	}
 	}
 	// NOTE: Walk cannot follow symlinks
 	for _, path := range paths {
@@ -86,10 +88,8 @@ func RecordArtifacts(paths []string,exclude_patterns_optional ...[]string) (map[
 					return nil
 				}
 				if len(exclude_patterns)>0{
-					match, err := ps.GitIgnore(bytes.NewReader([]byte(exclude_patterns)), path)
-					if err != nil {
-					return err
-					}
+					m := NewMatcher(ps)
+					match := m.Match([]string{path}, info.IsDir())
 					if match == false{
 						artifact, err := RecordArtifact(path)
 						// Abort if artifact can't be recorded, e.g. due to file permissions
