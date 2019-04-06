@@ -6,6 +6,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"syscall"
+	//"github.com/golang/tools/internal/fastwalk"
+
+	
 )
 
 /*
@@ -69,10 +72,6 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 		err := filepath.Walk(path,
 			func(path string, info os.FileInfo, err error) error {
 				// Abort if Walk function has a problem, e.g. path does not exist)
-				//fmt.Println(path, info)
-				//if true{
-				//	fmt.Println("path",path,"modesymlink: ", os.ModeSymlink)
-				//}				
 				if err != nil {
 					return err
 				}
@@ -82,12 +81,29 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 				}
 				//Code to verify for symlinks	
 				if info.Mode() & os.ModeSymlink != 0{
-					fmt.Println("symlink found")
+					//fmt.Println("symlink found", path)
+					//a, _ := filepath.EvalSymlinks(path)
 					sym_path, sym_err := os.Readlink(path) 
-					fmt.Println("symlink path", sym_path,sym_err)
+					if sym_err != nil {
+						return sym_err
+					}
+					//fmt.Println("symlink path", sym_path,sym_err)
+				//	fmt.Println(filepath.walkSymlinks(path))	
+					//path_till_now := []string{"tmpdir/"}	
+					//new_path := append(path_till_now, sym_path)		
+					//fmt.Println("new path" + "appended",new_path)		
+					recursed_artifacts, recursed_err := RecordArtifacts([]string{sym_path})
+					if recursed_err != nil {
+						return recursed_err
+					}
+					for key, value := range recursed_artifacts{
+						//fmt.Println("Recursed key", key, "Recursed value", value)
+						artifacts[key] = value
+					}
 					return nil
 				}
 				artifact, err := RecordArtifact(path)
+
 				// Abort if artifact can't be recorded, e.g. due to file permissions
 				if err != nil {
 					return err
@@ -101,9 +117,11 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 		}
 	}
 	//Looking at the artifacts
+	//fmt.Println("Here are the Artifacts *******")
 	//for key, value := range artifacts{
 	//	fmt.Println("key", key, "value", value)	
 	//}
+	//fmt.Println("END OF ONE RECUSION *****************")
 	return artifacts, nil
 }
 
