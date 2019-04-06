@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"syscall"
+	"fmt"
 )
 
 /*
@@ -24,23 +25,26 @@ value is the error.
 //is the reason for code failure. It will be removed once the code is completed.
 
 func RecordArtifact(path string) (map[string]interface{}, error) {
-	// Read file from passed path
 	
 	mapper := createMap()
 
+	// Read file from passed path
 	content, err := ioutil.ReadFile(path)
+	
 	retMap := make(map[string]interface{})
 
 	if err != nil {
 		return nil, err
 	}
 
-	// Create its sha 256 hash (currently we only support sha256 here)
+	// Create a map of all the hashes present in the hash_func list
 	hash_func := createList()
 	for _, element := range hash_func {
 		retMap[element] = mapper[element].Compute([] uint8(content))
 	}
 
+
+	fmt.Println("path ",path,"retMap ", retMap)
 	// Return it in a format that is conformant with link metadata artifacts
 	return retMap, nil
 }
