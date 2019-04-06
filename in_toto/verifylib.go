@@ -735,7 +735,8 @@ NOTE: Parameter substitution, artifact rules of type "create", "modify"
 and "delete" are currently not supported.
 */
 func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
-	linkDir string, stepName string) (Metablock, error) {
+	linkDir string, stepName string, parameterDictionary map[string]string) (
+	Metablock, error) {
 
 	var summaryLink Metablock
 	var err error
@@ -753,7 +754,12 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		return summaryLink, err
 	}
 
-	// TODO: Substitute parameters
+	if len(parameterDictionary) > 0 {
+		layout, err = SubstituteParameters(layout, parameterDictionary)
+		if err != nil {
+			return summaryLink, err
+		}
+	}
 
 	// Load links for layout
 	stepsMetadata, err := LoadLinksForLayout(layout, linkDir)
