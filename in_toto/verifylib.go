@@ -634,12 +634,34 @@ func VerifySublayouts(layout Layout,
 	return stepsMetadataVerified, nil
 }
 
-func SubstituteParameters(layout Layout, parameterDictionary map[string]string) (Layout, error) {
+// TODO: find a better way than two helper functions for the replacer op
+
+func substituteParamatersInSlice(replacer *strings.Replacer, slice []string) []string {
+	newSlice := make([]string, 0)
+	for _, item := range slice {
+		newSlice = append(newSlice, replacer.Replace(item))
+	}
+	return newSlice
+}
+
+func substituteParametersInSliceOfSlices(replacer *strings.Replacer,
+	slice [][]string) [][]string {
+	newSlice := make([][]string, 0)
+	for _, item := range slice {
+		newSlice = append(newSlice, substituteParamatersInSlice(replacer,
+			item))
+	}
+	return newSlice
+}
+
+func SubstituteParameters(layout Layout,
+	parameterDictionary map[string]string) (Layout, error) {
 
 	parameters := make([]string, 0)
 
 	for parameter, value := range parameterDictionary {
-		parameterFormatCheck, _ := regexp.MatchString("^[a-zA-Z0-9_-]+$", parameter)
+		parameterFormatCheck, _ := regexp.MatchString("^[a-zA-Z0-9_-]+$",
+			parameter)
 		if !parameterFormatCheck {
 			return layout, fmt.Errorf("invalid format for parameter")
 		}
@@ -651,57 +673,22 @@ func SubstituteParameters(layout Layout, parameterDictionary map[string]string) 
 	replacer := strings.NewReplacer(parameters...)
 
 	for _, step := range layout.Steps {
-		newMaterialRules := make([][]string, 0)
-		for _, rule := range step.ExpectedMaterials {
-			newRule := make([]string, 0)
-			for _, stanza := range rule {
-				newRule = append(newRule, replacer.Replace(stanza))
-			}
-			newMaterialRules = append(newMaterialRules, newRule)
-		}
-		newProductRules := make([][]string, 0)
-		for _, rule := range step.ExpectedProducts {
-			newRule := make([]string, 0)
-			for _, stanza := range rule {
-				newRule = append(newRule, replacer.Replace(stanza))
-			}
-			newProductRules = append(newProductRules, newRule)
-		}
-		newExpectedCommand := make([]string, 0)
-		for _, argv := range step.ExpectedCommand {
-			newExpectedCommand = append(newExpectedCommand, replacer.Replace(argv))
-		}
-
-		step.ExpectedMaterials = newMaterialRules
-		step.ExpectedProducts = newProductRules
-		step.ExpectedCommand = newExpectedCommand
+		step.ExpectedMaterials = substituteParametersInSliceOfSlices(replacer,
+			step.ExpectedMaterials)
+		step.ExpectedProducts = substituteParametersInSliceOfSlices(replacer,
+			step.ExpectedProducts)
+		step.ExpectedCommand = substituteParamatersInSlice(replacer,
+			step.ExpectedCommand)
 	}
 
 	for _, inspection := range layout.Inspect {
-		newMaterialRules := make([][]string, 0)
-		for _, rule := range inspection.ExpectedMaterials {
-			newRule := make([]string, 0)
-			for _, stanza := range rule {
-				newRule = append(newRule, replacer.Replace(stanza))
-			}
-			newMaterialRules = append(newMaterialRules, newRule)
-		}
-		newProductRules := make([][]string, 0)
-		for _, rule := range inspection.ExpectedProducts {
-			newRule := make([]string, 0)
-			for _, stanza := range rule {
-				newRule = append(newRule, replacer.Replace(stanza))
-			}
-			newProductRules = append(newProductRules, newRule)
-		}
-		newRun := make([]string, 0)
-		for _, argv := range inspection.Run {
-			newRun = append(newRun, replacer.Replace(argv))
-		}
-
-		inspection.ExpectedMaterials = newMaterialRules
-		inspection.ExpectedProducts = newProductRules
-		inspection.Run = newRun
+		inspection.ExpectedMaterials =
+			substituteParametersInSliceOfSlices(replacer,
+			inspection.ExpectedMaterials)
+		inspection.ExpectedProducts =
+			substituteParametersInSliceOfSlices(replacer,
+			inspection.ExpectedProducts)
+		inspection.Run = substituteParamatersInSlice(replacer, inspection.Run)
 	}
 
 	return layout, nil
