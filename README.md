@@ -17,7 +17,6 @@ and navigate to `localhost:8080/pkg/github.com/in-toto/in-toto-golang/in_toto/`
 
 
 ## Not (yet) supported
-* [Artifact rules of type `CREATE`, `DELETE` or `MODIFY`](https://github.com/in-toto/in-toto-golang/issues/28)
 * [Signature schemes, other than `rsassa-pss-sha256`](https://github.com/in-toto/in-toto-golang/issues/27)
 * [GPG keys](https://github.com/in-toto/in-toto-golang/issues/26)
 * [Layout parameter substitution](https://github.com/in-toto/in-toto-golang/issues/29)
