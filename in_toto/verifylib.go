@@ -684,10 +684,10 @@ func SubstituteParameters(layout Layout,
 	for _, inspection := range layout.Inspect {
 		inspection.ExpectedMaterials =
 			substituteParametersInSliceOfSlices(replacer,
-			inspection.ExpectedMaterials)
+				inspection.ExpectedMaterials)
 		inspection.ExpectedProducts =
 			substituteParametersInSliceOfSlices(replacer,
-			inspection.ExpectedProducts)
+				inspection.ExpectedProducts)
 		inspection.Run = substituteParamatersInSlice(replacer, inspection.Run)
 	}
 
