@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"syscall"
-	"fmt"
 )
 
 /*
@@ -43,8 +42,6 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 		retMap[element] = mapper[element].Compute([] uint8(content))
 	}
 
-
-	fmt.Println("path ",path,"retMap ", retMap)
 	// Return it in a format that is conformant with link metadata artifacts
 	return retMap, nil
 }
