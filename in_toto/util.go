@@ -115,3 +115,17 @@ func (s Set) Slice() []string {
 	}
 	return res
 }
+
+/*
+InterfaceKeyStrings returns string keys of passed interface{} map in an
+unordered string slice.
+*/
+func InterfaceKeyStrings(m map[string]interface{}) []string {
+	res := make([]string, len(m))
+	i := 0
+	for k := range m {
+		res[i] = k
+		i++
+	}
+	return res
+}

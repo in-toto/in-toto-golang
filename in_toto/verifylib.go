@@ -57,56 +57,18 @@ func RunInspections(layout Layout) (map[string]Metablock, error) {
 	return inspectionMetadata, nil
 }
 
-// Subtract is a helper function that performs set subtraction
-// TODO: This function has O(n**2), consider using maps (in linear-time)
-// https://siongui.github.io/2018/03/14/go-set-difference-of-two-arrays/, or
-// find a proper set library.
-func Subtract(a []string, b []string) []string {
-	var result []string
-	for _, valA := range a {
-		valInB := false
-		for _, valB := range b {
-			if valA == valB {
-				valInB = true
-				break
-			}
-		}
-		if !valInB {
-			result = append(result, valA)
-		}
-	}
-	return result
-}
-
-// FnFilter is a helper function that mimics fnmatch.filter from the Python
-// standard library using Go Match from the path/filepath package.
-func FnFilter(pattern string, names []string) []string {
-	var namesFiltered []string
-	for _, name := range names {
-		matched, err := filepath.Match(pattern, name)
-		if err != nil {
-			// The pattern was invalid. We treat it as no match.
-			// TODO: Maybe we should inform the caller at least with a warning?
-			continue
-		}
-		if matched {
-			namesFiltered = append(namesFiltered, name)
-		}
-	}
-	return namesFiltered
-}
-
 // verifyMatchRule is a helper function to process artifact rules of
 // type MATCH. See VerifyArtifacts for more details.
 func verifyMatchRule(ruleData map[string]string,
-	srcArtifacts map[string]interface{}, srcArtifactQueue []string,
-	itemsMetadata map[string]Metablock) []string {
+	srcArtifacts map[string]interface{}, srcArtifactQueue Set,
+	itemsMetadata map[string]Metablock) Set {
+	consumed := NewSet()
 	// Get destination link metadata
 	dstLinkMb, exists := itemsMetadata[ruleData["dstName"]]
 	if !exists {
 		// Destination link does not exist, rule can't consume any
 		// artifacts
-		return srcArtifactQueue
+		return consumed
 	}
 
 	// Get artifacts from destination link metadata
@@ -128,8 +90,7 @@ func verifyMatchRule(ruleData map[string]string,
 		}
 	}
 	// Iterate over queue and mark consumed artifacts
-	var consumed []string
-	for _, srcPath := range srcArtifactQueue {
+	for srcPath := range srcArtifactQueue {
 		// Remove optional source prefix from source artifact path
 		// Noop if prefix is empty, or artifact does not have it
 		srcBasePath := strings.TrimPrefix(srcPath, ruleData["srcPrefix"])
@@ -159,9 +120,9 @@ func verifyMatchRule(ruleData map[string]string,
 		// Only if a source and destination artifact pair was found and
 		// their hashes are equal, will we mark the source artifact as
 		// successfully consumed, i.e. it will be removed from the queue
-		consumed = append(consumed, srcPath)
+		consumed.Add(srcPath)
 	}
-	return Subtract(srcArtifactQueue, consumed)
+	return consumed
 }
 
 /*
@@ -170,13 +131,14 @@ passed items (step or inspection) to enforce and authorize artifacts (materials
 or products) reported by the corresponding link and to guarantee that
 artifacts are linked together across links.  In the beginning all artifacts are
 placed in a queue according to their type.  If an artifact gets consumed by a
-rule it is removed from the queue.  An artifact can only be consumed once by
-one set of rules.
+rule it is removed from the queue.  An artifact can only be consumed once in
+the course of processing the set of rules in ExpectedMaterials or
+ExpectedProducts.
 
-Rules of type MATCH, ALLOW and DISALLOW are supported.
+Rules of type MATCH, ALLOW, CREATE, DELETE, MODIFY and DISALLOW are supported.
 
-MATCH and ALLOW remove artifacts from the corresponding queues on success, and
-leave the queue unchanged on failure.  Hence, it is left to a subsequent
+All rules except for DISALLOW consume queued artifacts on success, and
+leave the queue unchanged on failure.  Hence, it is left to a terminal
 DISALLOW rule to fail overall verification, if artifacts are left in the queue
 that should have been consumed by preceding rules.
 */
@@ -201,78 +163,131 @@ func VerifyArtifacts(items []interface{},
 			expectedMaterials = item.ExpectedMaterials
 			expectedProducts = item.ExpectedProducts
 
-		default: // Something's wrong
+		default: // Something wrong
 			return fmt.Errorf("VerifyArtifacts received an item of invalid type,"+
 				" elements of passed slice 'items' must be one of 'Step' or"+
 				" 'Inspection', got: '%s'", reflect.TypeOf(item))
 		}
+
+		// Use the item's name to extract the corresponding link
 		srcLinkMb, exists := itemsMetadata[itemName]
 		if !exists {
 			return fmt.Errorf("VerifyArtifacts could not find metadata"+
 				" for item '%s', got: '%s'", itemName, itemsMetadata)
 		}
 
-		verificationDataList := []map[string]interface{}{
-			map[string]interface{}{
-				"srcType":   "materials",
-				"rules":     expectedMaterials,
-				"artifacts": srcLinkMb.Signed.(Link).Materials,
-			},
-			map[string]interface{}{
-				"srcType":   "products",
-				"rules":     expectedProducts,
-				"artifacts": srcLinkMb.Signed.(Link).Products,
-			},
+		// Create shortcuts to materials and products (including hashes) reported
+		// by the item's link, required to verify "match" rules
+		materials := srcLinkMb.Signed.(Link).Materials
+		products := srcLinkMb.Signed.(Link).Products
+
+		// All other rules only require the material or product paths (without
+		// hashes). We extract them from the corresponding maps and store them as
+		// sets for convenience in further processing
+		materialPaths := NewSet(InterfaceKeyStrings(materials)...)
+		productPaths := NewSet(InterfaceKeyStrings(products)...)
+
+		// For `create`, `delete` and `modify` rules we prepare sets of artifacts
+		// (without hashes) that were created, deleted or modified in the current
+		// step or inspection
+		created := productPaths.Difference(materialPaths)
+		deleted := materialPaths.Difference(productPaths)
+		remained := materialPaths.Intersection(productPaths)
+		modified := NewSet()
+		for name := range remained {
+			if !reflect.DeepEqual(materials[name], products[name]) {
+				modified.Add(name)
+			}
 		}
 
-		// Process all material rules using the corresponding materials
-		// and all product rules using the corresponding products
+		// For each item we have to run rule verification, once per artifact type.
+		// Here we prepare the corresponding data for each round.
+		verificationDataList := []map[string]interface{}{
+			map[string]interface{}{
+				"srcType":       "materials",
+				"rules":         expectedMaterials,
+				"artifacts":     materials,
+				"artifactPaths": materialPaths,
+			},
+			map[string]interface{}{
+				"srcType":       "products",
+				"rules":         expectedProducts,
+				"artifacts":     products,
+				"artifactPaths": productPaths,
+			},
+		}
+		// TODO: Add logging library (see in-toto/in-toto-golang#4)
+		// fmt.Printf("Verifying %s '%s' ", reflect.TypeOf(itemI), itemName)
+
+		// Process all material rules using the corresponding materials and all
+		// product rules using the corresponding products
 		for _, verificationData := range verificationDataList {
+			// TODO: Add logging library (see in-toto/in-toto-golang#4)
+			// fmt.Printf("%s...\n", verificationData["srcType"])
 
 			rules := verificationData["rules"].([][]string)
 			artifacts := verificationData["artifacts"].(map[string]interface{})
 
-			// Create a queue of artifact names (paths).  Each rule only operates on
-			// artifacts in that queue.  If a rule consumes an artifact (i.e. can be
-			// applied successfully), the artifact is removed from the queue.  By
+			// Use artifacts (without hashes) as base queue. Each rule only operates
+			// on artifacts in that queue.  If a rule consumes an artifact (i.e. can
+			// be applied successfully), the artifact is removed from the queue. By
 			// applying a DISALLOW rule eventually, verification may return an error,
 			// if the rule matches any artifacts in the queue that should have been
 			// consumed earlier.
-			var queue []string
-			for name, _ := range artifacts {
-				queue = append(queue, name)
-			}
+			queue := verificationData["artifactPaths"].(Set)
+
+			// TODO: Add logging library (see in-toto/in-toto-golang#4)
+			// fmt.Printf("Initial state\nMaterials: %s\nProducts: %s\nQueue: %s\n\n",
+			// 	materialPaths.Slice(), productPaths.Slice(), queue.Slice())
 
 			// Verify rules sequentially
 			for _, rule := range rules {
-				// Parse rule
+				// Parse rule and error out if it is malformed
+				// NOTE: the rule format should have been validated before
 				ruleData, err := UnpackRule(rule)
 				if err != nil {
 					return err
 				}
 
-				// Process rules according to rule type
-				// TODO: Currently we only process rules of type "match", "allow" or
-				// "disallow"
+				// Apply rule pattern to filter queued artifacts that are up for rule
+				// specific consumption
+				filtered := queue.Filter(ruleData["pattern"])
+
+				var consumed Set
 				switch ruleData["type"] {
 				case "match":
-					queue = verifyMatchRule(ruleData, artifacts, queue, itemsMetadata)
+					// Note: here we need to perform more elaborate filtering
+					consumed = verifyMatchRule(ruleData, artifacts, queue, itemsMetadata)
 
 				case "allow":
-					consumed := FnFilter(ruleData["pattern"], queue)
-					queue = Subtract(queue, consumed)
+					// Consumes all filtered artifacts
+					consumed = filtered
+
+				case "create":
+					// Consumes filtered artifacts that were created
+					consumed = filtered.Intersection(created)
+
+				case "delete":
+					// Consumes filtered artifacts that were deleted
+					consumed = filtered.Intersection(deleted)
+
+				case "modify":
+					// Consumes filtered artifacts that were modified
+					consumed = filtered.Intersection(modified)
 
 				case "disallow":
-					disallowed := FnFilter(ruleData["pattern"], queue)
-					if len(disallowed) > 0 {
+					// Does not consume but errors out if artifacts were filtered
+					if len(filtered) > 0 {
 						return fmt.Errorf("Artifact verification failed for %s '%s',"+
 							" %s %s disallowed by rule %s.",
-							reflect.TypeOf(itemI).Name(), itemName, verificationData["srcType"],
-							disallowed, rule)
+							reflect.TypeOf(itemI).Name(), itemName,
+							verificationData["srcType"], filtered.Slice(), rule)
 					}
-
-					// TODO: Support create, modify, delete rules
 				}
+				// Update queue by removing consumed artifacts
+				queue = queue.Difference(consumed)
+				// TODO: Add logging library (see in-toto/in-toto-golang#4)
+				// fmt.Printf("Rule: %s\nQueue: %s\n\n", rule, queue.Slice())
 			}
 		}
 	}

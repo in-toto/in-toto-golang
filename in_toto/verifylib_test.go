@@ -186,8 +186,8 @@ func TestRunInspections(t *testing.T) {
 		sort.Strings(availableFiles)
 		// Compare material and products (only file names) to files that were
 		// in the directory before calling RunInspections
-		materialNames := _stringKeys(result[inspectionName].Signed.(Link).Materials)
-		productNames := _stringKeys(result[inspectionName].Signed.(Link).Products)
+		materialNames := InterfaceKeyStrings(result[inspectionName].Signed.(Link).Materials)
+		productNames := InterfaceKeyStrings(result[inspectionName].Signed.(Link).Products)
 		sort.Strings(materialNames)
 		sort.Strings(productNames)
 		if !reflect.DeepEqual(materialNames, availableFiles) ||
@@ -238,29 +238,56 @@ func TestRunInspections(t *testing.T) {
 	}
 }
 
-func TestFnFilter(t *testing.T) {
-	// tests[0] = pattern, tests[1] = names, tests[2] = expected result
-	// Tests:
-	// - match
-	// - match with wildcard,
-	// - no match
-	// - no match (due to invalid pattern)
-	tests := [][][]string{
-		{{"foo"}, {"foo", "foobar", "bar"}, {"foo"}},
-		{{"foo*"}, {"foo", "foobar", "bar"}, {"foo", "foobar"}},
-		{{"foo"}, {"bar"}, nil},
-		{{"["}, {"["}, nil},
+func TestVerifyArtifacts(t *testing.T) {
+	items := []interface{}{
+		Step{
+			SupplyChainItem: SupplyChainItem{
+				Name: "foo",
+				ExpectedMaterials: [][]string{
+					{"DELETE", "foo-delete"},
+					{"MODIFY", "foo-modify"},
+					{"MATCH", "foo-match", "WITH", "MATERIALS", "FROM", "foo"}, // not-modify
+					{"ALLOW", "foo-allow"},
+					{"DISALLOW", "*"},
+				},
+				ExpectedProducts: [][]string{
+					{"CREATE", "foo-create"},
+					{"MODIFY", "foo-modify"},
+					{"MATCH", "foo-match", "WITH", "MATERIALS", "FROM", "foo"}, // not-modify
+					{"ALLOW", "foo-allow"},
+					{"DISALLOW", "*"},
+				},
+			},
+		},
 	}
 
-	for _, test := range tests {
-		result := FnFilter(test[0][0], test[1])
-		if !reflect.DeepEqual(result, test[2]) {
-			t.Errorf("FnFilter returned '%s', expected '%s'.", result, test[2])
-		}
+	itemsMetadata := map[string]Metablock{
+		"foo": {
+			Signed: Link{
+				Name: "foo",
+				Materials: map[string]interface{}{
+					"foo-delete": map[string]interface{}{"sha265": "abc"},
+					"foo-modify": map[string]interface{}{"sha265": "abc"},
+					"foo-match":  map[string]interface{}{"sha265": "abc"},
+					"foo-allow":  map[string]interface{}{"sha265": "abc"},
+				},
+				Products: map[string]interface{}{
+					"foo-create": map[string]interface{}{"sha265": "abc"},
+					"foo-modify": map[string]interface{}{"sha265": "abcdef"},
+					"foo-match":  map[string]interface{}{"sha265": "abc"},
+					"foo-allow":  map[string]interface{}{"sha265": "abc"},
+				},
+			},
+		},
+	}
+
+	err := VerifyArtifacts(items, itemsMetadata)
+	if err != nil {
+		t.Errorf("VerifyArtifacts returned '%s', expected no error", err)
 	}
 }
 
-func TestVerifyArtifacts(t *testing.T) {
+func TestVerifyArtifactErrors(t *testing.T) {
 	// Test error cases for combinations of Step and Inspection items and
 	// material and product rules:
 	// - Item must be one of step or inspection
@@ -350,7 +377,7 @@ func TestVerifyMatchRule(t *testing.T) {
 		{"foo.py": map[string]interface{}{"sha265": "dead"}},
 		{"bar.py": map[string]interface{}{"sha265": "abc"}},
 	}
-	// queue[i] = _stringKeys(srcArtifacts[i])
+	// queue[i] = InterfaceKeyStrings(srcArtifacts[i])
 	itemsMetadata := []map[string]Metablock{
 		{},
 		{},
@@ -360,19 +387,21 @@ func TestVerifyMatchRule(t *testing.T) {
 		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 	}
-	expected := [][]string{
-		{},
-		{"foo.py"},
-		nil,
-		nil,
-		nil,
-		{"foo.py"},
-		{"bar.py"},
+	expected := []Set{
+		NewSet(),
+		NewSet(),
+		NewSet("foo.py"),
+		NewSet("foo.py"),
+		NewSet("foo.d/foo.py"),
+		NewSet(),
+		NewSet(),
 	}
 
 	for i := 0; i < len(ruleData); i++ {
-		result := verifyMatchRule(ruleData[i], srcArtifacts[i],
-			_stringKeys(srcArtifacts[i]), itemsMetadata[i])
+
+		queue := NewSet(InterfaceKeyStrings(srcArtifacts[i])...)
+		result := verifyMatchRule(ruleData[i], srcArtifacts[i], queue,
+			itemsMetadata[i])
 		if !reflect.DeepEqual(result, expected[i]) {
 			t.Errorf("verifyMatchRule returned '%s', expected '%s'", result,
 				expected[i])
@@ -634,15 +663,4 @@ func TestVerifyLayoutSignatures(t *testing.T) {
 		t.Errorf("VerifyLayoutSignatures returned '%s', expected nil",
 			err)
 	}
-}
-
-/* Helper to get the string keys of a map as string slice */
-func _stringKeys(m map[string]interface{}) []string {
-	keys := make([]string, len(m))
-	i := 0
-	for k := range m {
-		keys[i] = k
-		i++
-	}
-	return keys
 }
