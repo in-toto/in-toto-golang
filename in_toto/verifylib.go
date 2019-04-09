@@ -287,8 +287,8 @@ func VerifyArtifacts(items []interface{},
 					// REQUIRE is somewhat of a weird animal that does not use
 					// patterns bur rather single filenames (for now).
 					if !queue.Has(ruleData["pattern"]) {
-						return fmt.Errorf("Artifacct verification failed for %s in REQUIRE '%s',"+
-							"because %s is not in %s.", verificationData["srcType"],
+						return fmt.Errorf("Artifact verification failed for %s in REQUIRE '%s',"+
+							" because %s is not in %s.", verificationData["srcType"],
 							ruleData["pattern"], ruleData["pattern"], queue.Slice())
 					}
 				}

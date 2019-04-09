@@ -302,6 +302,10 @@ func TestVerifyArtifactErrors(t *testing.T) {
 	// - Disallowed product in step
 	// - Disallowed material in inspection
 	// - Disallowed product in inspection
+	// - Required but missing material in step
+	// - Required but missing product in step
+	// - Required but missing material in inspection
+	// - Required but missing product in inspection
 	items := [][]interface{}{
 		{nil},
 		{Step{SupplyChainItem: SupplyChainItem{Name: "foo"}}},
@@ -314,6 +318,10 @@ func TestVerifyArtifactErrors(t *testing.T) {
 		{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"DISALLOW", "*"}}}}},
 		{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"DISALLOW", "*"}}}}},
 		{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"DISALLOW", "*"}}}}},
+		{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"REQUIRE", "foo"}}}}},
+		{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"REQUIRE", "foo"}}}}},
+		{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"REQUIRE", "foo"}}}}},
+		{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"REQUIRE", "foo"}}}}},
 	}
 	itemsMetadata := []map[string]Metablock{
 		{},
@@ -323,6 +331,10 @@ func TestVerifyArtifactErrors(t *testing.T) {
 		{"foo": {Signed: Link{Name: "foo"}}},
 		{"foo": {Signed: Link{Name: "foo"}}},
 		{"foo": {Signed: Link{Name: "foo"}}},
+		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+		{"foo": {Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+		{"foo": {Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 		{"foo": {Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 		{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
@@ -340,6 +352,10 @@ func TestVerifyArtifactErrors(t *testing.T) {
 		"products [foo.py] disallowed by rule",
 		"materials [foo.py] disallowed by rule",
 		"products [foo.py] disallowed by rule",
+		"materials in REQUIRE 'foo'",
+		"products in REQUIRE 'foo'",
+		"materials in REQUIRE 'foo'",
+		"products in REQUIRE 'foo'",
 	}
 
 	for i := 0; i < len(items); i++ {
