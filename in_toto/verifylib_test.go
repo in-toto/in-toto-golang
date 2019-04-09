@@ -254,6 +254,7 @@ func TestVerifyArtifacts(t *testing.T) {
 					{"CREATE", "foo-create"},
 					{"MODIFY", "foo-modify"},
 					{"MATCH", "foo-match", "WITH", "MATERIALS", "FROM", "foo"}, // not-modify
+					{"REQUIRE", "foo-allow"},
 					{"ALLOW", "foo-allow"},
 					{"DISALLOW", "*"},
 				},
