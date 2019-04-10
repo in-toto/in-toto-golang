@@ -13,7 +13,8 @@ var errorMsg string = "Wrong rule format, available formats are:\n" +
 	"\tDELETE <pattern>,\n" +
 	"\tMODIFY <pattern>,\n" +
 	"\tALLOW <pattern>,\n" +
-	"\tDISALLOW <pattern>\n\n"
+	"\tDISALLOW <pattern>,\n" +
+	"\tREQUIRE <filename>\n\n"
 
 /*
 UnpackRule parses the passed rule and extracts and returns the information
@@ -54,7 +55,7 @@ func UnpackRule(rule []string) (map[string]string, error) {
 	}
 
 	switch ruleLower[0] {
-	case "create", "modify", "delete", "allow", "disallow":
+	case "create", "modify", "delete", "allow", "disallow", "require":
 		if ruleLen != 2 {
 			return nil,
 				fmt.Errorf("%s Got:\n\t %s", errorMsg, rule)

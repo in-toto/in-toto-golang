@@ -283,6 +283,14 @@ func VerifyArtifacts(items []interface{},
 							reflect.TypeOf(itemI).Name(), itemName,
 							verificationData["srcType"], filtered.Slice(), rule)
 					}
+				case "require":
+					// REQUIRE is somewhat of a weird animal that does not use
+					// patterns bur rather single filenames (for now).
+					if !queue.Has(ruleData["pattern"]) {
+						return fmt.Errorf("Artifact verification failed for %s in REQUIRE '%s',"+
+							" because %s is not in %s.", verificationData["srcType"],
+							ruleData["pattern"], ruleData["pattern"], queue.Slice())
+					}
 				}
 				// Update queue by removing consumed artifacts
 				queue = queue.Difference(consumed)
