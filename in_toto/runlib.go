@@ -20,16 +20,13 @@ If reading the file fails, the first return value is nil and the second return
 value is the error.
 */
 
-//this code is printing map that holds values for various hash functions, this
-//is the reason for code failure. It will be removed once the code is completed.
-
 func RecordArtifact(path string) (map[string]interface{}, error) {
-	
+
 	mapper := createMap()
 
 	// Read file from passed path
 	content, err := ioutil.ReadFile(path)
-	
+
 	retMap := make(map[string]interface{})
 
 	if err != nil {
@@ -37,9 +34,9 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 	}
 
 	// Create a map of all the hashes present in the hash_func list
-	hash_func := createList()
+	hash_func := []string{"sha256"}
 	for _, element := range hash_func {
-		retMap[element] = mapper[element].Compute([] uint8(content))
+		retMap[element] = mapper[element].Compute([]uint8(content))
 	}
 
 	// Return it in a format that is conformant with link metadata artifacts
