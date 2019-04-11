@@ -63,13 +63,13 @@ the following format:
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
-func RecordArtifacts(paths []string,exclude_patterns_optional ...[]string) (map[string]interface{}, error) {
+
+
+
+func RecordArtifacts(paths []string,exclude_patterns []string) (map[string]interface{}, error) {
 	artifacts := make(map[string]interface{})
-	// fmt.Println("*********************************")
-	var exclude_patterns []string
 	var ps[]Pattern
-	if len(exclude_patterns_optional)>0{
-		exclude_patterns=exclude_patterns_optional[0]
+	if exclude_patterns!=nil{
     	for _,element:= range exclude_patterns{
     		temp:=ParsePattern(element,nil)
     		ps = append(ps,temp)
@@ -87,18 +87,19 @@ func RecordArtifacts(paths []string,exclude_patterns_optional ...[]string) (map[
 				if info.IsDir() {
 					return nil
 				}
-				if len(exclude_patterns)>0{
+
+				if exclude_patterns!=nil{
 					m := NewMatcher(ps)
 					match := m.Match([]string{path}, info.IsDir())
-					if match == false{
+					if !match {
 						artifact, err := RecordArtifact(path)
 						// Abort if artifact can't be recorded, e.g. due to file permissions
 						if err != nil {
 							return err
 						}
-					artifacts[path] = artifact
-					}		
-				} else{
+						artifacts[path] = artifact
+					}
+				} else {
 					artifact, err := RecordArtifact(path)
 						// Abort if artifact can't be recorded, e.g. due to file permissions
 						if err != nil {
@@ -106,19 +107,17 @@ func RecordArtifacts(paths []string,exclude_patterns_optional ...[]string) (map[
 						}
 						artifacts[path] = artifact
 				}
-				return nil	
-				// Abort if artifact can't be recorded, e.g. due to file permissions
+				return nil
 			})
 
 		if err != nil {
 			return nil, err
 		}
 	}
-	// for key,value:=range artifacts {
-	// 	fmt.Println(key,value)
-	// }
+
 	return artifacts, nil
 }
+
 
 /*
 WaitErrToExitCode converts an error returned by Cmd.wait() to an exit code.  It
@@ -200,46 +199,25 @@ return value is an empty Metablock and the second return value is the error.
 NOTE: Currently InTotoRun cannot be used to sign Link metadata.
 */
 func InTotoRun(name string, materialPaths []string, productPaths []string,
-	cmdArgs []string,exclude_patterns_optional ...[]string) (Metablock, error) {
+	cmdArgs []string,exclude_patterns []string) (Metablock, error) {
 	var linkMb Metablock
-	if len(exclude_patterns_optional)>0{
-		materials, err := RecordArtifacts(materialPaths,exclude_patterns_optional[0])
-		if err != nil {
-			return linkMb, err
-		}
-		byProducts, err := RunCommand(cmdArgs)
-		if err != nil {
-			return linkMb, err
-		}
-		products, err := RecordArtifacts(productPaths,exclude_patterns_optional[0])
-		if err != nil {
-			return linkMb, err
-		}
-		linkMb.Signatures = []Signature{}
-		linkMb.Signed = Link{
-		Type:        "link",
-		Name:        name,
-		Materials:   materials,
-		Products:    products,
-		ByProducts:  byProducts,
-		Command:     cmdArgs,
-		Environment: map[string]interface{}{},
-	}
-	}else{
-		materials, err := RecordArtifacts(materialPaths)
-		if err != nil {
-			return linkMb, err
-		}
-		byProducts, err := RunCommand(cmdArgs)
-		if err != nil {
-			return linkMb, err
-		}
-		products, err := RecordArtifacts(productPaths)
-		if err != nil {
+	materials, err := RecordArtifacts(materialPaths,exclude_patterns)
+	if err != nil {
 		return linkMb, err
-		}
-		linkMb.Signatures = []Signature{}
-		linkMb.Signed = Link{
+	}
+
+	byProducts, err := RunCommand(cmdArgs)
+	if err != nil {
+		return linkMb, err
+	}
+
+	products, err := RecordArtifacts(productPaths,exclude_patterns)
+	if err != nil {
+		return linkMb, err
+	}
+
+	linkMb.Signatures = []Signature{}
+	linkMb.Signed = Link{
 		Type:        "link",
 		Name:        name,
 		Materials:   materials,
@@ -248,6 +226,6 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		Command:     cmdArgs,
 		Environment: map[string]interface{}{},
 	}
-	}
+
 	return linkMb, nil
 }

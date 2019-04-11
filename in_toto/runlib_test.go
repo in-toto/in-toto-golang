@@ -120,7 +120,7 @@ func TestInTotoRun(t *testing.T) {
 			"materialPaths": {"demo.layout.template"},
 			"productPaths":  {"foo.tar.gz"},
 			"cmdArgs":       {"sh", "-c", "printf out; printf err >&2"},
-			"exclude_patterns": {"foo.tar.gz"},
+			"exclude_patterns": nil,
 
 		},
 	}
@@ -136,9 +136,9 @@ func TestInTotoRun(t *testing.T) {
 					},
 				},
 				Products: map[string]interface{}{
-					// "foo.tar.gz": map[string]interface{}{
-					// 	"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
-					// },
+					"foo.tar.gz": map[string]interface{}{
+						"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+					},
 				},
 				ByProducts: map[string]interface{}{
 					"return-value": 0, "stdout": []byte("out"), "stderr": []byte("err"),
