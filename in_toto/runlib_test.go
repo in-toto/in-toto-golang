@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"testing"
 	"path/filepath"
-	"fmt"
 )
 
 func TestRecordArtifact(t *testing.T) {
@@ -36,26 +35,18 @@ func TestRecordArtifacts(t *testing.T) {
 
 	// Folder Creation for Symlink Test
 	path1 := "tmpdir/New Folder"
-	//path1 := "/home/intoto/localhost:8082/pkg/in-toto-golang/in_toto"    	
 	path2 := ""
-    	target := filepath.Join(path1, "test_symlink.txt")
-    	os.MkdirAll(path1, 0755)
-    	ioutil.WriteFile(target, []byte("Hello\n"), 0644)
-    	symlink := filepath.Join(path2, "this_is_symlink")
-    	os.Symlink("tmpdir/New Folder", symlink)
-	//os.Symlink("/home/intoto/localhost:8082/pkg/in-toto-golang/in_toto",symlink)	
+	target := filepath.Join(path1, "test_symlink.txt")
+	os.MkdirAll(path1, 0755)
+	ioutil.WriteFile(target, []byte("Hello\n"), 0644)
+	symlink := filepath.Join(path2, "this_is_symlink")
+	os.Symlink("tmpdir/New Folder", symlink)
 	// Folder Creation for symlink test END
 
 
 	ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400)
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template", "this_is_symlink"})
-	//"tmpdir/tmpfile"
-	fmt.Println("Here are the Artifacts *******")
-	for key, value := range result{
-		fmt.Println("key", key, "value", value)	
-	}
-	fmt.Println("END OF ONE RECUSION *****************")
+		"demo.layout.template","tmpdir/tmpfile", "this_is_symlink"})
 	expected := map[string]interface{}{
 		"foo.tar.gz": map[string]interface{}{
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
@@ -66,12 +57,16 @@ func TestRecordArtifacts(t *testing.T) {
 		"tmpdir/tmpfile": map[string]interface{}{
 			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
 		},
+		"tmpdir/New Folder/test_symlink.txt": map[string]interface{}{
+			"sha256": "66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18",
+		},
 	}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
 	os.RemoveAll("tmpdir")
+	os.RemoveAll("this_is_symlink")
 
 	// Test error by recording inexistent artifact
 	result, err = RecordArtifacts([]string{"file-does-not-exist"})
