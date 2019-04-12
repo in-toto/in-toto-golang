@@ -46,7 +46,7 @@ func TestRecordArtifacts(t *testing.T) {
 
 	ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400)
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template","tmpdir/tmpfile", "this_is_symlink"})
+		"demo.layout.template", "tmpdir/tmpfile", "this_is_symlink"})
 	expected := map[string]interface{}{
 		"foo.tar.gz": map[string]interface{}{
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
