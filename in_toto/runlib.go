@@ -6,9 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"syscall"
-	//"github.com/golang/tools/internal/fastwalk"
-
-
 )
 
 /*
@@ -103,17 +100,10 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 				artifacts[path] = artifact
 				return nil
 			})
-
 		if err != nil {
 			return nil, err
 		}
 	}
-	//Looking at the artifacts
-	//fmt.Println("Here are the Artifacts *******")
-	//for key, value := range artifacts{
-	//	fmt.Println("key", key, "value", value)
-	//}
-	//fmt.Println("END OF ONE RECUSION *****************")
 	return artifacts, nil
 }
 
