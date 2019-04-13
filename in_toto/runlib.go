@@ -36,7 +36,10 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 	// Create a map of all the hashes present in the hash_func list
 	hash_func := []string{"sha256"}
 	for _, element := range hash_func {
-		retMap[element] = mapper[element].Compute([]uint8(content))
+
+		result := mapper[element].Compute([]uint8(content))
+
+		retMap[element] = result
 	}
 
 	// Return it in a format that is conformant with link metadata artifacts
