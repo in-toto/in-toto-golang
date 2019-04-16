@@ -666,29 +666,30 @@ func SubstituteParameters(layout Layout,
 			return layout, fmt.Errorf("invalid format for parameter")
 		}
 
-		parameters = append(parameters, parameter)
+		parameters = append(parameters, "{" + parameter + "}")
 		parameters = append(parameters, value)
 	}
 
 	replacer := strings.NewReplacer(parameters...)
 
-	for _, step := range layout.Steps {
-		step.ExpectedMaterials = substituteParametersInSliceOfSlices(replacer,
-			step.ExpectedMaterials)
-		step.ExpectedProducts = substituteParametersInSliceOfSlices(replacer,
-			step.ExpectedProducts)
-		step.ExpectedCommand = substituteParamatersInSlice(replacer,
-			step.ExpectedCommand)
+	for i := range layout.Steps {
+		layout.Steps[i].ExpectedMaterials = substituteParametersInSliceOfSlices(
+			replacer, layout.Steps[i].ExpectedMaterials)
+		layout.Steps[i].ExpectedProducts = substituteParametersInSliceOfSlices(
+			replacer, layout.Steps[i].ExpectedProducts)
+		layout.Steps[i].ExpectedCommand = substituteParamatersInSlice(replacer,
+			layout.Steps[i].ExpectedCommand)
 	}
 
-	for _, inspection := range layout.Inspect {
-		inspection.ExpectedMaterials =
+	for i := range layout.Inspect {
+		layout.Inspect[i].ExpectedMaterials =
 			substituteParametersInSliceOfSlices(replacer,
-				inspection.ExpectedMaterials)
-		inspection.ExpectedProducts =
+				layout.Inspect[i].ExpectedMaterials)
+		layout.Inspect[i].ExpectedProducts =
 			substituteParametersInSliceOfSlices(replacer,
-				inspection.ExpectedProducts)
-		inspection.Run = substituteParamatersInSlice(replacer, inspection.Run)
+				layout.Inspect[i].ExpectedProducts)
+		layout.Inspect[i].Run = substituteParamatersInSlice(replacer,
+			layout.Inspect[i].Run)
 	}
 
 	return layout, nil
