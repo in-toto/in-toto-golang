@@ -682,3 +682,84 @@ func TestVerifyLayoutSignatures(t *testing.T) {
 			err)
 	}
 }
+
+func TestSubstituteParamaters(t *testing.T) {
+	parameterDictionary := map[string]string{
+		"EDITOR": "vim",
+		"NEW_THING": "new_thing",
+		"SOURCE_STEP": "source_step",
+		"SOURCE_THING": "source_thing",
+		"UNTAR": "tar",
+	}
+
+	layout := Layout{
+		Type: "_layout",
+		Inspect: []Inspection{
+			{
+				SupplyChainItem: SupplyChainItem{
+					Name: "verify-the-thing",
+					ExpectedMaterials: [][]string{{"MATCH", "{SOURCE_THING}",
+						"WITH", "MATERIALS", "FROM", "{SOURCE_STEP}"}},
+					ExpectedProducts: [][]string{{"CREATE", "{NEW_THING}"}},
+				},
+				Run: []string{"{UNTAR}", "xzf", "foo.tar.gz"},
+			},
+		},
+		Steps: []Step{
+			{
+				SupplyChainItem: SupplyChainItem{
+					Name: "run-command",
+					ExpectedMaterials: [][]string{{"MATCH", "{SOURCE_THING}",
+						"WITH", "MATERIALS", "FROM", "{SOURCE_STEP}"}},
+					ExpectedProducts: [][]string{{"CREATE", "{NEW_THING}"}},
+				},
+				ExpectedCommand: []string{"{EDITOR}"},
+			},
+		},
+	}
+
+	newLayout, err := SubstituteParameters(layout, parameterDictionary)
+	if err != nil {
+		t.Errorf("parameter substitution error: got %s", err)
+	}
+
+	if newLayout.Steps[0].ExpectedCommand[0] != "vim" {
+		t.Errorf("parameter substitution failed - expected 'vim', got %s",
+			newLayout.Steps[0].ExpectedCommand[0])
+	}
+
+	if newLayout.Steps[0].ExpectedProducts[0][1] != "new_thing" {
+		t.Errorf("parameter substitution failed - expected 'new_thing'," +
+			" got %s", newLayout.Steps[0].ExpectedProducts[0][1])
+	}
+
+	if newLayout.Steps[0].ExpectedMaterials[0][1] != "source_thing" {
+		t.Errorf("parameter substitution failed - expected 'source_thing', " +
+			"got %s", newLayout.Steps[0].ExpectedMaterials[0][1])
+	}
+
+	if newLayout.Steps[0].ExpectedMaterials[0][5] != "source_step" {
+		t.Errorf("parameter substitution failed - expected 'source_step', " +
+			"got %s", newLayout.Steps[0].ExpectedMaterials[0][5])
+	}
+
+	if newLayout.Inspect[0].Run[0] != "tar" {
+		t.Errorf("parameter substitution failed - expected 'tar', got %s",
+			newLayout.Inspect[0].Run[0])
+	}
+
+	if newLayout.Inspect[0].ExpectedProducts[0][1] != "new_thing" {
+		t.Errorf("parameter substitution failed - expected 'new_thing'," +
+			" got %s", newLayout.Inspect[0].ExpectedProducts[0][1])
+	}
+
+	if newLayout.Inspect[0].ExpectedMaterials[0][1] != "source_thing" {
+		t.Errorf("parameter substitution failed - expected 'source_thing', " +
+			"got %s", newLayout.Inspect[0].ExpectedMaterials[0][1])
+	}
+
+	if newLayout.Inspect[0].ExpectedMaterials[0][5] != "source_step" {
+		t.Errorf("parameter substitution failed - expected 'source_step', " +
+			"got %s", newLayout.Inspect[0].ExpectedMaterials[0][5])
+	}
+}
