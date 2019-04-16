@@ -666,7 +666,7 @@ func SubstituteParameters(layout Layout,
 			return layout, fmt.Errorf("invalid format for parameter")
 		}
 
-		parameters = append(parameters, "{" + parameter + "}")
+		parameters = append(parameters, "{"+parameter+"}")
 		parameters = append(parameters, value)
 	}
 

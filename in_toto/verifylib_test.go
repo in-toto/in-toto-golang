@@ -685,11 +685,11 @@ func TestVerifyLayoutSignatures(t *testing.T) {
 
 func TestSubstituteParamaters(t *testing.T) {
 	parameterDictionary := map[string]string{
-		"EDITOR": "vim",
-		"NEW_THING": "new_thing",
-		"SOURCE_STEP": "source_step",
+		"EDITOR":       "vim",
+		"NEW_THING":    "new_thing",
+		"SOURCE_STEP":  "source_step",
 		"SOURCE_THING": "source_thing",
-		"UNTAR": "tar",
+		"UNTAR":        "tar",
 	}
 
 	layout := Layout{
@@ -729,17 +729,17 @@ func TestSubstituteParamaters(t *testing.T) {
 	}
 
 	if newLayout.Steps[0].ExpectedProducts[0][1] != "new_thing" {
-		t.Errorf("parameter substitution failed - expected 'new_thing'," +
+		t.Errorf("parameter substitution failed - expected 'new_thing',"+
 			" got %s", newLayout.Steps[0].ExpectedProducts[0][1])
 	}
 
 	if newLayout.Steps[0].ExpectedMaterials[0][1] != "source_thing" {
-		t.Errorf("parameter substitution failed - expected 'source_thing', " +
+		t.Errorf("parameter substitution failed - expected 'source_thing', "+
 			"got %s", newLayout.Steps[0].ExpectedMaterials[0][1])
 	}
 
 	if newLayout.Steps[0].ExpectedMaterials[0][5] != "source_step" {
-		t.Errorf("parameter substitution failed - expected 'source_step', " +
+		t.Errorf("parameter substitution failed - expected 'source_step', "+
 			"got %s", newLayout.Steps[0].ExpectedMaterials[0][5])
 	}
 
@@ -749,17 +749,17 @@ func TestSubstituteParamaters(t *testing.T) {
 	}
 
 	if newLayout.Inspect[0].ExpectedProducts[0][1] != "new_thing" {
-		t.Errorf("parameter substitution failed - expected 'new_thing'," +
+		t.Errorf("parameter substitution failed - expected 'new_thing',"+
 			" got %s", newLayout.Inspect[0].ExpectedProducts[0][1])
 	}
 
 	if newLayout.Inspect[0].ExpectedMaterials[0][1] != "source_thing" {
-		t.Errorf("parameter substitution failed - expected 'source_thing', " +
+		t.Errorf("parameter substitution failed - expected 'source_thing', "+
 			"got %s", newLayout.Inspect[0].ExpectedMaterials[0][1])
 	}
 
 	if newLayout.Inspect[0].ExpectedMaterials[0][5] != "source_step" {
-		t.Errorf("parameter substitution failed - expected 'source_step', " +
+		t.Errorf("parameter substitution failed - expected 'source_step', "+
 			"got %s", newLayout.Inspect[0].ExpectedMaterials[0][5])
 	}
 }
