@@ -22,12 +22,12 @@ value is the error.
 
 func RecordArtifact(path string) (map[string]interface{}, error) {
 
-	mapper := createMap()
+	hashObjectMap := createMap()
 
 	// Read file from passed path
-	content, err := ioutil.ReadFile(path)
+	contents, err := ioutil.ReadFile(path)
 
-	retMap := make(map[string]interface{})
+	hashedContentsMap := make(map[string]interface{})
 
 	if err != nil {
 		return nil, err
@@ -37,13 +37,13 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 	hash_func := []string{"sha256"}
 	for _, element := range hash_func {
 
-		result := mapper[element].Compute([]uint8(content))
+		result := hashObjectMap[element].Compute([]uint8(contents))
 
-		retMap[element] = result
+		hashedContentsMap[element] = result
 	}
 
 	// Return it in a format that is conformant with link metadata artifacts
-	return retMap, nil
+	return hashedContentsMap, nil
 }
 
 /*
