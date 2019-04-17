@@ -654,6 +654,16 @@ func substituteParametersInSliceOfSlices(replacer *strings.Replacer,
 	return newSlice
 }
 
+/*
+SubstituteParameters performs parameter substitution in steps and inspections
+in the following fields:
+- Expected Materials and Expected Products of both
+- Run of inspections
+- Expected Command of steps
+The substitution marker is '{}' and the keyword within the braces are replaced
+by a value found in the substitution map passed, parameterDictionary. The
+layout with parameters substituted is returned to the calling function.
+*/
 func SubstituteParameters(layout Layout,
 	parameterDictionary map[string]string) (Layout, error) {
 
