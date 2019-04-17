@@ -667,6 +667,10 @@ layout with parameters substituted is returned to the calling function.
 func SubstituteParameters(layout Layout,
 	parameterDictionary map[string]string) (Layout, error) {
 
+	if len(parameterDictionary) == 0 {
+		return layout, nil
+	}
+
 	parameters := make([]string, 0)
 
 	for parameter, value := range parameterDictionary {
@@ -716,13 +720,14 @@ of that step with a unique name. The verification routine is as follows:
 
 1. Verify layout signature(s) using passed key(s)
 2. Verify layout expiration date
-3. Load link metadata files for steps of layout
-4. Verify signatures and signature thresholds for steps of layout
-5. Verify sublayouts recursively
-6. Verify command alignment for steps of layout (only warns)
-7. Verify artifact rules for steps of layout
-8. Execute inspection commands (generates link metadata for each inspection)
-9. Verify artifact rules for inspections of layout
+3. Substitute parameters in layout
+4. Load link metadata files for steps of layout
+5. Verify signatures and signature thresholds for steps of layout
+6. Verify sublayouts recursively
+7. Verify command alignment for steps of layout (only warns)
+8. Verify artifact rules for steps of layout
+9. Execute inspection commands (generates link metadata for each inspection)
+10. Verify artifact rules for inspections of layout
 
 InTotoVerify returns a summary link wrapped in a Metablock object and an error
 value. If any of the verification routines fail, verification is aborted and
@@ -752,11 +757,10 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		return summaryLink, err
 	}
 
-	if len(parameterDictionary) > 0 {
-		layout, err = SubstituteParameters(layout, parameterDictionary)
-		if err != nil {
-			return summaryLink, err
-		}
+	// Substitute parameters in layout
+	layout, err = SubstituteParameters(layout, parameterDictionary)
+	if err != nil {
+		return summaryLink, err
 	}
 
 	// Load links for layout
