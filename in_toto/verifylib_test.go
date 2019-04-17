@@ -762,4 +762,13 @@ func TestSubstituteParamaters(t *testing.T) {
 		t.Errorf("parameter substitution failed - expected 'source_step', "+
 			"got %s", newLayout.Inspect[0].ExpectedMaterials[0][5])
 	}
+
+	parameterDictionary = map[string]string{
+		"invalid$": "some_replacement",
+	}
+
+	_, err = SubstituteParameters(layout, parameterDictionary)
+	if err.Error() != "invalid format for parameter" {
+		t.Errorf("invalid parameter format not detected")
+	}
 }
