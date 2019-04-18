@@ -10,6 +10,7 @@ import (
 	osPath "path"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -621,7 +622,7 @@ func VerifySublayouts(layout Layout,
 				sublayoutLinkPath := filepath.Join(superLayoutLinkPath,
 					sublayoutLinkDir)
 				summaryLink, err := InTotoVerify(metadata, layoutKeys,
-					sublayoutLinkPath, stepName)
+					sublayoutLinkPath, stepName, make(map[string]string))
 				if err != nil {
 					return nil, err
 				}
@@ -633,35 +634,113 @@ func VerifySublayouts(layout Layout,
 	return stepsMetadataVerified, nil
 }
 
+// TODO: find a better way than two helper functions for the replacer op
+
+func substituteParamatersInSlice(replacer *strings.Replacer, slice []string) []string {
+	newSlice := make([]string, 0)
+	for _, item := range slice {
+		newSlice = append(newSlice, replacer.Replace(item))
+	}
+	return newSlice
+}
+
+func substituteParametersInSliceOfSlices(replacer *strings.Replacer,
+	slice [][]string) [][]string {
+	newSlice := make([][]string, 0)
+	for _, item := range slice {
+		newSlice = append(newSlice, substituteParamatersInSlice(replacer,
+			item))
+	}
+	return newSlice
+}
+
+/*
+SubstituteParameters performs parameter substitution in steps and inspections
+in the following fields:
+- Expected Materials and Expected Products of both
+- Run of inspections
+- Expected Command of steps
+The substitution marker is '{}' and the keyword within the braces is replaced
+by a value found in the substitution map passed, parameterDictionary. The
+layout with parameters substituted is returned to the calling function.
+*/
+func SubstituteParameters(layout Layout,
+	parameterDictionary map[string]string) (Layout, error) {
+
+	if len(parameterDictionary) == 0 {
+		return layout, nil
+	}
+
+	parameters := make([]string, 0)
+
+	for parameter, value := range parameterDictionary {
+		parameterFormatCheck, _ := regexp.MatchString("^[a-zA-Z0-9_-]+$",
+			parameter)
+		if !parameterFormatCheck {
+			return layout, fmt.Errorf("invalid format for parameter")
+		}
+
+		parameters = append(parameters, "{"+parameter+"}")
+		parameters = append(parameters, value)
+	}
+
+	replacer := strings.NewReplacer(parameters...)
+
+	for i := range layout.Steps {
+		layout.Steps[i].ExpectedMaterials = substituteParametersInSliceOfSlices(
+			replacer, layout.Steps[i].ExpectedMaterials)
+		layout.Steps[i].ExpectedProducts = substituteParametersInSliceOfSlices(
+			replacer, layout.Steps[i].ExpectedProducts)
+		layout.Steps[i].ExpectedCommand = substituteParamatersInSlice(replacer,
+			layout.Steps[i].ExpectedCommand)
+	}
+
+	for i := range layout.Inspect {
+		layout.Inspect[i].ExpectedMaterials =
+			substituteParametersInSliceOfSlices(replacer,
+				layout.Inspect[i].ExpectedMaterials)
+		layout.Inspect[i].ExpectedProducts =
+			substituteParametersInSliceOfSlices(replacer,
+				layout.Inspect[i].ExpectedProducts)
+		layout.Inspect[i].Run = substituteParamatersInSlice(replacer,
+			layout.Inspect[i].Run)
+	}
+
+	return layout, nil
+}
+
 /*
 InTotoVerify can be used to verify an entire software supply chain according to
 the in-toto specification.  It requires the metadata of the root layout, a map
 that contains public keys to verify the root layout signatures, a path to a
 directory from where it can load link metadata files, which are treated as
-signed evidence for the steps defined in the layout, and a step name. The step
-name only matters for sublayouts, where it's important to associate the summary
-of that step with a unique name. The verification routine is as follows:
+signed evidence for the steps defined in the layout, a step name, and a
+paramater dictionary used for parameter substitution. The step name only
+matters for sublayouts, where it's important to associate the summary of that
+step with a unique name. The verification routine is as follows:
 
 1. Verify layout signature(s) using passed key(s)
 2. Verify layout expiration date
-3. Load link metadata files for steps of layout
-4. Verify signatures and signature thresholds for steps of layout
-5. Verify sublayouts recursively
-6. Verify command alignment for steps of layout (only warns)
-7. Verify artifact rules for steps of layout
-8. Execute inspection commands (generates link metadata for each inspection)
-9. Verify artifact rules for inspections of layout
+3. Substitute parameters in layout
+4. Load link metadata files for steps of layout
+5. Verify signatures and signature thresholds for steps of layout
+6. Verify sublayouts recursively
+7. Verify command alignment for steps of layout (only warns)
+8. Verify artifact rules for steps of layout
+9. Execute inspection commands (generates link metadata for each inspection)
+10. Verify artifact rules for inspections of layout
 
 InTotoVerify returns a summary link wrapped in a Metablock object and an error
 value. If any of the verification routines fail, verification is aborted and
 error is returned. In such an instance, the first value remains an empty
 Metablock object.
 
-NOTE: Parameter substitution, artifact rules of type "create", "modify"
+NOTE: Artifact rules of type "create", "modify"
 and "delete" are currently not supported.
 */
 func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
-	linkDir string, stepName string) (Metablock, error) {
+	linkDir string, stepName string, parameterDictionary map[string]string) (
+	Metablock, error) {
 
 	var summaryLink Metablock
 	var err error
@@ -679,7 +758,11 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		return summaryLink, err
 	}
 
-	// TODO: Substitute parameters
+	// Substitute parameters in layout
+	layout, err = SubstituteParameters(layout, parameterDictionary)
+	if err != nil {
+		return summaryLink, err
+	}
 
 	// Load links for layout
 	stepsMetadata, err := LoadLinksForLayout(layout, linkDir)
