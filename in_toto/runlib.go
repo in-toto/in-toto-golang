@@ -1,8 +1,6 @@
 package in_toto
 
 import (
-	"crypto/sha256"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -21,20 +19,31 @@ using sha256 and returns a map in the following format:
 If reading the file fails, the first return value is nil and the second return
 value is the error.
 */
+
 func RecordArtifact(path string) (map[string]interface{}, error) {
+
+	hashObjectMap := createMap()
+
 	// Read file from passed path
-	content, err := ioutil.ReadFile(path)
+	contents, err := ioutil.ReadFile(path)
+
+	hashedContentsMap := make(map[string]interface{})
+
 	if err != nil {
 		return nil, err
 	}
 
-	// Create its sha 256 hash (currently we only support sha256 here)
-	hashed := sha256.Sum256(content)
+	// Create a map of all the hashes present in the hash_func list
+	hash_func := []string{"sha256"}
+	for _, element := range hash_func {
+
+		result := hashObjectMap[element].Compute([]uint8(contents))
+
+		hashedContentsMap[element] = result
+	}
 
 	// Return it in a format that is conformant with link metadata artifacts
-	return map[string]interface{}{
-		"sha256": fmt.Sprintf("%x", hashed),
-	}, nil
+	return hashedContentsMap, nil
 }
 
 /*
