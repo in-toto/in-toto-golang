@@ -32,7 +32,7 @@ func TestRecordArtifacts(t *testing.T) {
 	os.Mkdir("tmpdir", 0700)
 	ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400)
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template", "tmpdir/tmpfile"},nil)
+		"demo.layout.template", "tmpdir/tmpfile"}, nil)
 	expected := map[string]interface{}{
 		"foo.tar.gz": map[string]interface{}{
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
@@ -67,8 +67,7 @@ func TestRecordArtifacts(t *testing.T) {
 	// Test 2 for exclude patterns -- exclude all
 	result, err = RecordArtifacts([]string{"foo.tar.gz",
 		"demo.layout.template"}, []string{"*"})
-	expected = map[string]interface{}{
-	}
+	expected = map[string]interface{}{}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
@@ -99,7 +98,6 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
-
 
 	os.RemoveAll("tmpdir")
 
