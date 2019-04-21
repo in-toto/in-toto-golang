@@ -1,12 +1,12 @@
 package in_toto
 
 import (
+	. "gopkg.in/src-d/go-git.v4/plumbing/format/gitignore"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"syscall"
-	. "gopkg.in/src-d/go-git.v4/plumbing/format/gitignore"
 )
 
 /*
@@ -62,18 +62,22 @@ the following format:
   }
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
+
+NOTE on exclude patterns:
+      - Uses gitignore from go-git library to compile gitignore-style patterns
+      - If exclude patterns are given then records artifact only for path
+        which do not match exclude patterns.
 */
 
-
-
-func RecordArtifacts(paths []string,exclude_patterns []string) (map[string]interface{}, error) {
+func RecordArtifacts(paths []string, exclude_patterns []string) (map[string]interface{}, error) {
 	artifacts := make(map[string]interface{})
-	var ps[]Pattern
-	if exclude_patterns!=nil{
-    	for _,element:= range exclude_patterns{
-    		temp:=ParsePattern(element,nil)
-    		ps = append(ps,temp)
-    	}
+	// parses the exclude patterns into pattern type object
+	var ps []Pattern
+	if exclude_patterns != nil {
+		for _, element := range exclude_patterns {
+			temp := ParsePattern(element, nil)
+			ps = append(ps, temp)
+		}
 	}
 	// NOTE: Walk cannot follow symlinks
 	for _, path := range paths {
@@ -87,8 +91,7 @@ func RecordArtifacts(paths []string,exclude_patterns []string) (map[string]inter
 				if info.IsDir() {
 					return nil
 				}
-
-				if exclude_patterns!=nil{
+				if exclude_patterns != nil {
 					m := NewMatcher(ps)
 					match := m.Match([]string{path}, info.IsDir())
 					if !match {
@@ -101,11 +104,11 @@ func RecordArtifacts(paths []string,exclude_patterns []string) (map[string]inter
 					}
 				} else {
 					artifact, err := RecordArtifact(path)
-						// Abort if artifact can't be recorded, e.g. due to file permissions
-						if err != nil {
-							return err
-						}
-						artifacts[path] = artifact
+					// Abort if artifact can't be recorded, e.g. due to file permissions
+					if err != nil {
+						return err
+					}
+					artifacts[path] = artifact
 				}
 				return nil
 			})
@@ -117,7 +120,6 @@ func RecordArtifacts(paths []string,exclude_patterns []string) (map[string]inter
 
 	return artifacts, nil
 }
-
 
 /*
 WaitErrToExitCode converts an error returned by Cmd.wait() to an exit code.  It
@@ -199,9 +201,9 @@ return value is an empty Metablock and the second return value is the error.
 NOTE: Currently InTotoRun cannot be used to sign Link metadata.
 */
 func InTotoRun(name string, materialPaths []string, productPaths []string,
-	cmdArgs []string,exclude_patterns []string) (Metablock, error) {
+	cmdArgs []string, exclude_patterns []string) (Metablock, error) {
 	var linkMb Metablock
-	materials, err := RecordArtifacts(materialPaths,exclude_patterns)
+	materials, err := RecordArtifacts(materialPaths, exclude_patterns)
 	if err != nil {
 		return linkMb, err
 	}
@@ -211,7 +213,7 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		return linkMb, err
 	}
 
-	products, err := RecordArtifacts(productPaths,exclude_patterns)
+	products, err := RecordArtifacts(productPaths, exclude_patterns)
 	if err != nil {
 		return linkMb, err
 	}

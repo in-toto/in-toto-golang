@@ -6,7 +6,6 @@ import (
 	"os"
 	"reflect"
 	"testing"
-	// "fmt"
 )
 
 func TestRecordArtifact(t *testing.T) {
@@ -33,7 +32,7 @@ func TestRecordArtifacts(t *testing.T) {
 	os.Mkdir("tmpdir", 0700)
 	ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400)
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template", "tmpdir/tmpfile"},[]string{"foo.tar.gz"})
+		"demo.layout.template", "tmpdir/tmpfile"}, []string{"foo.tar.gz"})
 	expected := map[string]interface{}{
 		// "foo.tar.gz": map[string]interface{}{
 		// 	"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
@@ -52,7 +51,7 @@ func TestRecordArtifacts(t *testing.T) {
 	os.RemoveAll("tmpdir")
 
 	// Test error by recording inexistent artifact
-	result, err = RecordArtifacts([]string{"file-does-not-exist"},[]string{"exclude pattern"})
+	result, err = RecordArtifacts([]string{"file-does-not-exist"}, nil)
 	if !os.IsNotExist(err) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
 			result, err, os.ErrNotExist)
@@ -117,11 +116,10 @@ func TestInTotoRun(t *testing.T) {
 	linkName := "Name"
 	parameters := []map[string][]string{
 		{
-			"materialPaths": {"demo.layout.template"},
-			"productPaths":  {"foo.tar.gz"},
-			"cmdArgs":       {"sh", "-c", "printf out; printf err >&2"},
+			"materialPaths":    {"demo.layout.template"},
+			"productPaths":     {"foo.tar.gz"},
+			"cmdArgs":          {"sh", "-c", "printf out; printf err >&2"},
 			"exclude_patterns": nil,
-
 		},
 	}
 	expected := []Metablock{
@@ -150,7 +148,7 @@ func TestInTotoRun(t *testing.T) {
 	}
 	for i := 0; i < len(parameters); i++ {
 		result, err := InTotoRun(linkName, parameters[i]["materialPaths"],
-			parameters[i]["productPaths"], parameters[i]["cmdArgs"],parameters[i]["exclude_patterns"])
+			parameters[i]["productPaths"], parameters[i]["cmdArgs"], parameters[i]["exclude_patterns"])
 		if !reflect.DeepEqual(result, expected[i]) {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'",
 				result, err, expected[i])
@@ -181,7 +179,7 @@ func TestInTotoRun(t *testing.T) {
 
 	for i := 0; i < len(parameters); i++ {
 		result, err := InTotoRun(linkName, parameters[i]["materialPaths"],
-			parameters[i]["productPaths"], parameters[i]["cmdArgs"],parameters[i]["exclude_patterns"])
+			parameters[i]["productPaths"], parameters[i]["cmdArgs"], parameters[i]["exclude_patterns"])
 		if err == nil {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, <error>)'",
 				result, err, expected[i])
