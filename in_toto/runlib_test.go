@@ -103,6 +103,20 @@ func TestRecordArtifacts(t *testing.T) {
 
 	os.RemoveAll("tmpdir")
 
+	// Test error by recording inexistent artifact and no match exclude patterns
+	result, err = RecordArtifacts([]string{"file-does-not-exist"}, []string{"no pattern"})
+	if !os.IsNotExist(err) {
+		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
+			result, err, os.ErrNotExist)
+	}
+
+	// Test error by recording inexistent artifact and matched exclude patterns
+	result, err = RecordArtifacts([]string{"file-does-not-exist"}, []string{"file-does-not-exist"})
+	if !os.IsNotExist(err) {
+		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
+			result, err, os.ErrNotExist)
+	}
+
 	// Test error by recording inexistent artifact
 	result, err = RecordArtifacts([]string{"file-does-not-exist"}, nil)
 	if !os.IsNotExist(err) {
