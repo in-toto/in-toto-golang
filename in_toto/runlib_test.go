@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"fmt"
 )
 
 func TestRecordArtifact(t *testing.T) {
@@ -33,13 +34,13 @@ func TestRecordArtifacts(t *testing.T) {
 	os.Mkdir("tmpdir", 0700)
 
 	// Folder Creation for Symlink Test
-	path1 := "tmpdir/New Folder"
+	path1 := "tmpdir/NewFolder"
 	path2 := ""
 	target := filepath.Join(path1, "test_symlink.txt")
 	os.MkdirAll(path1, 0755)
 	ioutil.WriteFile(target, []byte("Hello\n"), 0644)
 	symlink := filepath.Join(path2, "this_is_symlink")
-	os.Symlink("tmpdir/New Folder", symlink)
+	os.Symlink("tmpdir/NewFolder", symlink)
 	// Folder Creation for symlink test END
 
 	ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400)
@@ -60,6 +61,8 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
+	fmt.Println(result)
+
 
 	//Test to check perfomence with symlink
 	result, err = RecordArtifacts([]string{"foo.tar.gz",
@@ -74,7 +77,7 @@ func TestRecordArtifacts(t *testing.T) {
 		"tmpdir/tmpfile": map[string]interface{}{
 			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
 		},
-		"tmpdir/New Folder/test_symlink.txt": map[string]interface{}{
+		"tmpdir/NewFolder/test_symlink.txt": map[string]interface{}{
 			"sha256": "66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18",
 		},
 	}
@@ -82,11 +85,12 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
+	fmt.Println(result)
 
 	//Test to check perfomence with only symlink
 	result, err = RecordArtifacts([]string{"this_is_symlink"}, 0)
 	expected = map[string]interface{}{
-		"tmpdir/New Folder/test_symlink.txt": map[string]interface{}{
+		"tmpdir/NewFolder/test_symlink.txt": map[string]interface{}{
 			"sha256": "66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18",
 		},
 	}
@@ -94,6 +98,7 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
+	fmt.Println(result)
 
 	os.RemoveAll("tmpdir")
 	os.RemoveAll("this_is_symlink")
