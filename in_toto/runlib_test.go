@@ -46,8 +46,27 @@ func TestRecordArtifacts(t *testing.T) {
 
 	ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400)
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template", "tmpdir/tmpfile", "this_is_symlink"})
+		"demo.layout.template", "tmpdir/tmpfile"}, 0)
 	expected := map[string]interface{}{
+		"foo.tar.gz": map[string]interface{}{
+			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+		},
+		"demo.layout.template": map[string]interface{}{
+			"sha256": "019e121a1e0a34aecde0aebb642162b11db4248c781cb8119f81f592723a0424",
+		},
+		"tmpdir/tmpfile": map[string]interface{}{
+			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+		},
+	}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
+			result, err, expected)
+	}
+
+	//Test to check perfomence with symlink
+	result, err = RecordArtifacts([]string{"foo.tar.gz",
+		"demo.layout.template", "tmpdir/tmpfile", "this_is_symlink"}, 0)
+	expected = map[string]interface{}{
 		"foo.tar.gz": map[string]interface{}{
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 		},
@@ -65,11 +84,24 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
+
+	//Test to check perfomence with only symlink
+	result, err = RecordArtifacts([]string{"this_is_symlink"}, 0)
+	expected = map[string]interface{}{
+		"tmpdir/New Folder/test_symlink.txt": map[string]interface{}{
+			"sha256": "66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18",
+		},
+	}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
+			result, err, expected)
+	}
+
 	os.RemoveAll("tmpdir")
 	os.RemoveAll("this_is_symlink")
 
 	// Test error by recording inexistent artifact
-	result, err = RecordArtifacts([]string{"file-does-not-exist"})
+	result, err = RecordArtifacts([]string{"file-does-not-exist"}, 0)
 	if !os.IsNotExist(err) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
 			result, err, os.ErrNotExist)

@@ -62,7 +62,12 @@ the following format:
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
-func RecordArtifacts(paths []string) (map[string]interface{}, error) {
+
+/*CAUTION:- We are handling infinite recursion with the help of rdept variable.
+The function would walk through the directory untill it has reached it's
+depth limit of 10.
+*/
+func RecordArtifacts(paths []string, rdepth int) (map[string]interface{}, error) {
 	artifacts := make(map[string]interface{})
 	// NOTE: Walk cannot follow symlinks
 	for _, path := range paths {
@@ -77,19 +82,22 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 					return nil
 				}
 				//Code to verify for symlinks
-				if info.Mode() & os.ModeSymlink != 0{
-					sym_path, sym_err := os.Readlink(path)
-					if sym_err != nil {
-						return sym_err
+				// rdepth is added to keep the recursion in control.
+				if rdepth < 10{
+					if info.Mode() & os.ModeSymlink != 0{
+						sym_path, sym_err := os.Readlink(path)
+						if sym_err != nil {
+							return sym_err
+						}
+						recursed_artifacts, recursed_err := RecordArtifacts([]string{sym_path}, rdepth + 1)
+						if recursed_err != nil {
+							return recursed_err
+						}
+						for key, value := range recursed_artifacts{
+							artifacts[key] = value
+						}
+						return nil
 					}
-					recursed_artifacts, recursed_err := RecordArtifacts([]string{sym_path})
-					if recursed_err != nil {
-						return recursed_err
-					}
-					for key, value := range recursed_artifacts{
-						artifacts[key] = value
-					}
-					return nil
 				}
 				artifact, err := RecordArtifact(path)
 
@@ -189,7 +197,7 @@ NOTE: Currently InTotoRun cannot be used to sign Link metadata.
 func InTotoRun(name string, materialPaths []string, productPaths []string,
 	cmdArgs []string) (Metablock, error) {
 	var linkMb Metablock
-	materials, err := RecordArtifacts(materialPaths)
+	materials, err := RecordArtifacts(materialPaths, 0)
 	if err != nil {
 		return linkMb, err
 	}
@@ -199,7 +207,7 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		return linkMb, err
 	}
 
-	products, err := RecordArtifacts(productPaths)
+	products, err := RecordArtifacts(productPaths, 0)
 	if err != nil {
 		return linkMb, err
 	}
