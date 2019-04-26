@@ -4,9 +4,9 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
-	"path/filepath"
 )
 
 func TestRecordArtifact(t *testing.T) {
@@ -32,7 +32,6 @@ func TestRecordArtifacts(t *testing.T) {
 	// Test successfully record multiple artifacts including temporary subdir
 	os.Mkdir("tmpdir", 0700)
 
-
 	// Folder Creation for Symlink Test
 	path1 := "tmpdir/New Folder"
 	path2 := ""
@@ -42,7 +41,6 @@ func TestRecordArtifacts(t *testing.T) {
 	symlink := filepath.Join(path2, "this_is_symlink")
 	os.Symlink("tmpdir/New Folder", symlink)
 	// Folder Creation for symlink test END
-
 
 	ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400)
 	result, err := RecordArtifacts([]string{"foo.tar.gz",

@@ -83,17 +83,17 @@ func RecordArtifacts(paths []string, rdepth int) (map[string]interface{}, error)
 				}
 				//Code to verify for symlinks
 				// rdepth is added to keep the recursion in control.
-				if rdepth < 10{
-					if info.Mode() & os.ModeSymlink != 0{
+				if rdepth < 10 {
+					if info.Mode()&os.ModeSymlink != 0 {
 						sym_path, sym_err := os.Readlink(path)
 						if sym_err != nil {
 							return sym_err
 						}
-						recursed_artifacts, recursed_err := RecordArtifacts([]string{sym_path}, rdepth + 1)
+						recursed_artifacts, recursed_err := RecordArtifacts([]string{sym_path}, rdepth+1)
 						if recursed_err != nil {
 							return recursed_err
 						}
-						for key, value := range recursed_artifacts{
+						for key, value := range recursed_artifacts {
 							artifacts[key] = value
 						}
 						return nil
