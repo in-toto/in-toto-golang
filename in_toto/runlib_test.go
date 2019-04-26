@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
-	"fmt"
 )
 
 func TestRecordArtifact(t *testing.T) {
@@ -61,8 +60,6 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
-	fmt.Println(result)
-
 
 	//Test to check perfomence with symlink
 	result, err = RecordArtifacts([]string{"foo.tar.gz",
@@ -85,7 +82,6 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
-	fmt.Println(result)
 
 	//Test to check perfomence with only symlink
 	result, err = RecordArtifacts([]string{"this_is_symlink"}, 0)
@@ -98,7 +94,6 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
-	fmt.Println(result)
 
 	os.RemoveAll("tmpdir")
 	os.RemoveAll("this_is_symlink")
