@@ -63,7 +63,7 @@ If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
 
-/*CAUTION:- We are handling infinite recursion with the help of rdept variable.
+/*CAUTION:- We are handling infinite recursion with the help of rdepth variable.
 The function would walk through the directory untill it has reached it's
 depth limit of 10.
 */

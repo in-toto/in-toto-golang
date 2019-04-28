@@ -83,7 +83,7 @@ func TestRecordArtifacts(t *testing.T) {
 			result, err, expected)
 	}
 
-	//Test to check perfomence with only symlink
+	//Test to check performance with only symlink
 	result, err = RecordArtifacts([]string{"this_is_symlink"}, 0)
 	expected = map[string]interface{}{
 		"tmpdir/NewFolder/test_symlink.txt": map[string]interface{}{
