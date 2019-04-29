@@ -123,6 +123,18 @@ func TestRecordArtifact(t *testing.T) {
 // 	}
 // }
 
+func TestApplyExcludePatterns(t *testing.T){
+	paths := []string{"foo","bar","baz"}
+	exclude_patterns := []string{"foo"}
+	result,err := ApplyExcludePatterns(paths,exclude_patterns)
+	expected := []string{"bar","baz"}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
+			result, err, expected)
+	}
+
+}
+
 func TestRecordArtifacts(t *testing.T) {
 	// Test successfully record multiple artifacts including temporary subdir
 	os.Mkdir("tmpdir", 0700)
