@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"syscall"
+	"fmt"
 )
 
 /*
@@ -47,6 +48,30 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 	return hashedContentsMap, nil
 }
 
+func ApplyExcludePatterns(paths []string,exclude_patterns []string) ([]string,error) {
+	if exclude_patterns == nil {
+		return paths,nil
+	}
+	var ps []Pattern
+	included := []string{}
+	for _, element := range exclude_patterns {
+			temp := ParsePattern(element, nil)
+			ps = append(ps, temp)
+		}
+	m := NewMatcher(ps)
+	for _, path := range paths {
+		fileInfo, err := os.Stat(path)
+	    if err != nil{
+	      return nil,err
+	    }
+		match := m.Match([]string{path}, fileInfo.IsDir())
+		if !match {
+			included=append(included,path)
+		}
+	}
+	return included,nil
+}
+
 /*
 RecordArtifacts walks through the passed slice of paths, traversing
 subdirectories, and calls RecordArtifact for each file.  It returns a map in
@@ -72,12 +97,19 @@ NOTE on exclude patterns:
 func RecordArtifacts(paths []string, exclude_patterns []string) (map[string]interface{}, error) {
 	artifacts := make(map[string]interface{})
 	// parses the exclude patterns into pattern type object
-	var ps []Pattern
-	if exclude_patterns != nil {
-		for _, element := range exclude_patterns {
-			temp := ParsePattern(element, nil)
-			ps = append(ps, temp)
-		}
+	// var ps []Pattern
+	// if exclude_patterns != nil {
+	// 	for _, element := range exclude_patterns {
+	// 		temp := ParsePattern(element, nil)
+	// 		ps = append(ps, temp)
+	// 	}
+	// }
+	paths,err := ApplyExcludePatterns(paths,exclude_patterns)
+	// fmt.Printf("%v",paths)
+	if err != nil {
+		fmt.Println(err)
+		fmt.Printf("I am here")
+		return nil,err
 	}
 	// NOTE: Walk cannot follow symlinks
 	for _, path := range paths {
@@ -91,25 +123,34 @@ func RecordArtifacts(paths []string, exclude_patterns []string) (map[string]inte
 				if info.IsDir() {
 					return nil
 				}
-				if exclude_patterns != nil {
-					m := NewMatcher(ps)
-					match := m.Match([]string{path}, info.IsDir())
-					if !match {
-						artifact, err := RecordArtifact(path)
-						// Abort if artifact can't be recorded, e.g. due to file permissions
-						if err != nil {
-							return err
-						}
-						artifacts[path] = artifact
-					}
-				} else {
-					artifact, err := RecordArtifact(path)
-					// Abort if artifact can't be recorded, e.g. due to file permissions
-					if err != nil {
-						return err
-					}
-					artifacts[path] = artifact
+				// fmt.Printf(path)
+				// if exclude_patterns != nil {
+				// 	m := NewMatcher(ps)
+				// 	match := m.Match([]string{path}, info.IsDir())
+				// 	if !match {
+				// 		artifact, err := RecordArtifact(path)
+				// 		// Abort if artifact can't be recorded, e.g. due to file permissions
+				// 		if err != nil {
+				// 			return err
+				// 		}
+				// 		artifacts[path] = artifact
+				// 	}
+				// } else {
+				// 	artifact, err := RecordArtifact(path)
+				// 	// Abort if artifact can't be recorded, e.g. due to file permissions
+				// 	if err != nil {
+				// 		return err
+				// 	}
+				// 	artifacts[path] = artifact
+				// }
+				// return nil
+				// new changes
+				artifact, err := RecordArtifact(path)
+				// Abort if artifact can't be recorded, e.g. due to file permissions
+				if err != nil {
+					return err
 				}
+				artifacts[path] = artifact
 				return nil
 			})
 

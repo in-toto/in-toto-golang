@@ -27,12 +27,108 @@ func TestRecordArtifact(t *testing.T) {
 	}
 }
 
+// func TestRecordArtifacts(t *testing.T) {
+// 	// Test successfully record multiple artifacts including temporary subdir
+// 	os.Mkdir("tmpdir", 0700)
+// 	ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400)
+// 	result, err := RecordArtifacts([]string{"foo.tar.gz",
+// 		"demo.layout.template", "tmpdir/tmpfile"}, nil)
+// 	expected := map[string]interface{}{
+// 		"foo.tar.gz": map[string]interface{}{
+// 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+// 		},
+// 		"demo.layout.template": map[string]interface{}{
+// 			"sha256": "019e121a1e0a34aecde0aebb642162b11db4248c781cb8119f81f592723a0424",
+// 		},
+// 		"tmpdir/tmpfile": map[string]interface{}{
+// 			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+// 		},
+// 	}
+// 	if !reflect.DeepEqual(result, expected) {
+// 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
+// 			result, err, expected)
+// 	}
+// 	// Test 1 for exclude patterns
+// 	result, err = RecordArtifacts([]string{"foo.tar.gz",
+// 		"demo.layout.template", "tmpdir/tmpfile"}, []string{"foo.tar.gz"})
+// 	expected = map[string]interface{}{
+// 		"demo.layout.template": map[string]interface{}{
+// 			"sha256": "019e121a1e0a34aecde0aebb642162b11db4248c781cb8119f81f592723a0424",
+// 		},
+// 		"tmpdir/tmpfile": map[string]interface{}{
+// 			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+// 		},
+// 	}
+// 	if !reflect.DeepEqual(result, expected) {
+// 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
+// 			result, err, expected)
+// 	}
+
+// 	// Test 2 for exclude patterns -- exclude all
+// 	result, err = RecordArtifacts([]string{"foo.tar.gz",
+// 		"demo.layout.template"}, []string{"*"})
+// 	expected = map[string]interface{}{}
+// 	if !reflect.DeepEqual(result, expected) {
+// 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
+// 			result, err, expected)
+// 	}
+
+// 	// Test 3 for exclude patterns -- multiple star
+// 	result, err = RecordArtifacts([]string{"foo.tar.gz",
+// 		"demo.layout.template"}, []string{"*oo*"})
+// 	expected = map[string]interface{}{
+// 		"demo.layout.template": map[string]interface{}{
+// 			"sha256": "019e121a1e0a34aecde0aebb642162b11db4248c781cb8119f81f592723a0424",
+// 		},
+// 	}
+// 	if !reflect.DeepEqual(result, expected) {
+// 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
+// 			result, err, expected)
+// 	}
+
+// 	// Test 4 for exclude patterns -- question mark
+// 	result, err = RecordArtifacts([]string{"foo.tar.gz",
+// 		"demo.layout.template"}, []string{"foo.t?r.gz"})
+// 	expected = map[string]interface{}{
+// 		"demo.layout.template": map[string]interface{}{
+// 			"sha256": "019e121a1e0a34aecde0aebb642162b11db4248c781cb8119f81f592723a0424",
+// 		},
+// 	}
+// 	if !reflect.DeepEqual(result, expected) {
+// 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
+// 			result, err, expected)
+// 	}
+
+// 	os.RemoveAll("tmpdir")
+
+// 	// Test error by recording inexistent artifact and no match exclude patterns
+// 	result, err = RecordArtifacts([]string{"file-does-not-exist"}, []string{"no pattern"})
+// 	if !os.IsNotExist(err) {
+// 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
+// 			result, err, os.ErrNotExist)
+// 	}
+
+// 	// Test error by recording inexistent artifact and matched exclude patterns
+// 	result, err = RecordArtifacts([]string{"file-does-not-exist"}, []string{"file-does-not-exist"})
+// 	if !os.IsNotExist(err) {
+// 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
+// 			result, err, os.ErrNotExist)
+// 	}
+
+// 	// Test error by recording inexistent artifact
+// 	result, err = RecordArtifacts([]string{"file-does-not-exist"}, nil)
+// 	if !os.IsNotExist(err) {
+// 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
+// 			result, err, os.ErrNotExist)
+// 	}
+// }
+
 func TestRecordArtifacts(t *testing.T) {
 	// Test successfully record multiple artifacts including temporary subdir
 	os.Mkdir("tmpdir", 0700)
 	ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400)
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template", "tmpdir/tmpfile"}, nil)
+		"demo.layout.template", "tmpdir/tmpfile"},nil)
 	expected := map[string]interface{}{
 		"foo.tar.gz": map[string]interface{}{
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
@@ -48,75 +144,10 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
-	// Test 1 for exclude patterns
-	result, err = RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template", "tmpdir/tmpfile"}, []string{"foo.tar.gz"})
-	expected = map[string]interface{}{
-		"demo.layout.template": map[string]interface{}{
-			"sha256": "019e121a1e0a34aecde0aebb642162b11db4248c781cb8119f81f592723a0424",
-		},
-		"tmpdir/tmpfile": map[string]interface{}{
-			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-		},
-	}
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
-			result, err, expected)
-	}
-
-	// Test 2 for exclude patterns -- exclude all
-	result, err = RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template"}, []string{"*"})
-	expected = map[string]interface{}{}
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
-			result, err, expected)
-	}
-
-	// Test 3 for exclude patterns -- multiple star
-	result, err = RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template"}, []string{"*oo*"})
-	expected = map[string]interface{}{
-		"demo.layout.template": map[string]interface{}{
-			"sha256": "019e121a1e0a34aecde0aebb642162b11db4248c781cb8119f81f592723a0424",
-		},
-	}
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
-			result, err, expected)
-	}
-
-	// Test 4 for exclude patterns -- question mark
-	result, err = RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template"}, []string{"foo.t?r.gz"})
-	expected = map[string]interface{}{
-		"demo.layout.template": map[string]interface{}{
-			"sha256": "019e121a1e0a34aecde0aebb642162b11db4248c781cb8119f81f592723a0424",
-		},
-	}
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
-			result, err, expected)
-	}
-
 	os.RemoveAll("tmpdir")
 
-	// Test error by recording inexistent artifact and no match exclude patterns
-	result, err = RecordArtifacts([]string{"file-does-not-exist"}, []string{"no pattern"})
-	if !os.IsNotExist(err) {
-		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
-			result, err, os.ErrNotExist)
-	}
-
-	// Test error by recording inexistent artifact and matched exclude patterns
-	result, err = RecordArtifacts([]string{"file-does-not-exist"}, []string{"file-does-not-exist"})
-	if !os.IsNotExist(err) {
-		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
-			result, err, os.ErrNotExist)
-	}
-
 	// Test error by recording inexistent artifact
-	result, err = RecordArtifacts([]string{"file-does-not-exist"}, nil)
+	result, err = RecordArtifacts([]string{"file-does-not-exist"},nil)
 	if !os.IsNotExist(err) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
 			result, err, os.ErrNotExist)
