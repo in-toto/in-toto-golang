@@ -38,15 +38,15 @@ type Key struct {
 func validateKeyId(keyId string) error {
 	keyIdFormatCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", keyId)
 	if !keyIdFormatCheck {
-		return fmt.Errorf("'Key ID' has invalid format")
+		return fmt.Errorf("keyid must be a lower case hex string, got: %s",
+			keyId)
 	}
 	return nil
 }
 
 func validatePubKey(key Key) error {
 	if err := validateKeyId(key.KeyId); err != nil {
-		return fmt.Errorf("keyid must be a lower case hex string, got: %s",
-			key.KeyId)
+		return err
 	}
 	if key.KeyVal.Private != "" {
 		return fmt.Errorf("private key found")
