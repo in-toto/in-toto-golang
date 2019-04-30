@@ -91,30 +91,27 @@ func validateMaterialOrProductHash(value string) error {
 	return nil
 }
 
+func validateArtifacts(artifacts map[string]interface{}) error {
+	for _, artifact := range artifacts {
+		artifactValue := reflect.ValueOf(artifact).MapRange()
+		for artifactValue.Next() {
+			value := artifactValue.Value().Interface().(string)
+			if err := validateMaterialOrProductHash(value); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func validateLink(link Link) error {
 	if link.Type != "link" {
 		return fmt.Errorf("invalid type for link: should be 'link'")
 	}
 
-	for _, material := range link.Materials {
-		materialValue := reflect.ValueOf(material).MapRange()
-		for materialValue.Next() {
-			value := materialValue.Value().Interface().(string)
-			if err := validateMaterialOrProductHash(value); err != nil {
-				return err
-			}
-		}
-	}
+	validateArtifacts(link.Materials)
 
-	for _, product := range link.Products {
-		productValue := reflect.ValueOf(product).MapRange()
-		for productValue.Next() {
-			value := productValue.Value().Interface().(string)
-			if err := validateMaterialOrProductHash(value); err != nil {
-				return err
-			}
-		}
-	}
+	validateArtifacts(link.Products)
 
 	return nil
 }
