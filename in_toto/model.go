@@ -44,6 +44,10 @@ func validateKeyId(keyId string) error {
 }
 
 func validatePubKey(key Key) error {
+	if err := validateKeyId(key.KeyId); err != nil {
+		return fmt.Errorf("keyid must be a lower case hex string, got: %s",
+			key.KeyId)
+	}
 	if key.KeyVal.Private != "" {
 		return fmt.Errorf("private key found")
 	}
@@ -237,11 +241,6 @@ func validateLayout(layout Layout) error {
 	}
 
 	for keyId, key := range layout.Keys {
-
-		if err := validateKeyId(keyId); err != nil {
-			return err
-		}
-
 		if key.KeyId != keyId {
 			return fmt.Errorf("invalid key found")
 		}
