@@ -13,10 +13,7 @@ import (
 
 func validateHexSchema(str string) bool {
 	formatCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", str)
-	if !formatCheck {
-		return false
-	}
-	return true
+	return formatCheck
 }
 
 /*
@@ -106,7 +103,9 @@ func validateLink(link Link) error {
 		return err
 	}
 
-	validateArtifacts(link.Products)
+	if err := validateArtifacts(link.Products); err != nil {
+		return err
+	}
 
 	return nil
 }
