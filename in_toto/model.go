@@ -11,6 +11,14 @@ import (
 	"time"
 )
 
+func validateHexSchema(str string) bool {
+	formatCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", str)
+	if !formatCheck {
+		return false
+	}
+	return true
+}
+
 /*
 KeyVal contains the actual values of a key, as opposed to key metadata such as
 a key identifier or key type.  For RSA keys, the key value is a pair of public
@@ -35,18 +43,10 @@ type Key struct {
 	Scheme              string   `json:"scheme"`
 }
 
-func validateKeyId(keyId string) error {
-	keyIdFormatCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", keyId)
-	if !keyIdFormatCheck {
-		return fmt.Errorf("keyid must be a lower case hex string, got: %s",
-			keyId)
-	}
-	return nil
-}
-
 func validatePubKey(key Key) error {
-	if err := validateKeyId(key.KeyId); err != nil {
-		return err
+	if !validateHexSchema(key.KeyId) {
+		return fmt.Errorf("keyid must be a lower case hex string, got: %s",
+			key.KeyId)
 	}
 	if key.KeyVal.Private != "" {
 		return fmt.Errorf("private key found")
@@ -83,21 +83,13 @@ type Link struct {
 	Environment map[string]interface{} `json:"environment"`
 }
 
-func validateMaterialOrProductHash(value string) error {
-	hashSchemaCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", value)
-	if !hashSchemaCheck {
-		return fmt.Errorf("hash value has invalid format")
-	}
-	return nil
-}
-
 func validateArtifacts(artifacts map[string]interface{}) error {
 	for _, artifact := range artifacts {
 		artifactValue := reflect.ValueOf(artifact).MapRange()
 		for artifactValue.Next() {
 			value := artifactValue.Value().Interface().(string)
-			if err := validateMaterialOrProductHash(value); err != nil {
-				return err
+			if !validateHexSchema(value) {
+				return fmt.Errorf("hash value has invalid format")
 			}
 		}
 	}
@@ -109,7 +101,9 @@ func validateLink(link Link) error {
 		return fmt.Errorf("invalid type for link: should be 'link'")
 	}
 
-	validateArtifacts(link.Materials)
+	if err := validateArtifacts(link.Materials); err != nil {
+		return err
+	}
 
 	validateArtifacts(link.Products)
 
@@ -176,8 +170,9 @@ func validateStep(step Step) error {
 		return fmt.Errorf("invalid Type value for step: should be 'step'")
 	}
 	for _, keyId := range step.PubKeys {
-		if err := validateKeyId(keyId); err != nil {
-			return err
+		if !validateHexSchema(keyId) {
+			return fmt.Errorf("keyid must be a lower case hex string, got: %s",
+				keyId)
 		}
 	}
 	return nil
@@ -457,5 +452,34 @@ func (mb *Metablock) VerifySignature(key Key) error {
 	if err := VerifySignature(key, sig, dataCanonical); err != nil {
 		return err
 	}
+	return nil
+}
+
+func validateMetablock(mb Metablock) error {
+	switch mbSignedType := mb.Signed.(type) {
+	case Layout:
+		if err := validateLayout(mb.Signed.(Layout)); err != nil {
+			return err
+		}
+	case Link:
+		if err := validateLink(mb.Signed.(Link)); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown type '%s', should be 'layout' or 'link'",
+			mbSignedType)
+	}
+
+	for _, signature := range mb.Signatures {
+		if !validateHexSchema(signature.KeyId) {
+			return fmt.Errorf("keyid must be a lower case hex string, got: %s",
+				signature.KeyId)
+		}
+		if !validateHexSchema(signature.Sig) {
+			return fmt.Errorf("signature must be a lower case hex string, "+
+				"got: %s", signature.Sig)
+		}
+	}
+
 	return nil
 }
