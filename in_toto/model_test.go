@@ -345,7 +345,7 @@ func TestValidateLink(t *testing.T) {
 	}
 
 	err = validateLink(testMb.Signed.(Link))
-	if err.Error() != "hash value has invalid format" {
+	if err.Error() != "hash value has invalid format, got: !@#$%" {
 		t.Error("validateLink error - invalid hashes not detected")
 	}
 
@@ -379,7 +379,7 @@ func TestValidateLink(t *testing.T) {
 	}
 
 	err = validateLink(testMb.Signed.(Link))
-	if err.Error() != "hash value has invalid format" {
+	if err.Error() != "hash value has invalid format, got: !@#$%" {
 		t.Error("validateLink error - invalid hashes not detected")
 	}
 }
@@ -591,12 +591,12 @@ func TestValidateKeyId(t *testing.T) {
 	testKeyId := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
 		"08453f5"
 	if !validateHexSchema(testKeyId) {
-		t.Errorf("error validating key ID")
+		t.Errorf("validateHexSchema error - valid key ID flagged")
 	}
 
 	testKeyId = "Z776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
 		"08453f5"
-	if !validateHexSchema(testKeyId) {
+	if validateHexSchema(testKeyId) {
 		t.Errorf("validateHexSchema error - invalid key ID not detected")
 	}
 }
