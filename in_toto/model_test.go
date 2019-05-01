@@ -587,16 +587,16 @@ func TestValidateStep(t *testing.T) {
 	}
 }
 
-func TestValidateKeyId(t *testing.T) {
-	testKeyId := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
+func TestValidateHexSchema(t *testing.T) {
+	testStr := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
 		"08453f5"
-	if !validateHexSchema(testKeyId) {
+	if !validateHexSchema(testStr) {
 		t.Errorf("validateHexSchema error - valid key ID flagged")
 	}
 
-	testKeyId = "Z776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
+	testStr = "Z776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
 		"08453f5"
-	if validateHexSchema(testKeyId) {
+	if validateHexSchema(testStr) {
 		t.Errorf("validateHexSchema error - invalid key ID not detected")
 	}
 }
