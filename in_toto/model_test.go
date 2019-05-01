@@ -589,14 +589,13 @@ func TestValidateStep(t *testing.T) {
 func TestValidateKeyId(t *testing.T) {
 	testKeyId := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
 		"08453f5"
-	if err := validateKeyId(testKeyId); err != nil {
-		t.Errorf("error validating key ID: %s", err)
+	if !validateHexSchema(testKeyId) {
+		t.Errorf("error validating key ID")
 	}
 
 	testKeyId = "Z776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
 		"08453f5"
-	err := validateKeyId(testKeyId)
-	if err.Error() != "'Key ID' has invalid format" {
+	if !validateHexSchema(testKeyId) {
 		t.Errorf("validateKeyId error - invalid key ID not detected")
 	}
 }
