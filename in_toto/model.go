@@ -89,7 +89,8 @@ func validateArtifacts(artifacts map[string]interface{}) error {
 		for artifactValue.Next() {
 			value := artifactValue.Value().Interface().(string)
 			if !validateHexSchema(value) {
-				return fmt.Errorf("hash value has invalid format")
+				return fmt.Errorf("hash value has invalid format, got: %s",
+					value)
 			}
 		}
 	}

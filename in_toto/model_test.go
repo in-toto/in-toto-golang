@@ -580,8 +580,9 @@ func TestValidateStep(t *testing.T) {
 		},
 	}
 	err = validateStep(testStep)
-	if err.Error() != "'Key ID' has invalid format" {
-		t.Error("validateStep - validateKeyId error - invalid key ID not " +
+	if err.Error() != "keyid must be a lower case hex string, got: "+
+		testStep.PubKeys[0] {
+		t.Error("validateStep - validateHexSchema error - invalid key ID not " +
 			"detected")
 	}
 }
@@ -596,7 +597,7 @@ func TestValidateKeyId(t *testing.T) {
 	testKeyId = "Z776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
 		"08453f5"
 	if !validateHexSchema(testKeyId) {
-		t.Errorf("validateKeyId error - invalid key ID not detected")
+		t.Errorf("validateHexSchema error - invalid key ID not detected")
 	}
 }
 
