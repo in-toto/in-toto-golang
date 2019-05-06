@@ -627,6 +627,32 @@ func TestValidatePubKey(t *testing.T) {
 	}
 
 	testKey = Key{
+		KeyId:   "Z776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyType: "rsa",
+		KeyVal: KeyVal{
+			Private: "",
+			Public: "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAO" +
+				"CAY8AMIIBigKCAYEAzgLBsMFSgwBiWTBmVsyW\n5KbJwLFSodAzdUhU2Bq6" +
+				"SdRz/W6UOBGdojZXibxupjRtAaEQW/eXDe+1CbKg6ENZ\nGt2D9HGFCQZgQ" +
+				"S8ONgNDQGiNxgApMA0T21AaUhru0vEofzdN1DfEF4CAGv5AkcgK\nsalhTy" +
+				"ONervFIjFEdXGelFZ7dVMV3Pp5WkZPG0jFQWjnmDZhUrtSxEtqbVghc3kK" +
+				"\nAUj9Ll/3jyi2wS92Z1j5ueN8X62hWX2xBqQ6nViOMzdujkoiYCRSwuMLR" +
+				"qzW2CbT\nL8hF1+S5KWKFzxl5sCVfpPe7V5HkgEHjwCILXTbCn2fCMKlaSb" +
+				"J/MG2lW7qSY2Ro\nwVXWkp1wDrsJ6Ii9f2dErv9vJeOVZeO9DsooQ5EuzLC" +
+				"fQLEU5mn7ul7bU7rFsb8J\nxYOeudkNBatnNCgVMAkmDPiNA7E33bmL5ARR" +
+				"wU0iZicsqLQR32pmwdap8PjofxqQ\nk7Gtvz/iYzaLrZv33cFWWTsEOqK1g" +
+				"KqigSqgW9T26wO9AgMBAAE=\n-----END PUBLIC KEY-----",
+		},
+		Scheme: "rsassa-pss-sha256",
+	}
+
+	err := validatePubKey(testKey)
+	if err.Error() != "keyid must be a lower case hex string, got: "+
+		testKey.KeyId {
+		t.Error("validatePubKey error - invalid key ID not detected")
+	}
+
+	testKey = Key{
 		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
 		KeyType: "rsa",
 		KeyVal: KeyVal{
@@ -646,7 +672,7 @@ func TestValidatePubKey(t *testing.T) {
 		Scheme: "rsassa-pss-sha256",
 	}
 
-	err := validatePubKey(testKey)
+	err = validatePubKey(testKey)
 	if err.Error() != "private key found" {
 		t.Error("validatePubKey error - private key not detected")
 	}
