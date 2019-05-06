@@ -27,7 +27,7 @@ func TestRecordArtifact(t *testing.T) {
 	}
 }
 
-func TestApplyExcludePatterns(t *testing.T) {
+func TestApplyExcludeExplicit(t *testing.T) {
 	// os.Mkdir("tmpdir", 0700)
 	// ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400)
 	paths := []string{"foo.tar.gz", "demo.layout.template"}
@@ -41,6 +41,18 @@ func TestApplyExcludePatterns(t *testing.T) {
 	}
 	// os.RemoveAll("tmpdir")
 
+}
+
+//test for * pattern
+func TestApplyExcludeAll(t *testing.T) {
+	paths := []string{"foo.tar.gz", "demo.layout.template"}
+	exclude_patterns := []string{"demo.*"}
+	result, err := ApplyExcludePatterns(paths, exclude_patterns)
+	expected := []string{"foo.tar.gz"}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
+			result, err, expected)
+	}
 }
 
 func TestRecordArtifacts(t *testing.T) {
