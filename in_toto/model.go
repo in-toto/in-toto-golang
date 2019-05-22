@@ -54,6 +54,25 @@ func validatePubKey(key Key) error {
 	return nil
 }
 
+func validateRSAKey(key Key) error {
+	if key.KeyType != "rsa" {
+		return fmt.Errorf("invalid KeyType: should be 'rsa', got '%s'",
+			key.KeyType)
+	}
+	if !validateHexSchema(key.KeyId) {
+		return fmt.Errorf("keyid must be a lower case hex string, got: '%s'",
+			key.KeyId)
+	}
+	if key.KeyVal.Public == "" {
+		return fmt.Errorf("public key cannot be empty")
+	}
+	if key.Scheme != "rsassa-pss-sha256" {
+		return fmt.Errorf("invalid scheme found: should be 'rsassa-pss-sha256'"+
+			", got: '%s'", key.Scheme)
+	}
+	return nil
+}
+
 /*
 Signature represents a generic in-toto signature that contains the identifier
 of the Key, which was used to create the signature and the signature data.  The
