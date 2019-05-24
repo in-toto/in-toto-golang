@@ -692,3 +692,161 @@ func TestValidatePubKey(t *testing.T) {
 		t.Error("validatePubKey error - private key not detected")
 	}
 }
+
+func TestValidateMetablock(t *testing.T) {
+	testMetablock := Metablock{
+		Signatures: []Signature{
+			{
+				KeyId: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
+					"8f3e9cc48b35",
+				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9d" +
+					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
+					"9836ca218b584f51eb0eaacbb1c9bb57448101b07d058dec04d5255" +
+					"51d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053cd93" +
+					"e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb2271271" +
+					"78d52328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe59580" +
+					"4f3e47c4fc98434c44e914445f7cb773439ebf813de8849dd1b5339" +
+					"58f99f671d4e023d34c110d4b169cc02c12a3755ebe537147ff2479" +
+					"d244daaf719e24cf6b2fa6f47d0410d52d67217bcf4d4d4c2c7c0b9" +
+					"2cd2bcd321edc69bc1430f78a188e712b8cb1fff0c14550cd01c41d" +
+					"ae377256f31211fd249c5031bfee86e638bce6aa36aca349b787cef" +
+					"48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65a" +
+					"a626d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63" +
+					"bbea61be732207f0f5b58d056f118c830981747cb2b245d1377e17",
+			},
+		},
+		Signed: Layout{
+			Type:    "layout",
+			Expires: "2020-11-18T16:06:36Z",
+			Readme:  "some readme text",
+			Steps:   []Step{},
+			Inspect: []Inspection{},
+			Keys:    map[string]Key{},
+		},
+	}
+
+	if err := validateMetablock(testMetablock); err != nil {
+		t.Error("validateMetablock error: valid metablock failed")
+	}
+
+	testMetablock = Metablock{
+		Signatures: []Signature{
+			{
+				KeyId: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
+					"8f3e9cc48b35",
+				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9d" +
+					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
+					"9836ca218b584f51eb0eaacbb1c9bb57448101b07d058dec04d5255" +
+					"51d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053cd93" +
+					"e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb2271271" +
+					"78d52328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe59580" +
+					"4f3e47c4fc98434c44e914445f7cb773439ebf813de8849dd1b5339" +
+					"58f99f671d4e023d34c110d4b169cc02c12a3755ebe537147ff2479" +
+					"d244daaf719e24cf6b2fa6f47d0410d52d67217bcf4d4d4c2c7c0b9" +
+					"2cd2bcd321edc69bc1430f78a188e712b8cb1fff0c14550cd01c41d" +
+					"ae377256f31211fd249c5031bfee86e638bce6aa36aca349b787cef" +
+					"48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65a" +
+					"a626d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63" +
+					"bbea61be732207f0f5b58d056f118c830981747cb2b245d1377e17",
+			},
+		},
+		Signed: Layout{
+			Type:    "invalid",
+			Expires: "2020-11-18T16:06:36Z",
+			Readme:  "some readme text",
+			Steps:   []Step{},
+			Inspect: []Inspection{},
+			Keys:    map[string]Key{},
+		},
+	}
+
+	if err := validateMetablock(testMetablock); err.Error() !=
+		"invalid Type value for layout: should be 'layout'" {
+		t.Error("validateMetablock Error: invalid Type not detected")
+	}
+
+	testMetablock = Metablock{
+		Signatures: []Signature{
+			{
+				KeyId: "Z556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b5" +
+					"8f3e9cc48b35",
+				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9d" +
+					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
+					"9836ca218b584f51eb0eaacbb1c9bb57448101b07d058dec04d5255" +
+					"51d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053cd93" +
+					"e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb2271271" +
+					"78d52328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe59580" +
+					"4f3e47c4fc98434c44e914445f7cb773439ebf813de8849dd1b5339" +
+					"58f99f671d4e023d34c110d4b169cc02c12a3755ebe537147ff2479" +
+					"d244daaf719e24cf6b2fa6f47d0410d52d67217bcf4d4d4c2c7c0b9" +
+					"2cd2bcd321edc69bc1430f78a188e712b8cb1fff0c14550cd01c41d" +
+					"ae377256f31211fd249c5031bfee86e638bce6aa36aca349b787cef" +
+					"48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65a" +
+					"a626d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63" +
+					"bbea61be732207f0f5b58d056f118c830981747cb2b245d1377e17",
+			},
+		},
+		Signed: Layout{
+			Type:    "layout",
+			Expires: "2020-11-18T16:06:36Z",
+			Readme:  "some readme text",
+			Steps:   []Step{},
+			Inspect: []Inspection{},
+			Keys:    map[string]Key{},
+		},
+	}
+
+	if err := validateMetablock(testMetablock); err.Error() !=
+		"keyid must be a lower case hex string, got: Z556caebdc0877eed53d419"+
+			"b60eddb1e57fa773e4e31d70698b58f3e9cc48b35" {
+		t.Error("validateMetablock Error: invalid key ID not detected")
+	}
+
+	testMetablock = Metablock{
+		Signatures: []Signature{
+			{
+				KeyId: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
+					"8f3e9cc48b35",
+				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9z" +
+					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
+					"9836ca218b584f51eb0eaacbb1c9bb57448101b07d058dec04d5255" +
+					"51d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053cd93" +
+					"e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb2271271" +
+					"78d52328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe59580" +
+					"4f3e47c4fc98434c44e914445f7cb773439ebf813de8849dd1b5339" +
+					"58f99f671d4e023d34c110d4b169cc02c12a3755ebe537147ff2479" +
+					"d244daaf719e24cf6b2fa6f47d0410d52d67217bcf4d4d4c2c7c0b9" +
+					"2cd2bcd321edc69bc1430f78a188e712b8cb1fff0c14550cd01c41d" +
+					"ae377256f31211fd249c5031bfee86e638bce6aa36aca349b787cef" +
+					"48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65a" +
+					"a626d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63" +
+					"bbea61be732207f0f5b58d056f118c830981747cb2b245d1377e17",
+			},
+		},
+		Signed: Layout{
+			Type:    "layout",
+			Expires: "2020-11-18T16:06:36Z",
+			Readme:  "some readme text",
+			Steps:   []Step{},
+			Inspect: []Inspection{},
+			Keys:    map[string]Key{},
+		},
+	}
+
+	if err := validateMetablock(testMetablock); err.Error() !=
+		"signature must be a lower case hex string, got: 02813858670c66647c17"+
+			"802d84f06453589f41850013a544609e9z33ba21fa19280e8371701f8274fb0c"+
+			"56bd95ff4f34c418456b002af9836ca218b584f51eb0eaacbb1c9bb57448101b"+
+			"07d058dec04d525551d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2"+
+			"053cd93e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb227127178"+
+			"d52328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe595804f3e47c4fc9"+
+			"8434c44e914445f7cb773439ebf813de8849dd1b533958f99f671d4e023d34c1"+
+			"10d4b169cc02c12a3755ebe537147ff2479d244daaf719e24cf6b2fa6f47d041"+
+			"0d52d67217bcf4d4d4c2c7c0b92cd2bcd321edc69bc1430f78a188e712b8cb1f"+
+			"ff0c14550cd01c41dae377256f31211fd249c5031bfee86e638bce6aa36aca34"+
+			"9b787cef48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65aa"+
+			"626d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63bbea61be73"+
+			"2207f0f5b58d056f118c830981747cb2b245d1377e17" {
+		t.Error("validateMetablock error: invalid signature not detected")
+	}
+}
