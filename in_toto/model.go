@@ -318,7 +318,7 @@ type Metablock struct {
 }
 
 func checkRequiredFields(signed map[string]interface{}) error {
-	reflection := reflect.TypeOf(0)
+	reflection := reflect.TypeOf(nil)
 	if signed["_type"] == "link" {
 		var link Link
 		reflection = reflect.TypeOf(link)
