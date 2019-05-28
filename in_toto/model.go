@@ -317,6 +317,32 @@ type Metablock struct {
 	Signatures []Signature `json:"signatures"`
 }
 
+func checkRequiredFields(signed map[string]interface{}) error {
+	reflection := reflect.TypeOf(0)
+	if signed["_type"] == "link" {
+		var link Link
+		reflection = reflect.TypeOf(link)
+	} else if signed["_type"] == "layout" {
+		var layout Layout
+		reflection = reflect.TypeOf(layout)
+	} else {
+		return fmt.Errorf("The '_type' field of the 'signed' part of in-toto" +
+			" metadata must be one of 'link' or 'layout'")
+	}
+	attributeCount := reflection.NumField()
+	allFields := make([]string, 0)
+	for i := 0; i < attributeCount; i++ {
+		allFields = append(allFields, reflection.Field(i).Tag.Get("json"))
+	}
+
+	for _, field := range allFields {
+		if _, ok := signed[field]; !ok {
+			return fmt.Errorf("required field %s missing", field)
+		}
+	}
+	return nil
+}
+
 /*
 Load parses JSON formatted metadata at the passed path into the Metablock
 object on which it was called.  It returns an error if it cannot parse
@@ -364,21 +390,12 @@ func (mb *Metablock) Load(path string) error {
 		return err
 	}
 
+	if err := checkRequiredFields(signed); err != nil {
+		return err
+	}
+
 	if signed["_type"] == "link" {
 		var link Link
-		reflection := reflect.TypeOf(link)
-		attributeCount := reflection.NumField()
-		allFields := make([]string, 0)
-
-		for i := 0; i < attributeCount; i++ {
-			allFields = append(allFields, reflection.Field(i).Tag.Get("json"))
-		}
-
-		for _, field := range allFields {
-			if _, ok := signed[field]; !ok {
-				return fmt.Errorf("required field %s missing", field)
-			}
-		}
 
 		data, err := rawMb["signed"].MarshalJSON()
 		if err != nil {
@@ -394,19 +411,6 @@ func (mb *Metablock) Load(path string) error {
 
 	} else if signed["_type"] == "layout" {
 		var layout Layout
-		reflection := reflect.TypeOf(layout)
-		attributeCount := reflection.NumField()
-		allFields := make([]string, 0)
-
-		for i := 0; i < attributeCount; i++ {
-			allFields = append(allFields, reflection.Field(i).Tag.Get("json"))
-		}
-
-		for _, field := range allFields {
-			if _, ok := signed[field]; !ok {
-				return fmt.Errorf("required field %s missing", field)
-			}
-		}
 
 		data, err := rawMb["signed"].MarshalJSON()
 		if err != nil {
