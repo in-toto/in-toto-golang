@@ -54,21 +54,17 @@ func validatePubKey(key Key) error {
 	return nil
 }
 
-func validateRSAKey(key Key) error {
+func validateRSAPubKey(key Key) error {
 	if key.KeyType != "rsa" {
 		return fmt.Errorf("invalid KeyType: should be 'rsa', got '%s'",
 			key.KeyType)
 	}
-	if !validateHexSchema(key.KeyId) {
-		return fmt.Errorf("keyid must be a lower case hex string, got: '%s'",
-			key.KeyId)
-	}
-	if key.KeyVal.Public == "" {
-		return fmt.Errorf("public key cannot be empty")
-	}
 	if key.Scheme != "rsassa-pss-sha256" {
 		return fmt.Errorf("invalid scheme found: should be 'rsassa-pss-sha256'"+
 			", got: '%s'", key.Scheme)
+	}
+	if err := validatePubKey(key); err != nil {
+		return err
 	}
 	return nil
 }
@@ -276,7 +272,7 @@ func validateLayout(layout Layout) error {
 		if key.KeyId != keyId {
 			return fmt.Errorf("invalid key found")
 		}
-		if err := validatePubKey(key); err != nil {
+		if err := validateRSAPubKey(key); err != nil {
 			return err
 		}
 	}

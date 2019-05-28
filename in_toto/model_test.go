@@ -622,7 +622,7 @@ func TestValidatePubKey(t *testing.T) {
 		Scheme: "rsassa-pss-sha256",
 	}
 
-	if err := validatePubKey(testKey); err != nil {
+	if err := validateRSAPubKey(testKey); err != nil {
 		t.Errorf("error validating public key: %s", err)
 	}
 
@@ -646,10 +646,10 @@ func TestValidatePubKey(t *testing.T) {
 		Scheme: "rsassa-pss-sha256",
 	}
 
-	err := validatePubKey(testKey)
+	err := validateRSAPubKey(testKey)
 	if err.Error() != "keyid must be a lower case hex string, got: "+
 		testKey.KeyId {
-		t.Error("validatePubKey error - invalid key ID not detected")
+		t.Error("validateRSAPubKey error - invalid key ID not detected")
 	}
 
 	testKey = Key{
@@ -672,9 +672,9 @@ func TestValidatePubKey(t *testing.T) {
 		Scheme: "rsassa-pss-sha256",
 	}
 
-	err = validatePubKey(testKey)
+	err = validateRSAPubKey(testKey)
 	if err.Error() != "private key found" {
-		t.Error("validatePubKey error - private key not detected")
+		t.Error("validateRSAPubKey error - private key not detected")
 	}
 
 	testKey = Key{
@@ -687,9 +687,9 @@ func TestValidatePubKey(t *testing.T) {
 		Scheme: "rsassa-pss-sha256",
 	}
 
-	err = validatePubKey(testKey)
+	err = validateRSAPubKey(testKey)
 	if err.Error() != "public key cannot be empty" {
-		t.Error("validatePubKey error - private key not detected")
+		t.Error("validateRSAPubKey error - private key not detected")
 	}
 }
 
