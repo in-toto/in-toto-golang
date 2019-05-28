@@ -908,8 +908,8 @@ func TestValidateMetablock(t *testing.T) {
 	}
 
 	if err := validateMetablock(testMetablock); err.Error() !=
-		"keyid must be a lower case hex string, got: Z556caebdc0877eed53d419"+
-			"b60eddb1e57fa773e4e31d70698b58f3e9cc48b35" {
+		"validateSignature: keyid must be a lower case hex string, got: Z556c"+
+			"aebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58f3e9cc48b35" {
 		t.Error("validateMetablock Error: invalid key ID not detected")
 	}
 
@@ -945,7 +945,7 @@ func TestValidateMetablock(t *testing.T) {
 	}
 
 	if err := validateMetablock(testMetablock); err.Error() !=
-		"signature must be a lower case hex string, got: 02813858670c66647c17"+
+		"validateSignature: signature must be a lower case hex string, got: 02813858670c66647c17"+
 			"802d84f06453589f41850013a544609e9z33ba21fa19280e8371701f8274fb0c"+
 			"56bd95ff4f34c418456b002af9836ca218b584f51eb0eaacbb1c9bb57448101b"+
 			"07d058dec04d525551d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2"+

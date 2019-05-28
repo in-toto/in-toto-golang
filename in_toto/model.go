@@ -83,6 +83,27 @@ type Signature struct {
 	Sig   string `json:"sig"`
 }
 
+func validateSignature(signature Signature) error {
+	if !validateHexSchema(signature.KeyId) {
+		return fmt.Errorf("keyid must be a lower case hex string, got: %s",
+			signature.KeyId)
+	}
+	if !validateHexSchema(signature.Sig) {
+		return fmt.Errorf("signature must be a lower case hex string, "+
+			"got: %s", signature.Sig)
+	}
+	return nil
+}
+
+func validateSliceOfSignatures(slice []Signature) error {
+	for _, signature := range slice {
+		if err := validateSignature(signature); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 /*
 Link represents the evidence of a supply chain step performed by a functionary.
 It should be contained in a generic Metablock object, which provides
@@ -489,15 +510,8 @@ func validateMetablock(mb Metablock) error {
 			mbSignedType)
 	}
 
-	for _, signature := range mb.Signatures {
-		if !validateHexSchema(signature.KeyId) {
-			return fmt.Errorf("keyid must be a lower case hex string, got: %s",
-				signature.KeyId)
-		}
-		if !validateHexSchema(signature.Sig) {
-			return fmt.Errorf("signature must be a lower case hex string, "+
-				"got: %s", signature.Sig)
-		}
+	if err := validateSliceOfSignatures(mb.Signatures); err != nil {
+		return fmt.Errorf("validateSignature: %s", err)
 	}
 
 	return nil
