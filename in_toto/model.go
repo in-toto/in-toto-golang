@@ -11,9 +11,12 @@ import (
 	"time"
 )
 
-func validateHexSchema(str string) bool {
+func validateHexString(str string) error {
 	formatCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", str)
-	return formatCheck
+	if !formatCheck {
+		return fmt.Errorf("'%s' is not a valid hex string", str)
+	}
+	return nil
 }
 
 /*
@@ -41,9 +44,8 @@ type Key struct {
 }
 
 func validatePubKey(key Key) error {
-	if !validateHexSchema(key.KeyId) {
-		return fmt.Errorf("keyid must be a lower case hex string, got: %s",
-			key.KeyId)
+	if err := validateHexString(key.KeyId); err != nil {
+		return fmt.Errorf("keyid: %s", err.Error())
 	}
 	if key.KeyVal.Private != "" {
 		return fmt.Errorf("private key found")
@@ -80,13 +82,11 @@ type Signature struct {
 }
 
 func validateSignature(signature Signature) error {
-	if !validateHexSchema(signature.KeyId) {
-		return fmt.Errorf("keyid must be a lower case hex string, got: %s",
-			signature.KeyId)
+	if err := validateHexString(signature.KeyId); err != nil {
+		return fmt.Errorf("keyid: %s", err.Error())
 	}
-	if !validateHexSchema(signature.Sig) {
-		return fmt.Errorf("signature must be a lower case hex string, "+
-			"got: %s", signature.Sig)
+	if err := validateHexString(signature.Sig); err != nil {
+		return fmt.Errorf("signature: %s", err.Error())
 	}
 	return nil
 }
@@ -121,9 +121,8 @@ func validateArtifacts(artifacts map[string]interface{}) error {
 		artifactValue := reflect.ValueOf(artifact).MapRange()
 		for artifactValue.Next() {
 			value := artifactValue.Value().Interface().(string)
-			if !validateHexSchema(value) {
-				return fmt.Errorf("hash value has invalid format, got: %s",
-					value)
+			if err := validateHexString(value); err != nil {
+				return fmt.Errorf("hash value: %s", err.Error())
 			}
 		}
 	}
@@ -206,9 +205,8 @@ func validateStep(step Step) error {
 		return fmt.Errorf("invalid Type value for step: should be 'step'")
 	}
 	for _, keyId := range step.PubKeys {
-		if !validateHexSchema(keyId) {
-			return fmt.Errorf("keyid must be a lower case hex string, got: %s",
-				keyId)
+		if err := validateHexString(keyId); err != nil {
+			return fmt.Errorf("keyid: %s", err.Error())
 		}
 	}
 	return nil

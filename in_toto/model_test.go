@@ -345,7 +345,7 @@ func TestValidateLink(t *testing.T) {
 	}
 
 	err = validateLink(testMb.Signed.(Link))
-	if err.Error() != "hash value has invalid format, got: !@#$%" {
+	if err.Error() != "hash value: '!@#$%' is not a valid hex string" {
 		t.Error("validateLink error - invalid hashes not detected")
 	}
 
@@ -379,7 +379,7 @@ func TestValidateLink(t *testing.T) {
 	}
 
 	err = validateLink(testMb.Signed.(Link))
-	if err.Error() != "hash value has invalid format, got: !@#$%" {
+	if err.Error() != "hash value: '!@#$%' is not a valid hex string" {
 		t.Error("validateLink error - invalid hashes not detected")
 	}
 }
@@ -580,9 +580,9 @@ func TestValidateStep(t *testing.T) {
 		},
 	}
 	err = validateStep(testStep)
-	if err.Error() != "keyid must be a lower case hex string, got: "+
-		testStep.PubKeys[0] {
-		t.Error("validateStep - validateHexSchema error - invalid key ID not " +
+	if err.Error() != "keyid: '"+testStep.PubKeys[0]+"' is not a valid "+
+		"hex string" {
+		t.Error("validateStep - validateHexString error - invalid key ID not " +
 			"detected")
 	}
 }
@@ -590,14 +590,14 @@ func TestValidateStep(t *testing.T) {
 func TestValidateHexSchema(t *testing.T) {
 	testStr := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
 		"08453f5"
-	if !validateHexSchema(testStr) {
-		t.Errorf("validateHexSchema error - valid key ID flagged")
+	if err := validateHexString(testStr); err != nil {
+		t.Errorf("validateHexString error - valid key ID flagged")
 	}
 
 	testStr = "Z776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
 		"08453f5"
-	if validateHexSchema(testStr) {
-		t.Errorf("validateHexSchema error - invalid key ID not detected")
+	if err := validateHexString(testStr); err == nil {
+		t.Errorf("validateHexString error - invalid key ID not detected")
 	}
 }
 
@@ -647,8 +647,7 @@ func TestValidatePubKey(t *testing.T) {
 	}
 
 	err := validateRSAPubKey(testKey)
-	if err.Error() != "keyid must be a lower case hex string, got: "+
-		testKey.KeyId {
+	if err.Error() != "keyid: '"+testKey.KeyId+"' is not a valid hex string" {
 		t.Error("validateRSAPubKey error - invalid key ID not detected")
 	}
 
@@ -908,8 +907,8 @@ func TestValidateMetablock(t *testing.T) {
 	}
 
 	if err := validateMetablock(testMetablock); err.Error() !=
-		"validateSignature: keyid must be a lower case hex string, got: Z556c"+
-			"aebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58f3e9cc48b35" {
+		"validateSignature: keyid: 'Z556caebdc0877eed53d419b60eddb1e57fa773e4"+
+			"e31d70698b58f3e9cc48b35' is not a valid hex string" {
 		t.Error("validateMetablock Error: invalid key ID not detected")
 	}
 
@@ -945,19 +944,19 @@ func TestValidateMetablock(t *testing.T) {
 	}
 
 	if err := validateMetablock(testMetablock); err.Error() !=
-		"validateSignature: signature must be a lower case hex string, got: 02813858670c66647c17"+
-			"802d84f06453589f41850013a544609e9z33ba21fa19280e8371701f8274fb0c"+
-			"56bd95ff4f34c418456b002af9836ca218b584f51eb0eaacbb1c9bb57448101b"+
-			"07d058dec04d525551d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2"+
-			"053cd93e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb227127178"+
-			"d52328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe595804f3e47c4fc9"+
-			"8434c44e914445f7cb773439ebf813de8849dd1b533958f99f671d4e023d34c1"+
-			"10d4b169cc02c12a3755ebe537147ff2479d244daaf719e24cf6b2fa6f47d041"+
-			"0d52d67217bcf4d4d4c2c7c0b92cd2bcd321edc69bc1430f78a188e712b8cb1f"+
-			"ff0c14550cd01c41dae377256f31211fd249c5031bfee86e638bce6aa36aca34"+
-			"9b787cef48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65aa"+
-			"626d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63bbea61be73"+
-			"2207f0f5b58d056f118c830981747cb2b245d1377e17" {
+		"validateSignature: signature: '02813858670c66647c17802d84f06453589f4"+
+			"1850013a544609e9z33ba21fa19280e8371701f8274fb0c56bd95ff4f34c4184"+
+			"56b002af9836ca218b584f51eb0eaacbb1c9bb57448101b07d058dec04d52555"+
+			"1d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053cd93e2354f2006"+
+			"1178a01705f2fa9ac82c7aeca4dd830e2672eb227127178d52328747ac819e50"+
+			"ec8ff52c662d7a4c58f5040d8f655fe595804f3e47c4fc98434c44e914445f7c"+
+			"b773439ebf813de8849dd1b533958f99f671d4e023d34c110d4b169cc02c12a3"+
+			"755ebe537147ff2479d244daaf719e24cf6b2fa6f47d0410d52d67217bcf4d4d"+
+			"4c2c7c0b92cd2bcd321edc69bc1430f78a188e712b8cb1fff0c14550cd01c41d"+
+			"ae377256f31211fd249c5031bfee86e638bce6aa36aca349b787cef48255b0ef"+
+			"04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65aa626d5caebbfae2986"+
+			"f842bd2ce94bcefe5dd0ae9c5b2028a15bd63bbea61be732207f0f5b58d056f1"+
+			"18c830981747cb2b245d1377e17' is not a valid hex string" {
 		t.Error("validateMetablock error: invalid signature not detected")
 	}
 }
