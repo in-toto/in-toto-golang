@@ -117,12 +117,14 @@ type Link struct {
 }
 
 func validateArtifacts(artifacts map[string]interface{}) error {
-	for _, artifact := range artifacts {
+	for artifactName, artifact := range artifacts {
 		artifactValue := reflect.ValueOf(artifact).MapRange()
 		for artifactValue.Next() {
 			value := artifactValue.Value().Interface().(string)
+			hashType := artifactValue.Key().Interface().(string)
 			if err := validateHexString(value); err != nil {
-				return fmt.Errorf("hash value: %s", err.Error())
+				return fmt.Errorf("in artifact '%s', %s hash value: %s",
+					artifactName, hashType, err.Error())
 			}
 		}
 	}
@@ -131,15 +133,18 @@ func validateArtifacts(artifacts map[string]interface{}) error {
 
 func validateLink(link Link) error {
 	if link.Type != "link" {
-		return fmt.Errorf("invalid type for link: should be 'link'")
+		return fmt.Errorf("invalid type for link '%s': should be 'link'",
+			link.Name)
 	}
 
 	if err := validateArtifacts(link.Materials); err != nil {
-		return err
+		return fmt.Errorf("in materials of link '%s': %s", link.Name,
+			err.Error())
 	}
 
 	if err := validateArtifacts(link.Products); err != nil {
-		return err
+		return fmt.Errorf("in products of link '%s': %s", link.Name,
+			err.Error())
 	}
 
 	return nil
@@ -202,7 +207,7 @@ type Step struct {
 
 func validateStep(step Step) error {
 	if step.Type != "step" {
-		return fmt.Errorf("invalid Type value for step: should be 'step'")
+		return fmt.Errorf("invalid Type value for step '%s': should be 'step'", step.SupplyChainItem.Name)
 	}
 	for _, keyId := range step.PubKeys {
 		if err := validateHexString(keyId); err != nil {

@@ -310,7 +310,7 @@ func TestValidateLink(t *testing.T) {
 	}
 
 	err := validateLink(testMb.Signed.(Link))
-	if err.Error() != "invalid type for link: should be 'link'" {
+	if err.Error() != "invalid type for link 'test_type': should be 'link'" {
 		t.Error("validateLink error - incorrect type not detected")
 	}
 
@@ -345,7 +345,8 @@ func TestValidateLink(t *testing.T) {
 	}
 
 	err = validateLink(testMb.Signed.(Link))
-	if err.Error() != "hash value: '!@#$%' is not a valid hex string" {
+	if err.Error() != "in materials of link 'test_material_hash': in artifact"+
+		" 'foo.py', sha256 hash value: '!@#$%' is not a valid hex string" {
 		t.Error("validateLink error - invalid hashes not detected")
 	}
 
@@ -379,7 +380,8 @@ func TestValidateLink(t *testing.T) {
 	}
 
 	err = validateLink(testMb.Signed.(Link))
-	if err.Error() != "hash value: '!@#$%' is not a valid hex string" {
+	if err.Error() != "in products of link 'test_product_hash': in artifact "+
+		"'foo.tar.gz', sha256 hash value: '!@#$%' is not a valid hex string" {
 		t.Error("validateLink error - invalid hashes not detected")
 	}
 }
@@ -553,8 +555,8 @@ func TestValidateLayout(t *testing.T) {
 	}
 
 	err = validateLayout(testMb.Signed.(Layout))
-	if err.Error() != "invalid Type value for step: should be 'step'" {
-		t.Error("validateLayout - validateStep error - invalid step type not" +
+	if err.Error() != "invalid Type value for step 'foo': should be 'step'" {
+		t.Error("validateLayout - validateStep error - invalid step type not " +
 			"detected")
 	}
 }
@@ -567,7 +569,7 @@ func TestValidateStep(t *testing.T) {
 		},
 	}
 	err := validateStep(testStep)
-	if err.Error() != "invalid Type value for step: should be 'step'" {
+	if err.Error() != "invalid Type value for step 'foo': should be 'step'" {
 		t.Error("validateStep error - invalid type not detected")
 	}
 
@@ -871,7 +873,7 @@ func TestValidateMetablock(t *testing.T) {
 	}
 
 	if err := validateMetablock(testMetablock); err.Error() !=
-		"invalid type for link: should be 'link'" {
+		"invalid type for link 'test_type': should be 'link'" {
 		t.Error("validateMetablock Error: invalid Type not detected")
 	}
 
