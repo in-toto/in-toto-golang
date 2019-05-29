@@ -48,22 +48,22 @@ func validatePubKey(key Key) error {
 		return fmt.Errorf("keyid: %s", err.Error())
 	}
 	if key.KeyVal.Private != "" {
-		return fmt.Errorf("private key found")
+		return fmt.Errorf("in key '%s': private key found", key.KeyId)
 	}
 	if key.KeyVal.Public == "" {
-		return fmt.Errorf("public key cannot be empty")
+		return fmt.Errorf("in key '%s': public key cannot be empty", key.KeyId)
 	}
 	return nil
 }
 
 func validateRSAPubKey(key Key) error {
 	if key.KeyType != "rsa" {
-		return fmt.Errorf("invalid KeyType: should be 'rsa', got '%s'",
-			key.KeyType)
+		return fmt.Errorf("invalid KeyType for key '%s': should be 'rsa', got"+
+			" '%s'", key.KeyId, key.KeyType)
 	}
 	if key.Scheme != "rsassa-pss-sha256" {
-		return fmt.Errorf("invalid scheme found: should be 'rsassa-pss-sha256'"+
-			", got: '%s'", key.Scheme)
+		return fmt.Errorf("invalid scheme for key '%s': should be "+
+			"'rsassa-pss-sha256', got: '%s'", key.KeyId, key.Scheme)
 	}
 	if err := validatePubKey(key); err != nil {
 		return err
@@ -86,7 +86,8 @@ func validateSignature(signature Signature) error {
 		return fmt.Errorf("keyid: %s", err.Error())
 	}
 	if err := validateHexString(signature.Sig); err != nil {
-		return fmt.Errorf("signature: %s", err.Error())
+		return fmt.Errorf("signature with keyid '%s': %s", signature.KeyId,
+			err.Error())
 	}
 	return nil
 }
