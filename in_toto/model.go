@@ -177,6 +177,13 @@ type SupplyChainItem struct {
 	ExpectedProducts  [][]string `json:"expected_products"`
 }
 
+func validateSupplyChainItem(supplyChainItem SupplyChainItem) error {
+	if supplyChainItem.Name == "" {
+		return fmt.Errorf("name cannot be empty")
+	}
+	return nil
+}
+
 /*
 Inspection represents an in-toto supply chain inspection, whose command in the
 Run field is executed during final product verification, generating unsigned
@@ -188,6 +195,17 @@ type Inspection struct {
 	Type string   `json:"_type"`
 	Run  []string `json:"run"`
 	SupplyChainItem
+}
+
+func validateInspection(inspection Inspection) error {
+	if err := validateSupplyChainItem(inspection.SupplyChainItem); err != nil {
+		return err
+	}
+	if inspection.Type != "inspection" {
+		return fmt.Errorf("invalid Type value for inspection '%s': should be "+
+			"'inspection'", inspection.SupplyChainItem.Name)
+	}
+	return nil
 }
 
 /*
@@ -207,8 +225,12 @@ type Step struct {
 }
 
 func validateStep(step Step) error {
+	if err := validateSupplyChainItem(step.SupplyChainItem); err != nil {
+		return err
+	}
 	if step.Type != "step" {
-		return fmt.Errorf("invalid Type value for step '%s': should be 'step'", step.SupplyChainItem.Name)
+		return fmt.Errorf("invalid Type value for step '%s': should be 'step'",
+			step.SupplyChainItem.Name)
 	}
 	for _, keyId := range step.PubKeys {
 		if err := validateHexString(keyId); err != nil {
