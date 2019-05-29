@@ -596,7 +596,7 @@ func TestValidateStep(t *testing.T) {
 	}
 	err = validateStep(testStep)
 	if err.Error() != "step name cannot be empty" {
-		t.Error("validateStep error - invalid type not detected")
+		t.Error("validateStep error - empty name not detected")
 	}
 }
 
@@ -620,7 +620,7 @@ func TestValidateInspection(t *testing.T) {
 	}
 	err = validateInspection(testInspection)
 	if err.Error() != "inspection name cannot be empty" {
-		t.Error("validateInspection error - invalid type not detected")
+		t.Error("validateInspection error - empty name not detected")
 	}
 }
 
