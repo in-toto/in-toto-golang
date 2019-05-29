@@ -587,6 +587,41 @@ func TestValidateStep(t *testing.T) {
 		t.Error("validateStep - validateHexString error - invalid key ID not " +
 			"detected")
 	}
+
+	testStep = Step{
+		Type: "step",
+		SupplyChainItem: SupplyChainItem{
+			Name: "",
+		},
+	}
+	err = validateStep(testStep)
+	if err.Error() != "step name cannot be empty" {
+		t.Error("validateStep error - invalid type not detected")
+	}
+}
+
+func TestValidateInspection(t *testing.T) {
+	testInspection := Inspection{
+		Type: "invalid",
+		SupplyChainItem: SupplyChainItem{
+			Name: "foo",
+		},
+	}
+	err := validateInspection(testInspection)
+	if err.Error() != "invalid Type value for inspection 'foo': should be "+
+		"'inspection'" {
+		t.Error("validateInspection error - invalid type not detected")
+	}
+	testInspection = Inspection{
+		Type: "inspection",
+		SupplyChainItem: SupplyChainItem{
+			Name: "",
+		},
+	}
+	err = validateInspection(testInspection)
+	if err.Error() != "inspection name cannot be empty" {
+		t.Error("validateInspection error - invalid type not detected")
+	}
 }
 
 func TestValidateHexSchema(t *testing.T) {

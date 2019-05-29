@@ -199,7 +199,7 @@ type Inspection struct {
 
 func validateInspection(inspection Inspection) error {
 	if err := validateSupplyChainItem(inspection.SupplyChainItem); err != nil {
-		return err
+		return fmt.Errorf("inspection %s", err.Error())
 	}
 	if inspection.Type != "inspection" {
 		return fmt.Errorf("invalid Type value for inspection '%s': should be "+
@@ -226,7 +226,7 @@ type Step struct {
 
 func validateStep(step Step) error {
 	if err := validateSupplyChainItem(step.SupplyChainItem); err != nil {
-		return err
+		return fmt.Errorf("step %s", err.Error())
 	}
 	if step.Type != "step" {
 		return fmt.Errorf("invalid Type value for step '%s': should be 'step'",
