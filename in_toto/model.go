@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+/*
+validateHexString is used to validate that a string passed to it contains
+only valid hexadecimal characters.
+*/
 func validateHexString(str string) error {
 	formatCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", str)
 	if !formatCheck {
@@ -43,6 +47,9 @@ type Key struct {
 	Scheme              string   `json:"scheme"`
 }
 
+/*
+validatePubKey is a general function to validate if a key is a valid public key.
+*/
 func validatePubKey(key Key) error {
 	if err := validateHexString(key.KeyId); err != nil {
 		return fmt.Errorf("keyid: %s", err.Error())
@@ -56,6 +63,9 @@ func validatePubKey(key Key) error {
 	return nil
 }
 
+/*
+validateRSAPubKey checks if a passed key is a valid RSA public key.
+*/
 func validateRSAPubKey(key Key) error {
 	if key.KeyType != "rsa" {
 		return fmt.Errorf("invalid KeyType for key '%s': should be 'rsa', got"+
@@ -81,6 +91,10 @@ type Signature struct {
 	Sig   string `json:"sig"`
 }
 
+/*
+validateSignature is a function used to check if a passed signature is valid,
+by inspecting the key ID and the signature itself.
+*/
 func validateSignature(signature Signature) error {
 	if err := validateHexString(signature.KeyId); err != nil {
 		return fmt.Errorf("keyid: %s", err.Error())
@@ -92,6 +106,10 @@ func validateSignature(signature Signature) error {
 	return nil
 }
 
+/*
+validateSliceOfSignatures is a helper function used to validate multiple
+signatures stored in a slice.
+*/
 func validateSliceOfSignatures(slice []Signature) error {
 	for _, signature := range slice {
 		if err := validateSignature(signature); err != nil {
@@ -117,6 +135,9 @@ type Link struct {
 	Environment map[string]interface{} `json:"environment"`
 }
 
+/*
+validateArtifacts is a general function used to validate products and materials.
+*/
 func validateArtifacts(artifacts map[string]interface{}) error {
 	for artifactName, artifact := range artifacts {
 		artifactValue := reflect.ValueOf(artifact).MapRange()
@@ -132,6 +153,10 @@ func validateArtifacts(artifacts map[string]interface{}) error {
 	return nil
 }
 
+/*
+validateLink is a function used to ensure that a passed item of type Link
+matches the necessary format.
+*/
 func validateLink(link Link) error {
 	if link.Type != "link" {
 		return fmt.Errorf("invalid type for link '%s': should be 'link'",
@@ -177,6 +202,11 @@ type SupplyChainItem struct {
 	ExpectedProducts  [][]string `json:"expected_products"`
 }
 
+/*
+validateSupplyChainItem is used to validate the common elements found in both
+steps and inspections. Here, the function primarily ensures that the name of
+a supply chain item isn't empty.
+*/
 func validateSupplyChainItem(supplyChainItem SupplyChainItem) error {
 	if supplyChainItem.Name == "" {
 		return fmt.Errorf("name cannot be empty")
@@ -197,6 +227,10 @@ type Inspection struct {
 	SupplyChainItem
 }
 
+/*
+validateInspection ensures that a passed inspection is valid and matches the
+necessary format of an inspection.
+*/
 func validateInspection(inspection Inspection) error {
 	if err := validateSupplyChainItem(inspection.SupplyChainItem); err != nil {
 		return fmt.Errorf("inspection %s", err.Error())
@@ -224,6 +258,10 @@ type Step struct {
 	SupplyChainItem
 }
 
+/*
+validateStep ensures that a passed step is valid and matches the
+necessary format of an step.
+*/
 func validateStep(step Step) error {
 	if err := validateSupplyChainItem(step.SupplyChainItem); err != nil {
 		return fmt.Errorf("step %s", err.Error())
@@ -285,6 +323,10 @@ func (l *Layout) InspectAsInterfaceSlice() []interface{} {
 	return inspectionsI
 }
 
+/*
+validateLayout is a function used to ensure that a passed item of type Layout
+matches the necessary format.
+*/
 func validateLayout(layout Layout) error {
 	if layout.Type != "layout" {
 		return fmt.Errorf("invalid Type value for layout: should be 'layout'")
@@ -522,6 +564,10 @@ func (mb *Metablock) VerifySignature(key Key) error {
 	return nil
 }
 
+/*
+validateMetablock ensures that a passed Metablock object is valid. It indirectly
+validates the Link or Layout that the Metablock object contains.
+*/
 func validateMetablock(mb Metablock) error {
 	switch mbSignedType := mb.Signed.(type) {
 	case Layout:
