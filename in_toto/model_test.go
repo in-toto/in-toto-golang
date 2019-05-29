@@ -582,8 +582,8 @@ func TestValidateStep(t *testing.T) {
 		},
 	}
 	err = validateStep(testStep)
-	if err.Error() != "keyid: '"+testStep.PubKeys[0]+"' is not a valid "+
-		"hex string" {
+	if err.Error() != "in step 'foo', keyid: '"+testStep.PubKeys[0]+"' is not"+
+		" a valid hex string" {
 		t.Error("validateStep - validateHexString error - invalid key ID not " +
 			"detected")
 	}

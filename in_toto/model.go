@@ -234,7 +234,8 @@ func validateStep(step Step) error {
 	}
 	for _, keyId := range step.PubKeys {
 		if err := validateHexString(keyId); err != nil {
-			return fmt.Errorf("keyid: %s", err.Error())
+			return fmt.Errorf("in step '%s', keyid: %s",
+				step.SupplyChainItem.Name, err.Error())
 		}
 	}
 	return nil
