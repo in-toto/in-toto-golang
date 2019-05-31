@@ -17,6 +17,16 @@ and navigate to `localhost:8080/pkg/github.com/in-toto/in-toto-golang/in_toto/`
 
 
 ## Not (yet) supported
+
+This golang implementation was focused on verification on admission controllers
+and kubectl plugins. As such, it focused on providing a strong, auditable set
+of core functions rather than a broad and (possibly) unstable feature set. In
+other words, we believe that the current feature set is stable enough for
+production use.
+
+If any of these features are necessary for your usecase please let us know and
+we will try to provide them as soon as possible!
+
 * [Signature schemes, other than `rsassa-pss-sha256`](https://github.com/in-toto/in-toto-golang/issues/27)
 * [GPG keys](https://github.com/in-toto/in-toto-golang/issues/26)
 * [Layout parameter substitution](https://github.com/in-toto/in-toto-golang/issues/29)
