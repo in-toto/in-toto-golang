@@ -203,6 +203,17 @@ type SupplyChainItem struct {
 }
 
 /*
+validateArtifactRule calls UnpackRule to validate that the passed rule conforms
+with any of the available rule formats.
+*/
+func validateArtifactRule(rule []string) error {
+	if _, err := UnpackRule(rule); err != nil {
+		return err
+	}
+	return nil
+}
+
+/*
 validateSupplyChainItem is used to validate the common elements found in both
 steps and inspections. Here, the function primarily ensures that the name of
 a supply chain item isn't empty.
@@ -210,6 +221,16 @@ a supply chain item isn't empty.
 func validateSupplyChainItem(supplyChainItem SupplyChainItem) error {
 	if supplyChainItem.Name == "" {
 		return fmt.Errorf("name cannot be empty")
+	}
+	for _, rule := range supplyChainItem.ExpectedMaterials {
+		if err := validateArtifactRule(rule); err != nil {
+			return fmt.Errorf("invalid material rule: %s", err.Error())
+		}
+	}
+	for _, rule := range supplyChainItem.ExpectedProducts {
+		if err := validateArtifactRule(rule); err != nil {
+			return fmt.Errorf("invalid product rule: %s", err.Error())
+		}
 	}
 	return nil
 }
