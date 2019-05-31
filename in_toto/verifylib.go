@@ -537,7 +537,7 @@ VerifyLayoutExpiration verifies that the passed Layout has not expired.  It
 returns an error if the (zulu) date in the Expires field is in the past.
 */
 func VerifyLayoutExpiration(layout Layout) error {
-	expires, err := time.Parse(time.RFC3339, layout.Expires)
+	expires, err := time.Parse(ISO8601DateSchema, layout.Expires)
 	if err != nil {
 		return err
 	}

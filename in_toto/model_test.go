@@ -26,8 +26,56 @@ func TestMetablockLoad(t *testing.T) {
 		[]byte(`{"signatures": "string", "signed": {}}`),
 		[]byte(`{"signatures": [], "signed": []}`),
 		[]byte(`{"signatures": [], "signed": {"_type": "something else"}}`),
-		[]byte(`{"signatures": [], "signed": {"_type": "link", "materials": "invalid"}}`),
-		[]byte(`{"signatures": [], "signed": {"_type": "layout", "steps": "invalid"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"materials": "invalid", "name": "some name", "products": "invalid",
+			"byproducts": "invalid", "command": "some command",
+			"environment": "some list"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
+			"keys": "some keys", "expires": "some date"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"inspect": "invalid", "readme": "some readme", "keys": "some keys",
+			"expires": "some date"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "readme": "some readme", "keys": "some keys",
+			"expires": "some date"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
+			"expires": "some date"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
+			"keys": "some keys"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "inspect": "invalid",
+			"keys": "some keys", "expires": "some date"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout", "steps": [],
+			"inspect": [], "readme": "some readme", "keys": {},
+			"expires": "some date", "foo": "bar"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"materials": "invalid", "products": "invalid",
+			"byproducts": "invalid", "command": "some command",
+			"environment": "some list"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"name": "some name", "products": "invalid",
+			"byproducts": "invalid", "command": "some command",
+			"environment": "some list"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"materials": "invalid", "name": "some name",
+			"byproducts": "invalid", "command": "some command",
+			"environment": "some list"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"materials": "invalid", "name": "some name", "products": "invalid",
+			"command": "some command",
+			"environment": "some list"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"materials": "invalid", "name": "some name", "products": "invalid",
+			"byproducts": "invalid", "environment": "some list"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"materials": "invalid", "name": "some name", "products": "invalid",
+			"byproducts": "invalid", "command": "some command"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link", "materials": {},
+			"name": "some name", "products": {}, "byproducts": {},
+			"command": [], "environment": {}, "foo": "bar"}}`),
 	}
 
 	expectedErrors := []string{
@@ -39,6 +87,19 @@ func TestMetablockLoad(t *testing.T) {
 		"metadata must be one of 'link' or 'layout'",
 		"cannot unmarshal string into Go struct field Link.materials",
 		"cannot unmarshal string into Go struct field Layout.steps",
+		"required field steps missing",
+		"required field inspect missing",
+		"required field keys missing",
+		"required field expires missing",
+		"required field readme missing",
+		"json: unknown field \"foo\"",
+		"required field name missing",
+		"required field materials missing",
+		"required field products missing",
+		"required field byproducts missing",
+		"required field command missing",
+		"required field environment missing",
+		"json: unknown field \"foo\"",
 	}
 
 	for i := 0; i < len(invalidJsonBytes); i++ {
@@ -207,5 +268,788 @@ func TestMetablockVerifySignature(t *testing.T) {
 	err := mb.VerifySignature(key)
 	if err != nil {
 		t.Errorf("Metablock.VerifySignature returned '%s', expected nil", err)
+	}
+}
+
+func TestValidateLink(t *testing.T) {
+	var mb Metablock
+	if err := mb.Load("package.2f89b927.link"); err != nil {
+		t.Errorf("Metablock load returned '%s'", err)
+	}
+	if err := validateLink(mb.Signed.(Link)); err != nil {
+		t.Errorf("Link metadata validation failed, returned '%s'", err)
+	}
+
+	testMb := Metablock{
+		Signed: Link{
+			Type: "invalid",
+			Name: "test_type",
+			Command: []string{
+				"tar",
+				"zcvf",
+				"foo.tar.gz",
+				"foo.py",
+			},
+			Materials: map[string]interface{}{
+				"foo.py": map[string]interface{}{
+					"sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549",
+				},
+			},
+			Products: map[string]interface{}{
+				"foo.tar.gz": map[string]interface{}{
+					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+				},
+			},
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
+			},
+			Environment: map[string]interface{}{},
+		},
+	}
+
+	err := validateLink(testMb.Signed.(Link))
+	if err.Error() != "invalid type for link 'test_type': should be 'link'" {
+		t.Error("validateLink error - incorrect type not detected")
+	}
+
+	testMb = Metablock{
+		Signed: Link{
+			Type: "link",
+			Name: "test_material_hash",
+			Command: []string{
+				"tar",
+				"zcvf",
+				"foo.tar.gz",
+				"foo.py",
+			},
+			Materials: map[string]interface{}{
+				"foo.py": map[string]interface{}{
+					"sha256": "!@#$%",
+				},
+			},
+			Products: map[string]interface{}{
+				"foo.tar.gz": map[string]interface{}{
+					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e69" +
+						"36c1e5aabb7c98514f355",
+				},
+			},
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
+			},
+			Environment: map[string]interface{}{},
+		},
+	}
+
+	err = validateLink(testMb.Signed.(Link))
+	if err.Error() != "in materials of link 'test_material_hash': in artifact"+
+		" 'foo.py', sha256 hash value: '!@#$%' is not a valid hex string" {
+		t.Error("validateLink error - invalid hashes not detected")
+	}
+
+	testMb = Metablock{
+		Signed: Link{
+			Type: "link",
+			Name: "test_product_hash",
+			Command: []string{
+				"tar",
+				"zcvf",
+				"foo.tar.gz",
+				"foo.py",
+			},
+			Materials: map[string]interface{}{
+				"foo.py": map[string]interface{}{
+					"sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549",
+				},
+			},
+			Products: map[string]interface{}{
+				"foo.tar.gz": map[string]interface{}{
+					"sha256": "!@#$%",
+				},
+			},
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
+			},
+			Environment: map[string]interface{}{},
+		},
+	}
+
+	err = validateLink(testMb.Signed.(Link))
+	if err.Error() != "in products of link 'test_product_hash': in artifact "+
+		"'foo.tar.gz', sha256 hash value: '!@#$%' is not a valid hex string" {
+		t.Error("validateLink error - invalid hashes not detected")
+	}
+}
+
+func TestValidateLayout(t *testing.T) {
+	var mb Metablock
+	if err := mb.Load("demo.layout.template"); err != nil {
+		t.Errorf("Metablock load returned '%s'", err)
+	}
+	if err := validateLayout(mb.Signed.(Layout)); err != nil {
+		t.Errorf("Layout metadata validation failed, returned '%s'", err)
+	}
+
+	testMb := Metablock{
+		Signed: Layout{
+			Type:    "invalid",
+			Expires: "2020-11-18T16:06:36Z",
+			Readme:  "some readme text",
+			Steps:   []Step{},
+			Inspect: []Inspection{},
+			Keys:    map[string]Key{},
+		},
+	}
+
+	err := validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "invalid Type value for layout: should be 'layout'" {
+		t.Error("validateLayout error - invalid type not detected")
+	}
+
+	testMb = Metablock{
+		Signed: Layout{
+			Type:    "layout",
+			Expires: "2020-02-31T18:03:43Z",
+			Readme:  "some readme text",
+			Steps:   []Step{},
+			Inspect: []Inspection{},
+			Keys:    map[string]Key{},
+		},
+	}
+
+	err = validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "expiry time parsed incorrectly - date either invalid "+
+		"or of incorrect format" {
+		t.Error("validateLayout error - invalid date not detected")
+	}
+
+	testMb = Metablock{
+		Signed: Layout{
+			Type:    "layout",
+			Expires: "2020-02-27T18:03:43Zinvalid",
+			Readme:  "some readme text",
+			Steps:   []Step{},
+			Inspect: []Inspection{},
+			Keys:    map[string]Key{},
+		},
+	}
+
+	err = validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "expiry time parsed incorrectly - date either invalid "+
+		"or of incorrect format" {
+		t.Error("validateLayout error - invalid date not detected")
+	}
+
+	testMb = Metablock{
+		Signed: Layout{
+			Type:    "layout",
+			Expires: "2020-02-27T18:03:43Z",
+			Readme:  "some readme text",
+			Steps: []Step{
+				{
+					Type: "step",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+				{
+					Type: "step",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+			},
+			Inspect: []Inspection{},
+			Keys:    map[string]Key{},
+		},
+	}
+
+	err = validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "non unique step or inspection name found" {
+		t.Error("validateLayout error - duplicate step/inspection name not " +
+			"detected")
+	}
+
+	testMb = Metablock{
+		Signed: Layout{
+			Type:    "layout",
+			Expires: "2020-02-27T18:03:43Z",
+			Readme:  "some readme text",
+			Steps: []Step{
+				{
+					Type: "step",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+			},
+			Inspect: []Inspection{
+				{
+					Type: "inspection",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+			},
+			Keys: map[string]Key{},
+		},
+	}
+
+	err = validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "non unique step or inspection name found" {
+		t.Error("validateLayout error - duplicate step/inspection name not " +
+			"detected")
+	}
+
+	testMb = Metablock{
+		Signed: Layout{
+			Type:    "layout",
+			Expires: "2020-02-27T18:03:43Z",
+			Readme:  "some readme text",
+			Steps:   []Step{},
+			Inspect: []Inspection{
+				{
+					Type: "inspection",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+				{
+					Type: "inspection",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+			},
+			Keys: map[string]Key{},
+		},
+	}
+
+	err = validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "non unique step or inspection name found" {
+		t.Error("validateLayout error - duplicate step/inspection name not " +
+			"detected")
+	}
+
+	testMb = Metablock{
+		Signed: Layout{
+			Type:    "layout",
+			Expires: "2020-02-27T18:03:43Z",
+			Readme:  "some readme text",
+			Steps: []Step{
+				{
+					Type: "invalid",
+					SupplyChainItem: SupplyChainItem{
+						Name: "foo",
+					},
+				},
+			},
+			Inspect: []Inspection{},
+			Keys:    map[string]Key{},
+		},
+	}
+
+	err = validateLayout(testMb.Signed.(Layout))
+	if err.Error() != "invalid Type value for step 'foo': should be 'step'" {
+		t.Error("validateLayout - validateStep error - invalid step type not " +
+			"detected")
+	}
+}
+
+func TestValidateStep(t *testing.T) {
+	testStep := Step{
+		Type: "invalid",
+		SupplyChainItem: SupplyChainItem{
+			Name: "foo",
+		},
+	}
+	err := validateStep(testStep)
+	if err.Error() != "invalid Type value for step 'foo': should be 'step'" {
+		t.Error("validateStep error - invalid type not detected")
+	}
+
+	testStep = Step{
+		Type: "step",
+		PubKeys: []string{"776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f4Z" +
+			"41132b345b08453f5"},
+		SupplyChainItem: SupplyChainItem{
+			Name: "foo",
+		},
+	}
+	err = validateStep(testStep)
+	if err.Error() != "in step 'foo', keyid: '"+testStep.PubKeys[0]+"' is not"+
+		" a valid hex string" {
+		t.Error("validateStep - validateHexString error - invalid key ID not " +
+			"detected")
+	}
+
+	testStep = Step{
+		Type: "step",
+		SupplyChainItem: SupplyChainItem{
+			Name: "",
+		},
+	}
+	err = validateStep(testStep)
+	if err.Error() != "step name cannot be empty" {
+		t.Error("validateStep error - empty name not detected")
+	}
+}
+
+func TestValidateInspection(t *testing.T) {
+	testInspection := Inspection{
+		Type: "invalid",
+		SupplyChainItem: SupplyChainItem{
+			Name: "foo",
+		},
+	}
+	err := validateInspection(testInspection)
+	if err.Error() != "invalid Type value for inspection 'foo': should be "+
+		"'inspection'" {
+		t.Error("validateInspection error - invalid type not detected")
+	}
+	testInspection = Inspection{
+		Type: "inspection",
+		SupplyChainItem: SupplyChainItem{
+			Name: "",
+		},
+	}
+	err = validateInspection(testInspection)
+	if err.Error() != "inspection name cannot be empty" {
+		t.Error("validateInspection error - empty name not detected")
+	}
+}
+
+func TestValidateHexSchema(t *testing.T) {
+	testStr := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
+		"08453f5"
+	if err := validateHexString(testStr); err != nil {
+		t.Errorf("validateHexString error - valid key ID flagged")
+	}
+
+	testStr = "Z776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b" +
+		"08453f5"
+	if err := validateHexString(testStr); err == nil {
+		t.Errorf("validateHexString error - invalid key ID not detected")
+	}
+}
+
+func TestValidatePubKey(t *testing.T) {
+	testKey := Key{
+		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyType: "rsa",
+		KeyVal: KeyVal{
+			Private: "",
+			Public: "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAO" +
+				"CAY8AMIIBigKCAYEAzgLBsMFSgwBiWTBmVsyW\n5KbJwLFSodAzdUhU2Bq6" +
+				"SdRz/W6UOBGdojZXibxupjRtAaEQW/eXDe+1CbKg6ENZ\nGt2D9HGFCQZgQ" +
+				"S8ONgNDQGiNxgApMA0T21AaUhru0vEofzdN1DfEF4CAGv5AkcgK\nsalhTy" +
+				"ONervFIjFEdXGelFZ7dVMV3Pp5WkZPG0jFQWjnmDZhUrtSxEtqbVghc3kK" +
+				"\nAUj9Ll/3jyi2wS92Z1j5ueN8X62hWX2xBqQ6nViOMzdujkoiYCRSwuMLR" +
+				"qzW2CbT\nL8hF1+S5KWKFzxl5sCVfpPe7V5HkgEHjwCILXTbCn2fCMKlaSb" +
+				"J/MG2lW7qSY2Ro\nwVXWkp1wDrsJ6Ii9f2dErv9vJeOVZeO9DsooQ5EuzLC" +
+				"fQLEU5mn7ul7bU7rFsb8J\nxYOeudkNBatnNCgVMAkmDPiNA7E33bmL5ARR" +
+				"wU0iZicsqLQR32pmwdap8PjofxqQ\nk7Gtvz/iYzaLrZv33cFWWTsEOqK1g" +
+				"KqigSqgW9T26wO9AgMBAAE=\n-----END PUBLIC KEY-----",
+		},
+		Scheme: "rsassa-pss-sha256",
+	}
+
+	if err := validateRSAPubKey(testKey); err != nil {
+		t.Errorf("error validating public key: %s", err)
+	}
+
+	testKey = Key{
+		KeyId:   "Z776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyType: "rsa",
+		KeyVal: KeyVal{
+			Private: "",
+			Public: "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAO" +
+				"CAY8AMIIBigKCAYEAzgLBsMFSgwBiWTBmVsyW\n5KbJwLFSodAzdUhU2Bq6" +
+				"SdRz/W6UOBGdojZXibxupjRtAaEQW/eXDe+1CbKg6ENZ\nGt2D9HGFCQZgQ" +
+				"S8ONgNDQGiNxgApMA0T21AaUhru0vEofzdN1DfEF4CAGv5AkcgK\nsalhTy" +
+				"ONervFIjFEdXGelFZ7dVMV3Pp5WkZPG0jFQWjnmDZhUrtSxEtqbVghc3kK" +
+				"\nAUj9Ll/3jyi2wS92Z1j5ueN8X62hWX2xBqQ6nViOMzdujkoiYCRSwuMLR" +
+				"qzW2CbT\nL8hF1+S5KWKFzxl5sCVfpPe7V5HkgEHjwCILXTbCn2fCMKlaSb" +
+				"J/MG2lW7qSY2Ro\nwVXWkp1wDrsJ6Ii9f2dErv9vJeOVZeO9DsooQ5EuzLC" +
+				"fQLEU5mn7ul7bU7rFsb8J\nxYOeudkNBatnNCgVMAkmDPiNA7E33bmL5ARR" +
+				"wU0iZicsqLQR32pmwdap8PjofxqQ\nk7Gtvz/iYzaLrZv33cFWWTsEOqK1g" +
+				"KqigSqgW9T26wO9AgMBAAE=\n-----END PUBLIC KEY-----",
+		},
+		Scheme: "rsassa-pss-sha256",
+	}
+
+	err := validateRSAPubKey(testKey)
+	if err.Error() != "keyid: '"+testKey.KeyId+"' is not a valid hex string" {
+		t.Error("validateRSAPubKey error - invalid key ID not detected")
+	}
+
+	testKey = Key{
+		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyType: "rsa",
+		KeyVal: KeyVal{
+			Private: "invalid",
+			Public: "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAO" +
+				"CAY8AMIIBigKCAYEAzgLBsMFSgwBiWTBmVsyW\n5KbJwLFSodAzdUhU2Bq6" +
+				"SdRz/W6UOBGdojZXibxupjRtAaEQW/eXDe+1CbKg6ENZ\nGt2D9HGFCQZgQ" +
+				"S8ONgNDQGiNxgApMA0T21AaUhru0vEofzdN1DfEF4CAGv5AkcgK\nsalhTy" +
+				"ONervFIjFEdXGelFZ7dVMV3Pp5WkZPG0jFQWjnmDZhUrtSxEtqbVghc3kK" +
+				"\nAUj9Ll/3jyi2wS92Z1j5ueN8X62hWX2xBqQ6nViOMzdujkoiYCRSwuMLR" +
+				"qzW2CbT\nL8hF1+S5KWKFzxl5sCVfpPe7V5HkgEHjwCILXTbCn2fCMKlaSb" +
+				"J/MG2lW7qSY2Ro\nwVXWkp1wDrsJ6Ii9f2dErv9vJeOVZeO9DsooQ5EuzLC" +
+				"fQLEU5mn7ul7bU7rFsb8J\nxYOeudkNBatnNCgVMAkmDPiNA7E33bmL5ARR" +
+				"wU0iZicsqLQR32pmwdap8PjofxqQ\nk7Gtvz/iYzaLrZv33cFWWTsEOqK1g" +
+				"KqigSqgW9T26wO9AgMBAAE=\n-----END PUBLIC KEY-----",
+		},
+		Scheme: "rsassa-pss-sha256",
+	}
+
+	err = validateRSAPubKey(testKey)
+	if err.Error() != "in key '776a00e29f3559e0141b3b096f696abc6cfb0c657ab40"+
+		"f441132b345b08453f5': private key found" {
+		t.Error("validateRSAPubKey error - private key not detected")
+	}
+
+	testKey = Key{
+		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyType: "rsa",
+		KeyVal: KeyVal{
+			Private: "",
+			Public:  "",
+		},
+		Scheme: "rsassa-pss-sha256",
+	}
+
+	err = validateRSAPubKey(testKey)
+	if err.Error() != "in key '776a00e29f3559e0141b3b096f696abc6cfb0c657ab40"+
+		"f441132b345b08453f5': public key cannot be empty" {
+		t.Error("validateRSAPubKey error - empty public key not detected")
+	}
+}
+
+func TestValidateRSAPubKey(t *testing.T) {
+	key := Key{
+		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyType: "invalid",
+		KeyVal: KeyVal{
+			Private: "",
+			Public: "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAO" +
+				"CAY8AMIIBigKCAYEAzgLBsMFSgwBiWTBmVsyW\n5KbJwLFSodAzdUhU2Bq6" +
+				"SdRz/W6UOBGdojZXibxupjRtAaEQW/eXDe+1CbKg6ENZ\nGt2D9HGFCQZgQ" +
+				"S8ONgNDQGiNxgApMA0T21AaUhru0vEofzdN1DfEF4CAGv5AkcgK\nsalhTy" +
+				"ONervFIjFEdXGelFZ7dVMV3Pp5WkZPG0jFQWjnmDZhUrtSxEtqbVghc3kK" +
+				"\nAUj9Ll/3jyi2wS92Z1j5ueN8X62hWX2xBqQ6nViOMzdujkoiYCRSwuMLR" +
+				"qzW2CbT\nL8hF1+S5KWKFzxl5sCVfpPe7V5HkgEHjwCILXTbCn2fCMKlaSb" +
+				"J/MG2lW7qSY2Ro\nwVXWkp1wDrsJ6Ii9f2dErv9vJeOVZeO9DsooQ5EuzLC" +
+				"fQLEU5mn7ul7bU7rFsb8J\nxYOeudkNBatnNCgVMAkmDPiNA7E33bmL5ARR" +
+				"wU0iZicsqLQR32pmwdap8PjofxqQ\nk7Gtvz/iYzaLrZv33cFWWTsEOqK1g" +
+				"KqigSqgW9T26wO9AgMBAAE=\n-----END PUBLIC KEY-----",
+		},
+		Scheme: "rsassa-pss-sha256",
+	}
+	if err := validateRSAPubKey(key); err.Error() != "invalid KeyType for key"+
+		" '776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5':"+
+		" should be 'rsa', got 'invalid'" {
+		t.Error("validateRSAPubKey error - invalid type not detected")
+	}
+
+	key = Key{
+		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyType: "rsa",
+		KeyVal: KeyVal{
+			Private: "",
+			Public: "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAO" +
+				"CAY8AMIIBigKCAYEAzgLBsMFSgwBiWTBmVsyW\n5KbJwLFSodAzdUhU2Bq6" +
+				"SdRz/W6UOBGdojZXibxupjRtAaEQW/eXDe+1CbKg6ENZ\nGt2D9HGFCQZgQ" +
+				"S8ONgNDQGiNxgApMA0T21AaUhru0vEofzdN1DfEF4CAGv5AkcgK\nsalhTy" +
+				"ONervFIjFEdXGelFZ7dVMV3Pp5WkZPG0jFQWjnmDZhUrtSxEtqbVghc3kK" +
+				"\nAUj9Ll/3jyi2wS92Z1j5ueN8X62hWX2xBqQ6nViOMzdujkoiYCRSwuMLR" +
+				"qzW2CbT\nL8hF1+S5KWKFzxl5sCVfpPe7V5HkgEHjwCILXTbCn2fCMKlaSb" +
+				"J/MG2lW7qSY2Ro\nwVXWkp1wDrsJ6Ii9f2dErv9vJeOVZeO9DsooQ5EuzLC" +
+				"fQLEU5mn7ul7bU7rFsb8J\nxYOeudkNBatnNCgVMAkmDPiNA7E33bmL5ARR" +
+				"wU0iZicsqLQR32pmwdap8PjofxqQ\nk7Gtvz/iYzaLrZv33cFWWTsEOqK1g" +
+				"KqigSqgW9T26wO9AgMBAAE=\n-----END PUBLIC KEY-----",
+		},
+		Scheme: "invalid",
+	}
+	if err := validateRSAPubKey(key); err.Error() != "invalid scheme for key"+
+		" '776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5'"+
+		": should be 'rsassa-pss-sha256', got: 'invalid'" {
+		t.Error("validateRSAPubKey error - invalid scheme not detected")
+	}
+}
+
+func TestValidateMetablock(t *testing.T) {
+	testMetablock := Metablock{
+		Signatures: []Signature{
+			{
+				KeyId: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
+					"8f3e9cc48b35",
+				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9d" +
+					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
+					"9836ca218b584f51eb0eaacbb1c9bb57448101b07d058dec04d5255" +
+					"51d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053cd93" +
+					"e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb2271271" +
+					"78d52328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe59580" +
+					"4f3e47c4fc98434c44e914445f7cb773439ebf813de8849dd1b5339" +
+					"58f99f671d4e023d34c110d4b169cc02c12a3755ebe537147ff2479" +
+					"d244daaf719e24cf6b2fa6f47d0410d52d67217bcf4d4d4c2c7c0b9" +
+					"2cd2bcd321edc69bc1430f78a188e712b8cb1fff0c14550cd01c41d" +
+					"ae377256f31211fd249c5031bfee86e638bce6aa36aca349b787cef" +
+					"48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65a" +
+					"a626d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63" +
+					"bbea61be732207f0f5b58d056f118c830981747cb2b245d1377e17",
+			},
+		},
+		Signed: Layout{
+			Type:    "layout",
+			Expires: "2020-11-18T16:06:36Z",
+			Readme:  "some readme text",
+			Steps:   []Step{},
+			Inspect: []Inspection{},
+			Keys:    map[string]Key{},
+		},
+	}
+
+	if err := validateMetablock(testMetablock); err != nil {
+		t.Error("validateMetablock error: valid metablock failed")
+	}
+
+	testMetablock = Metablock{
+		Signatures: []Signature{
+			{
+				KeyId: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
+					"8f3e9cc48b35",
+				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9d" +
+					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
+					"9836ca218b584f51eb0eaacbb1c9bb57448101b07d058dec04d5255" +
+					"51d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053cd93" +
+					"e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb2271271" +
+					"78d52328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe59580" +
+					"4f3e47c4fc98434c44e914445f7cb773439ebf813de8849dd1b5339" +
+					"58f99f671d4e023d34c110d4b169cc02c12a3755ebe537147ff2479" +
+					"d244daaf719e24cf6b2fa6f47d0410d52d67217bcf4d4d4c2c7c0b9" +
+					"2cd2bcd321edc69bc1430f78a188e712b8cb1fff0c14550cd01c41d" +
+					"ae377256f31211fd249c5031bfee86e638bce6aa36aca349b787cef" +
+					"48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65a" +
+					"a626d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63" +
+					"bbea61be732207f0f5b58d056f118c830981747cb2b245d1377e17",
+			},
+		},
+		Signed: Link{
+			Type: "link",
+			Name: "test_type",
+			Command: []string{
+				"tar",
+				"zcvf",
+				"foo.tar.gz",
+				"foo.py",
+			},
+			Materials: map[string]interface{}{
+				"foo.py": map[string]interface{}{
+					"sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a" +
+						"27c013544a60502549",
+				},
+			},
+			Products: map[string]interface{}{
+				"foo.tar.gz": map[string]interface{}{
+					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c" +
+						"1e5aabb7c98514f355",
+				},
+			},
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
+			},
+			Environment: map[string]interface{}{},
+		},
+	}
+
+	if err := validateMetablock(testMetablock); err != nil {
+		t.Error("validateMetablock error: valid metablock failed")
+	}
+
+	testMetablock = Metablock{
+		Signatures: []Signature{
+			{
+				KeyId: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
+					"8f3e9cc48b35",
+				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9d" +
+					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
+					"9836ca218b584f51eb0eaacbb1c9bb57448101b07d058dec04d5255" +
+					"51d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053cd93" +
+					"e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb2271271" +
+					"78d52328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe59580" +
+					"4f3e47c4fc98434c44e914445f7cb773439ebf813de8849dd1b5339" +
+					"58f99f671d4e023d34c110d4b169cc02c12a3755ebe537147ff2479" +
+					"d244daaf719e24cf6b2fa6f47d0410d52d67217bcf4d4d4c2c7c0b9" +
+					"2cd2bcd321edc69bc1430f78a188e712b8cb1fff0c14550cd01c41d" +
+					"ae377256f31211fd249c5031bfee86e638bce6aa36aca349b787cef" +
+					"48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65a" +
+					"a626d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63" +
+					"bbea61be732207f0f5b58d056f118c830981747cb2b245d1377e17",
+			},
+		},
+		Signed: Layout{
+			Type:    "invalid",
+			Expires: "2020-11-18T16:06:36Z",
+			Readme:  "some readme text",
+			Steps:   []Step{},
+			Inspect: []Inspection{},
+			Keys:    map[string]Key{},
+		},
+	}
+
+	if err := validateMetablock(testMetablock); err.Error() !=
+		"invalid Type value for layout: should be 'layout'" {
+		t.Error("validateMetablock Error: invalid Type not detected")
+	}
+
+	testMetablock = Metablock{
+		Signatures: []Signature{
+			{
+				KeyId: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
+					"8f3e9cc48b35",
+				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9d" +
+					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
+					"9836ca218b584f51eb0eaacbb1c9bb57448101b07d058dec04d5255" +
+					"51d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053cd93" +
+					"e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb2271271" +
+					"78d52328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe59580" +
+					"4f3e47c4fc98434c44e914445f7cb773439ebf813de8849dd1b5339" +
+					"58f99f671d4e023d34c110d4b169cc02c12a3755ebe537147ff2479" +
+					"d244daaf719e24cf6b2fa6f47d0410d52d67217bcf4d4d4c2c7c0b9" +
+					"2cd2bcd321edc69bc1430f78a188e712b8cb1fff0c14550cd01c41d" +
+					"ae377256f31211fd249c5031bfee86e638bce6aa36aca349b787cef" +
+					"48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65a" +
+					"a626d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63" +
+					"bbea61be732207f0f5b58d056f118c830981747cb2b245d1377e17",
+			},
+		},
+		Signed: Link{
+			Type: "invalid",
+			Name: "test_type",
+			Command: []string{
+				"tar",
+				"zcvf",
+				"foo.tar.gz",
+				"foo.py",
+			},
+			Materials: map[string]interface{}{
+				"foo.py": map[string]interface{}{
+					"sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a" +
+						"27c013544a60502549",
+				},
+			},
+			Products: map[string]interface{}{
+				"foo.tar.gz": map[string]interface{}{
+					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c" +
+						"1e5aabb7c98514f355",
+				},
+			},
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
+			},
+			Environment: map[string]interface{}{},
+		},
+	}
+
+	if err := validateMetablock(testMetablock); err.Error() !=
+		"invalid type for link 'test_type': should be 'link'" {
+		t.Error("validateMetablock Error: invalid Type not detected")
+	}
+
+	testMetablock = Metablock{
+		Signatures: []Signature{
+			{
+				KeyId: "Z556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b5" +
+					"8f3e9cc48b35",
+				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9d" +
+					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
+					"9836ca218b584f51eb0eaacbb1c9bb57448101b07d058dec04d5255" +
+					"51d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053cd93" +
+					"e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb2271271" +
+					"78d52328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe59580" +
+					"4f3e47c4fc98434c44e914445f7cb773439ebf813de8849dd1b5339" +
+					"58f99f671d4e023d34c110d4b169cc02c12a3755ebe537147ff2479" +
+					"d244daaf719e24cf6b2fa6f47d0410d52d67217bcf4d4d4c2c7c0b9" +
+					"2cd2bcd321edc69bc1430f78a188e712b8cb1fff0c14550cd01c41d" +
+					"ae377256f31211fd249c5031bfee86e638bce6aa36aca349b787cef" +
+					"48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65a" +
+					"a626d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63" +
+					"bbea61be732207f0f5b58d056f118c830981747cb2b245d1377e17",
+			},
+		},
+		Signed: Layout{
+			Type:    "layout",
+			Expires: "2020-11-18T16:06:36Z",
+			Readme:  "some readme text",
+			Steps:   []Step{},
+			Inspect: []Inspection{},
+			Keys:    map[string]Key{},
+		},
+	}
+
+	if err := validateMetablock(testMetablock); err.Error() !=
+		"validateSignature: keyid: 'Z556caebdc0877eed53d419b60eddb1e57fa773e4"+
+			"e31d70698b58f3e9cc48b35' is not a valid hex string" {
+		t.Error("validateMetablock Error: invalid key ID not detected")
+	}
+
+	testMetablock = Metablock{
+		Signatures: []Signature{
+			{
+				KeyId: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
+					"8f3e9cc48b35",
+				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9z" +
+					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
+					"9836ca218b584f51eb0eaacbb1c9bb57448101b07d058dec04d5255" +
+					"51d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053cd93" +
+					"e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb2271271" +
+					"78d52328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe59580" +
+					"4f3e47c4fc98434c44e914445f7cb773439ebf813de8849dd1b5339" +
+					"58f99f671d4e023d34c110d4b169cc02c12a3755ebe537147ff2479" +
+					"d244daaf719e24cf6b2fa6f47d0410d52d67217bcf4d4d4c2c7c0b9" +
+					"2cd2bcd321edc69bc1430f78a188e712b8cb1fff0c14550cd01c41d" +
+					"ae377256f31211fd249c5031bfee86e638bce6aa36aca349b787cef" +
+					"48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65a" +
+					"a626d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63" +
+					"bbea61be732207f0f5b58d056f118c830981747cb2b245d1377e17",
+			},
+		},
+		Signed: Layout{
+			Type:    "layout",
+			Expires: "2020-11-18T16:06:36Z",
+			Readme:  "some readme text",
+			Steps:   []Step{},
+			Inspect: []Inspection{},
+			Keys:    map[string]Key{},
+		},
+	}
+
+	if err := validateMetablock(testMetablock); err.Error() !=
+		"validateSignature: signature with keyid '556caebdc0877eed53d419b60ed"+
+			"db1e57fa773e4e31d70698b588f3e9cc48b35': '02813858670c66647c17802"+
+			"d84f06453589f41850013a544609e9z33ba21fa19280e8371701f8274fb0c56b"+
+			"d95ff4f34c418456b002af9836ca218b584f51eb0eaacbb1c9bb57448101b07d"+
+			"058dec04d525551d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053"+
+			"cd93e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb227127178d52"+
+			"328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe595804f3e47c4fc9843"+
+			"4c44e914445f7cb773439ebf813de8849dd1b533958f99f671d4e023d34c110d"+
+			"4b169cc02c12a3755ebe537147ff2479d244daaf719e24cf6b2fa6f47d0410d5"+
+			"2d67217bcf4d4d4c2c7c0b92cd2bcd321edc69bc1430f78a188e712b8cb1fff0"+
+			"c14550cd01c41dae377256f31211fd249c5031bfee86e638bce6aa36aca349b7"+
+			"87cef48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65aa626"+
+			"d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63bbea61be73220"+
+			"7f0f5b58d056f118c830981747cb2b245d1377e17' is not a valid hex"+
+			" string" {
+		t.Error("validateMetablock error: invalid signature not detected")
 	}
 }
