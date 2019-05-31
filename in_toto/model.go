@@ -388,26 +388,23 @@ type Metablock struct {
 	Signatures []Signature `json:"signatures"`
 }
 
-func checkRequiredFields(signed map[string]interface{}) error {
-	reflection := reflect.TypeOf(nil)
-	if signed["_type"] == "link" {
-		var link Link
-		reflection = reflect.TypeOf(link)
-	} else if signed["_type"] == "layout" {
-		var layout Layout
-		reflection = reflect.TypeOf(layout)
-	} else {
-		return fmt.Errorf("The '_type' field of the 'signed' part of in-toto" +
-			" metadata must be one of 'link' or 'layout'")
-	}
-	attributeCount := reflection.NumField()
+/*
+checkRequiredJsonFields checks that the passed map (obj) has keys for each of
+the json tags in the passed struct type (typ), and returns an error otherwise.
+*/
+func checkRequiredJsonFields(obj map[string]interface{},
+	typ reflect.Type) error {
+
+	// Create list of json tags, e.g. `json:"_type"`
+	attributeCount := typ.NumField()
 	allFields := make([]string, 0)
 	for i := 0; i < attributeCount; i++ {
-		allFields = append(allFields, reflection.Field(i).Tag.Get("json"))
+		allFields = append(allFields, typ.Field(i).Tag.Get("json"))
 	}
 
+	// Assert that there's a key in the passed map for each tag
 	for _, field := range allFields {
-		if _, ok := signed[field]; !ok {
+		if _, ok := obj[field]; !ok {
 			return fmt.Errorf("required field %s missing", field)
 		}
 	}
@@ -461,12 +458,11 @@ func (mb *Metablock) Load(path string) error {
 		return err
 	}
 
-	if err := checkRequiredFields(signed); err != nil {
-		return err
-	}
-
 	if signed["_type"] == "link" {
 		var link Link
+		if err := checkRequiredJsonFields(signed, reflect.TypeOf(link)); err != nil {
+			return err
+		}
 
 		data, err := rawMb["signed"].MarshalJSON()
 		if err != nil {
@@ -482,6 +478,9 @@ func (mb *Metablock) Load(path string) error {
 
 	} else if signed["_type"] == "layout" {
 		var layout Layout
+		if err := checkRequiredJsonFields(signed, reflect.TypeOf(layout)); err != nil {
+			return err
+		}
 
 		data, err := rawMb["signed"].MarshalJSON()
 		if err != nil {
