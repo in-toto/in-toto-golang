@@ -24,7 +24,7 @@ of core functions rather than a broad and (possibly) unstable feature set. In
 other words, we believe that the current feature set is stable enough for
 production use.
 
-If any of these features are necessary for your usecase please let us know and
+If any of these features are necessary for your use case please let us know and
 we will try to provide them as soon as possible!
 
 * [Signature schemes, other than `rsassa-pss-sha256`](https://github.com/in-toto/in-toto-golang/issues/27)
