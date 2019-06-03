@@ -559,6 +559,39 @@ func TestValidateLayout(t *testing.T) {
 		t.Error("validateLayout - validateStep error - invalid step type not " +
 			"detected")
 	}
+
+	cases := map[string]struct {
+		Arg      Layout
+		Expected string
+	}{
+		"invalid key map": {
+			Layout{
+				Type:    "layout",
+				Expires: "2020-02-27T18:03:43Z",
+				Keys: map[string]Key{
+					"deadbeef": Key{KeyId: "livebeef"},
+				},
+			},
+			"invalid key found",
+		},
+		"invalid rsa key": {
+			Layout{
+				Type:    "layout",
+				Expires: "2020-02-27T18:03:43Z",
+				Keys: map[string]Key{
+					"deadbeef": Key{KeyId: "deadbeef"},
+				},
+			},
+			"invalid KeyType for key",
+		},
+	}
+
+	for name, tc := range cases {
+		err := validateLayout(tc.Arg)
+		if err == nil || !strings.Contains(err.Error(), tc.Expected) {
+			t.Errorf("%s: '%s' not in '%s'", name, tc.Expected, err)
+		}
+	}
 }
 
 func TestValidateStep(t *testing.T) {
@@ -1051,5 +1084,47 @@ func TestValidateMetablock(t *testing.T) {
 			"7f0f5b58d056f118c830981747cb2b245d1377e17' is not a valid hex"+
 			" string" {
 		t.Error("validateMetablock error: invalid signature not detected")
+	}
+
+	cases := map[string]struct {
+		Arg      Metablock
+		Expected string
+	}{
+		"invalid type": {
+			Metablock{Signed: "invalid"},
+			"unknown type 'invalid', should be 'layout' or 'link'",
+		},
+	}
+	for name, tc := range cases {
+		err := validateMetablock(tc.Arg)
+		if err == nil || !strings.Contains(err.Error(), tc.Expected) {
+			t.Errorf("%s: '%s' not in '%s'", name, tc.Expected, err)
+		}
+	}
+}
+
+func TestValidateSupplyChainItem(t *testing.T) {
+	cases := map[string]struct {
+		Arg      SupplyChainItem
+		Expected string
+	}{
+		"empty name": {SupplyChainItem{Name: ""}, "name cannot be empty"},
+		"material rule": {
+			SupplyChainItem{
+				Name:              "test",
+				ExpectedMaterials: [][]string{{"invalid"}}},
+			"invalid material rule"},
+		"product rule": {
+			SupplyChainItem{
+				Name:             "test",
+				ExpectedProducts: [][]string{{"invalid"}}},
+			"invalid product rule"},
+	}
+
+	for name, tc := range cases {
+		err := validateSupplyChainItem(tc.Arg)
+		if err == nil || !strings.Contains(err.Error(), tc.Expected) {
+			t.Errorf("%s: '%s' not in '%s'", name, tc.Expected, err)
+		}
 	}
 }
