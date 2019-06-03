@@ -214,23 +214,32 @@ func validateArtifactRule(rule []string) error {
 }
 
 /*
+validateSliceOfArtifactRules iterates over passed rules to validate them.
+*/
+func validateSliceOfArtifactRules(rules [][]string) error {
+	for _, rule := range rules {
+		if err := validateArtifactRule(rule); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+/*
 validateSupplyChainItem is used to validate the common elements found in both
 steps and inspections. Here, the function primarily ensures that the name of
 a supply chain item isn't empty.
 */
-func validateSupplyChainItem(supplyChainItem SupplyChainItem) error {
-	if supplyChainItem.Name == "" {
+func validateSupplyChainItem(item SupplyChainItem) error {
+	if item.Name == "" {
 		return fmt.Errorf("name cannot be empty")
 	}
-	for _, rule := range supplyChainItem.ExpectedMaterials {
-		if err := validateArtifactRule(rule); err != nil {
-			return fmt.Errorf("invalid material rule: %s", err.Error())
-		}
+
+	if err := validateSliceOfArtifactRules(item.ExpectedMaterials); err != nil {
+		return fmt.Errorf("invalid material rule: %s", err)
 	}
-	for _, rule := range supplyChainItem.ExpectedProducts {
-		if err := validateArtifactRule(rule); err != nil {
-			return fmt.Errorf("invalid product rule: %s", err.Error())
-		}
+	if err := validateSliceOfArtifactRules(item.ExpectedProducts); err != nil {
+		return fmt.Errorf("invalid product rule: %s", err)
 	}
 	return nil
 }
