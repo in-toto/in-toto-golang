@@ -36,7 +36,12 @@ func RunInspections(layout Layout, runDir string) (map[string]Metablock, error) 
 
 	for _, inspection := range layout.Inspect {
 
-		linkMb, err := InTotoRun(inspection.Name, runDir, []string{"."}, []string{"."},
+		paths := []string{"."}
+		if runDir != "" {
+			paths = []string{runDir}
+		}
+
+		linkMb, err := InTotoRun(inspection.Name, runDir, paths, paths,
 			inspection.Run)
 		if err != nil {
 			return nil, err
