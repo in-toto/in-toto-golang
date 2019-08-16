@@ -172,7 +172,7 @@ func TestRunInspections(t *testing.T) {
 
 	// Make a list of files in current dir (all must be recorded as artifacts)
 	availableFiles, _ := filepath.Glob("*")
-	result, err := RunInspections(layout)
+	result, err := RunInspections(layout, "")
 
 	// Error must be nil
 	if err != nil {
@@ -218,7 +218,7 @@ func TestRunInspections(t *testing.T) {
 		},
 	}
 
-	result, err = RunInspections(layout)
+	result, err = RunInspections(layout, "")
 	if result != nil || err == nil {
 		t.Errorf("RunInspections returned '(%s, %s)', expected"+
 			" '(nil, *exec.Error)'", result, err)
@@ -232,7 +232,7 @@ func TestRunInspections(t *testing.T) {
 			Run:             []string{"sh", "-c", "false"},
 		},
 	}
-	result, err = RunInspections(layout)
+	result, err = RunInspections(layout, "")
 	if result != nil || err == nil {
 		t.Errorf("RunInspections returned '(%s, %s)', expected"+
 			" '(nil, *exec.Error)'", result, err)

@@ -96,7 +96,7 @@ func TestRunCommand(t *testing.T) {
 		{"return-value": 0, "stdout": []byte(""), "stderr": []byte("err")},
 	}
 	for i := 0; i < len(parameters); i++ {
-		result, err := RunCommand(parameters[i])
+		result, err := RunCommand(parameters[i], "")
 		if !reflect.DeepEqual(result, expected[i]) || err != nil {
 			t.Errorf("RunCommand returned '(%s, %s)', expected '(%s, nil)'",
 				result, err, expected[i])
@@ -104,7 +104,7 @@ func TestRunCommand(t *testing.T) {
 	}
 
 	// Fail run command
-	result, err := RunCommand([]string{"command-does-not-exist"})
+	result, err := RunCommand([]string{"command-does-not-exist"}, "")
 	if result != nil || err == nil {
 		t.Errorf("RunCommand returned '(%s, %s)', expected '(nil, *exec.Error)'",
 			result, err)
@@ -146,7 +146,7 @@ func TestInTotoRun(t *testing.T) {
 		},
 	}
 	for i := 0; i < len(parameters); i++ {
-		result, err := InTotoRun(linkName, parameters[i]["materialPaths"],
+		result, err := InTotoRun(linkName, "", parameters[i]["materialPaths"],
 			parameters[i]["productPaths"], parameters[i]["cmdArgs"])
 		if !reflect.DeepEqual(result, expected[i]) {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'",
@@ -177,7 +177,7 @@ func TestInTotoRun(t *testing.T) {
 	}
 
 	for i := 0; i < len(parameters); i++ {
-		result, err := InTotoRun(linkName, parameters[i]["materialPaths"],
+		result, err := InTotoRun(linkName, "", parameters[i]["materialPaths"],
 			parameters[i]["productPaths"], parameters[i]["cmdArgs"])
 		if err == nil {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, <error>)'",

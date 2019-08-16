@@ -134,9 +134,13 @@ created the first return value is nil and the second return value is the error.
 NOTE: Since stdout and stderr are captured, they cannot be seen during the
 command execution.
 */
-func RunCommand(cmdArgs []string) (map[string]interface{}, error) {
+func RunCommand(cmdArgs []string, runDir string) (map[string]interface{}, error) {
 
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+	if runDir != "" {
+		cmd.Dir = runDir
+	}
+
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
 		return nil, err
@@ -172,7 +176,7 @@ Metablock object.  If command execution or artifact recording fails the first
 return value is an empty Metablock and the second return value is the error.
 NOTE: Currently InTotoRun cannot be used to sign Link metadata.
 */
-func InTotoRun(name string, materialPaths []string, productPaths []string,
+func InTotoRun(name string, runDir string, materialPaths []string, productPaths []string,
 	cmdArgs []string) (Metablock, error) {
 	var linkMb Metablock
 	materials, err := RecordArtifacts(materialPaths)
@@ -180,7 +184,7 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		return linkMb, err
 	}
 
-	byProducts, err := RunCommand(cmdArgs)
+	byProducts, err := RunCommand(cmdArgs, runDir)
 	if err != nil {
 		return linkMb, err
 	}
