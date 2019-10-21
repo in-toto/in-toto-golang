@@ -559,7 +559,7 @@ Signed field of the Metablock on which it was called.  If canonicalization
 fails the first return value is nil and the second return value is the error.
 */
 func (mb *Metablock) GetSignableRepresentation() ([]byte, error) {
-	return encodeCanonical(mb.Signed)
+	return EncodeCanonical(mb.Signed)
 }
 
 /*

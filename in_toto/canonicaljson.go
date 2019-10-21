@@ -104,12 +104,12 @@ func _encodeCanonical(obj interface{}, result *bytes.Buffer) (err error) {
 }
 
 /*
-encodeCanonical JSON canonicalizes the passed object and returns it as a byte
+EncodeCanonical JSON canonicalizes the passed object and returns it as a byte
 slice.  It uses the OLPC canonical JSON specification (see
 http://wiki.laptop.org/go/Canonical_JSON).  If canonicalization fails the byte
 slice is nil and the second return value contains the error.
 */
-func encodeCanonical(obj interface{}) ([]byte, error) {
+func EncodeCanonical(obj interface{}) ([]byte, error) {
 	// FIXME: Terrible hack to turn the passed struct into a map, converting
 	// the struct's variable names to the json key names defined in the struct
 	data, err := json.Marshal(obj)

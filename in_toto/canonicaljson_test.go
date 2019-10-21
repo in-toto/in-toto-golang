@@ -34,19 +34,19 @@ func TestEncodeCanonical(t *testing.T) {
 		"",
 	}
 	for i := 0; i < len(objects); i++ {
-		result, err := encodeCanonical(objects[i])
+		result, err := EncodeCanonical(objects[i])
 
 		if string(result) != expectedResult[i] || err != nil {
-			t.Errorf("encodeCanonical returned (%s, %s), expected (%s, nil)",
+			t.Errorf("EncodeCanonical returned (%s, %s), expected (%s, nil)",
 				result, err, expectedResult[i])
 		}
 	}
 
 	// Cannot canonicalize function
-	result, err := encodeCanonical(TestEncodeCanonical)
+	result, err := EncodeCanonical(TestEncodeCanonical)
 	expectedError := "json: unsupported type"
 	if err == nil || !strings.Contains(err.Error(), expectedError) {
-		t.Errorf("encodeCanonical returned (%s, %s), expected '%s' error",
+		t.Errorf("EncodeCanonical returned (%s, %s), expected '%s' error",
 			result, err, expectedError)
 	}
 }
@@ -56,7 +56,7 @@ func Test_encodeCanonical(t *testing.T) {
 	err := _encodeCanonical(Test_encodeCanonical, &result)
 	expectedError := "Can't canonicalize"
 	if err == nil || !strings.Contains(err.Error(), expectedError) {
-		t.Errorf("encodeCanonical returned '%s', expected '%s' error",
+		t.Errorf("EncodeCanonical returned '%s', expected '%s' error",
 			err, expectedError)
 	}
 }
