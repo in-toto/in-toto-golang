@@ -27,7 +27,7 @@ production use.
 If any of these features are necessary for your use case please let us know and
 we will try to provide them as soon as possible!
 
-* [Signature schemes, other than `rsassa-pss-sha256`](https://github.com/in-toto/in-toto-golang/issues/27)
+* [Signature schemes, other than `rsassa-pss-sha256` and `ed25519`](https://github.com/in-toto/in-toto-golang/issues/27)
 * [GPG keys](https://github.com/in-toto/in-toto-golang/issues/26)
 * [Layout parameter substitution](https://github.com/in-toto/in-toto-golang/issues/29)
 * [in-toto-run functionality](https://github.com/in-toto/in-toto-golang/issues/30)
