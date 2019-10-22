@@ -141,3 +141,68 @@ k7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=
 		}
 	}
 }
+
+func testParseed25519FromPrivateJSON(t *testing.T) {
+	// Test parsing errors:
+	// - Not JSON,
+	// - Missing private field
+	// - private field is the wrong length
+	// - scheme and keytype are not ed25519
+	invalidKey := []string{
+		"not a json",
+		`{"keytype": "ed25519", "scheme": "ed25519", "keyid": "308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8f93f549eb4cca8dc2142fb655ba2d0955d1824f79474f354e38d6a359e9d440", "private": ""}}`,
+		`{"keytype": "ed25519", "scheme": "ed25519", "keyid": "308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8f93f549eb4cca8dc2142fb655ba2d0955d1824f79474f354e38d6a359e9d440", "private": "861fd1b466cfc6f73"}}`,
+		`{"keytype": "25519", "scheme": "ed25519", "keyid": "308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8f93f549eb4cca8dc2142fb655ba2d0955d1824f79474f354e38d6a359e9d440", "private": "861fd1b466cfc6f73f8ed630f99d8eda250421f0e3a6123fd5c311cc001bda49"}}`,
+		`{"keytype": "ed25519", "scheme": "cd25519", "keyid": "308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8f93f549eb4cca8dc2142fb655ba2d0955d1824f79474f354e38d6a359e9d440", "private": "861fd1b466cfc6f73f8ed630f99d8eda250421f0e3a6123fd5c311cc001bda49"}}`,
+	}
+
+	expectedErrors := []string{
+		"this is not a valid JSON key object",
+		"this key is not a private key",
+		"the private field on this key is malformed",
+		"this doesn't appear to be an ed25519 key",
+		"this doesn't appear to be an ed25519 key",
+	}
+
+	for i := 0; i < len(invalidKey); i++ {
+		_, err := Parseed25519FromPrivateJSON(invalidKey[i])
+		if err == nil || !strings.Contains(err.Error(), expectedErrors[i]) {
+			t.Errorf("Parseed25519FromPrivateJSON returned (%s), expected '%s'"+
+				" error", err, expectedErrors[i])
+		}
+	}
+
+	// Generated through in-toto run 0.4.1 and thus it should be a happy key
+	validKey := `{"keytype": "ed25519", "scheme": "ed25519", "keyid": "308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8f93f549eb4cca8dc2142fb655ba2d0955d1824f79474f354e38d6a359e9d440", "private": "861fd1b466cfc6f73f8ed630f99d8eda250421f0e3a6123fd5c311cc001bda49"}}`
+	_, err := Parseed25519FromPrivateJSON(validKey)
+	if err != nil {
+		t.Errorf("Parseed25519FromPrivateJSON returned (%s), expected no error",
+			err)
+	}
+
+}
+
+func testgenerateEd25519Signature(t *testing.T) {
+	// let's load a key in memory here first
+	validKey := `{"keytype": "ed25519", "scheme": "ed25519", "keyid": "308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8f93f549eb4cca8dc2142fb655ba2d0955d1824f79474f354e38d6a359e9d440", "private": "861fd1b466cfc6f73f8ed630f99d8eda250421f0e3a6123fd5c311cc001bda49"}}`
+	key, err := Parseed25519FromPrivateJSON(validKey)
+	if err != nil {
+		t.Errorf("Parseed25519FromPrivateJSON returned (%s), expected no error",
+			err)
+	}
+
+	signature, err := generateEd25519Signature([]uint8("ohmywhatatest"), key)
+	if err != nil {
+		t.Errorf("generateEd25519Signature shouldn't have returned error (%s)",
+			err)
+	}
+
+	if signature.KeyId != key.KeyId {
+		t.Errorf("generateEd25519Signature should've returned matching keyids!")
+	}
+
+	// ed25519 signatures should be 32 bytes long => 64 hex digits
+	if len(signature.Sig) != 64 {
+		t.Errorf("generateEd25519Signature should've returned a 32 byte signature!")
+	}
+}

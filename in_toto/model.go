@@ -616,5 +616,36 @@ func validateMetablock(mb Metablock) error {
 		return fmt.Errorf("validateSignature: %s", err)
 	}
 
+    return nil
+}
+
+/*
+signs the signed portion of the metablock using the Key object provided.
+It then appends the resulting signature to the signatures field as provided.
+It return an error if the Signed object cannot be canonicalized, or if the key
+is invalid or not supported.
+*/
+func (mb *Metablock) Sign(key Key) error {
+
+	dataCanonical, err := mb.GetSignableRepresentation()
+	if err != nil {
+		return err
+	}
+	var newSignature Signature
+
+	// FIXME: we could be fancier about signature-generation using a dispatch
+	// table or something but for now let's just be explicit
+	// (also, lolnogenerics)
+	if key.KeyType == "ed25519" && key.Scheme == "ed25519" {
+		newSignature, err = generateEd25519Signature(dataCanonical, key)
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("This key type or signature scheme is not supported yet!")
+	}
+
+	mb.Signatures = append(mb.Signatures, newSignature)
+
 	return nil
 }
