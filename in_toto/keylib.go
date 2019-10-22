@@ -155,21 +155,21 @@ func VerifySignature(key Key, sig Signature, data []byte) error {
 	return nil
 }
 
-/* Parse ed25519 from private json uses the passed json string to populate and
-* ed25519 key. These ed25519 keys have the format as generated using
-* in-toto-keygen:
-*  {
-    "keytype: "ed25519",
-    "scheme": "ed25519",
-    "keyid": ...
-    "keyid_hash_algorithms": [...]
-    "keyval": {
-        "public": "..." # 32 bytes
-        "private": "..." # 32 bytes
-    }
-   }
+/*
+ParseEd25519FromPrivateJSON parses and ed25519 private key from the json
+string. These ed25519 keys have the format as generated using in-toto-keygen:
+{
+  "keytype: "ed25519",
+  "scheme": "ed25519",
+  "keyid": ...
+  "keyid_hash_algorithms": [...]
+  "keyval": {
+    "public": "..." # 32 bytes
+    "private": "..." # 32 bytes
+  }
+}
 */
-func Parseed25519FromPrivateJSON(JSONString string) (Key, error) {
+func ParseEd25519FromPrivateJSON(JSONString string) (Key, error) {
 
 	var keyObj Key
 	err := json.Unmarshal([]uint8(JSONString), &keyObj)
@@ -194,7 +194,7 @@ func Parseed25519FromPrivateJSON(JSONString string) (Key, error) {
 }
 
 /*
-generateEd25519Signature creates an ed25519 signautre using the key and the
+generateEd25519Signature creates an ed25519 signature using the key and the
 signable buffer provided. It returns an error if the underlying signing library
 fails.
 */
