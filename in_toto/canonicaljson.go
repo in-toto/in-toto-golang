@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
-	"strconv"
 )
 
 /*
@@ -50,13 +49,17 @@ func _encodeCanonical(obj interface{}, result *bytes.Buffer) (err error) {
 			result.WriteString("false")
 		}
 
-	// Golang's JSON decoder, which we use before canonicalization, in order to
-	// transform any passed object to a generic JSON object, stores JSON
-	// numbers as float64. Hence, it is safe to expect all numeric values to be
-	// float64.
-	case float64:
-		// The used canonicalization spec only allows non-floating point numbers
-		result.WriteString(strconv.Itoa(int(objAsserted)))
+	// The wrapping `EncodeCanonical` function decodes the passed json data with
+	// `decoder.UseNumber` so that any numeric value is stored as `json.Number`
+	// (instead of the default `float64`). This allows us to assert that it is a
+	// non-floating point number, which are the only numbers allowed by the used
+	// canonicalization specification.
+	case json.Number:
+		if _, err := objAsserted.Int64(); err != nil {
+			panic(fmt.Sprintf("Can't canonicalize floating point number '%s'",
+				objAsserted))
+		}
+		result.WriteString(objAsserted.String())
 
 	case nil:
 		result.WriteString("null")
@@ -123,7 +126,10 @@ func EncodeCanonical(obj interface{}) ([]byte, error) {
 		return nil, err
 	}
 	var jsonMap interface{}
-	if err := json.Unmarshal(data, &jsonMap); err != nil {
+
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(&jsonMap); err != nil {
 		return nil, err
 	}
 
