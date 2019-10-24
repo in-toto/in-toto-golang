@@ -65,7 +65,9 @@ func _encodeCanonical(obj interface{}, result *bytes.Buffer) (err error) {
 	case []interface{}:
 		result.WriteString("[")
 		for i, val := range objAsserted {
-			_encodeCanonical(val, result)
+			if err := _encodeCanonical(val, result); err != nil {
+				return err
+			}
 			if i < (len(objAsserted) - 1) {
 				result.WriteString(",")
 			}
@@ -85,9 +87,13 @@ func _encodeCanonical(obj interface{}, result *bytes.Buffer) (err error) {
 
 		// Canonicalize map
 		for i, key := range mapKeys {
-			_encodeCanonical(key, result)
+			if err := _encodeCanonical(key, result); err != nil {
+				return err
+			}
 			result.WriteString(":")
-			_encodeCanonical(objAsserted[key], result)
+			if err := _encodeCanonical(objAsserted[key], result); err != nil {
+				return err
+			}
 			if i < (len(mapKeys) - 1) {
 				result.WriteString(",")
 			}
