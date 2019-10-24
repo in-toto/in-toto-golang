@@ -90,9 +90,11 @@ func _encodeCanonical(obj interface{}, result *bytes.Buffer) (err error) {
 
 		// Canonicalize map
 		for i, key := range mapKeys {
-			if err := _encodeCanonical(key, result); err != nil {
-				return err
-			}
+			// Note: `key` must be a `string` (see `case map[string]interface{}`) and
+			// canonicalization of strings cannot err out (see `case string`), thus
+			// no error handling is needed here.
+			_encodeCanonical(key, result)
+
 			result.WriteString(":")
 			if err := _encodeCanonical(objAsserted[key], result); err != nil {
 				return err

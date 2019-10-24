@@ -64,11 +64,19 @@ func TestEncodeCanonicalErr(t *testing.T) {
 }
 
 func Test_encodeCanonical(t *testing.T) {
-	var result bytes.Buffer
-	err := _encodeCanonical(Test_encodeCanonical, &result)
 	expectedError := "Can't canonicalize"
-	if err == nil || !strings.Contains(err.Error(), expectedError) {
-		t.Errorf("EncodeCanonical returned '%s', expected '%s' error",
-			err, expectedError)
+
+	objects := []interface{}{
+		Test_encodeCanonical,
+		[]interface{}{Test_encodeCanonical},
+	}
+
+	for i := 0; i < len(objects); i++ {
+		var result bytes.Buffer
+		err := _encodeCanonical(objects[i], &result)
+		if err == nil || !strings.Contains(err.Error(), expectedError) {
+			t.Errorf("EncodeCanonical returned '%s', expected '%s' error",
+				err, expectedError)
+		}
 	}
 }
