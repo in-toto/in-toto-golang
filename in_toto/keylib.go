@@ -2,7 +2,6 @@ package in_toto
 
 import (
 	"crypto"
-	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
@@ -10,6 +9,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"golang.org/x/crypto/ed25519"
 	"io/ioutil"
 	"os"
 	"reflect"
