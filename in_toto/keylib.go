@@ -156,8 +156,8 @@ func VerifySignature(key Key, sig Signature, data []byte) error {
 }
 
 /*
-ParseEd25519FromPrivateJSON parses and ed25519 private key from the json
-string. These ed25519 keys have the format as generated using in-toto-keygen:
+ParseEd25519FromPrivateJSON parses an ed25519 private key from the json string.
+These ed25519 keys have the format as generated using in-toto-keygen:
 {
   "keytype: "ed25519",
   "scheme": "ed25519",
@@ -194,11 +194,11 @@ func ParseEd25519FromPrivateJSON(JSONString string) (Key, error) {
 }
 
 /*
-generateEd25519Signature creates an ed25519 signature using the key and the
+GenerateEd25519Signature creates an ed25519 signature using the key and the
 signable buffer provided. It returns an error if the underlying signing library
 fails.
 */
-func generateEd25519Signature(signable []byte, key Key) (Signature, error) {
+func GenerateEd25519Signature(signable []byte, key Key) (Signature, error) {
 
 	var signature Signature
 

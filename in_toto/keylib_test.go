@@ -182,7 +182,7 @@ func TestParseEd25519FromPrivateJSON(t *testing.T) {
 
 }
 
-func TestgenerateEd25519Signature(t *testing.T) {
+func TestGenerateEd25519Signature(t *testing.T) {
 	// let's load a key in memory here first
 	validKey := `{"keytype": "ed25519", "scheme": "ed25519", "keyid": "308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8f93f549eb4cca8dc2142fb655ba2d0955d1824f79474f354e38d6a359e9d440", "private": "861fd1b466cfc6f73f8ed630f99d8eda250421f0e3a6123fd5c311cc001bda49"}}`
 	key, err := ParseEd25519FromPrivateJSON(validKey)
@@ -191,18 +191,19 @@ func TestgenerateEd25519Signature(t *testing.T) {
 			err)
 	}
 
-	signature, err := generateEd25519Signature([]uint8("ohmywhatatest"), key)
+	signature, err := GenerateEd25519Signature([]uint8("ohmywhatatest"), key)
 	if err != nil {
-		t.Errorf("generateEd25519Signature shouldn't have returned error (%s)",
+		t.Errorf("GenerateEd25519Signature shouldn't have returned error (%s)",
 			err)
 	}
 
 	if signature.KeyId != key.KeyId {
-		t.Errorf("generateEd25519Signature should've returned matching keyids!")
+		t.Errorf("GenerateEd25519Signature should've returned matching keyids!")
 	}
 
-	// ed25519 signatures should be 32 bytes long => 64 hex digits
-	if len(signature.Sig) != 64 {
-		t.Errorf("generateEd25519Signature should've returned a 32 byte signature!")
+	// ed25519 signatures should be 64 bytes long => 128 hex digits
+	if len(signature.Sig) != 128 {
+		t.Errorf("GenerateEd25519Signature should've returned a 32 byte signature! %s",
+			signature.Sig)
 	}
 }

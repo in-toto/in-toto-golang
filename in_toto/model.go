@@ -622,7 +622,7 @@ func validateMetablock(mb Metablock) error {
 /*
 Sign creates a sigature over the signed portion of the metablock using the Key
 object provided. It then appends the resulting signature to the signatures
-field as provided. It return an error if the Signed object cannot be
+field as provided. It returns an error if the Signed object cannot be
 canonicalized, or if the key is invalid or not supported.
 */
 func (mb *Metablock) Sign(key Key) error {
@@ -637,7 +637,7 @@ func (mb *Metablock) Sign(key Key) error {
 	// table or something but for now let's just be explicit
 	// (also, lolnogenerics)
 	if key.KeyType == "ed25519" && key.Scheme == "ed25519" {
-		newSignature, err = generateEd25519Signature(dataCanonical, key)
+		newSignature, err = GenerateEd25519Signature(dataCanonical, key)
 		if err != nil {
 			return err
 		}
