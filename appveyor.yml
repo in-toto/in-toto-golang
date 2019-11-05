@@ -5,7 +5,9 @@ clone_folder: c:\gopath\src\github.com\in-toto\in-toto-golang
 environment:
   GOPATH: c:\gopath
 
-stack: go 1.13
+install:
+  - go version
+  - go env
 
 test_script:
   - ps: if (gofmt -l in_toto) { Write-Error "Use gofmt" }
