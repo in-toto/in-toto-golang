@@ -1131,7 +1131,8 @@ func TestValidateSupplyChainItem(t *testing.T) {
 
 func TestMetablockSignWithEd25519(t *testing.T) {
 	// Test metablock signing (with ed25519)
-	// - Pass non-private key
+	// - Pass non-ed25519 key
+	// - Pass malformed ed25519 key
 	// - Pass unsupported invalid key type
 	// - Pass an ed25519 key and expect a signature back
 	var key Key
@@ -1156,6 +1157,15 @@ func TestMetablockSignWithEd25519(t *testing.T) {
 	}
 
 	validKey := `{"keytype": "ed25519", "scheme": "ed25519", "keyid": "308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8f93f549eb4cca8dc2142fb655ba2d0955d1824f79474f354e38d6a359e9d440", "private": "861fd1b466cfc6f73f8ed630f99d8eda250421f0e3a6123fd5c311cc001bda49"}}`
+
+	// Trigger error in Sign/GenerateEd25519Signature with malformed key data
+	badkey, err = ParseEd25519FromPrivateJSON(validKey)
+	badkey.KeyVal.Private = "xyz"
+	err = mb.Sign(badkey)
+	if err == nil || !strings.Contains(err.Error(), "invalid byte") {
+		t.Errorf("Metablock.Sign returned (%s), expected 'invalid byte' error ",
+			err)
+	}
 
 	badkey, err = ParseEd25519FromPrivateJSON(validKey)
 	if err != nil {
