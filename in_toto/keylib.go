@@ -6,8 +6,10 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"golang.org/x/crypto/ed25519"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -151,4 +153,64 @@ func VerifySignature(key Key, sig Signature, data []byte) error {
 	}
 
 	return nil
+}
+
+/*
+ParseEd25519FromPrivateJSON parses an ed25519 private key from the json string.
+These ed25519 keys have the format as generated using in-toto-keygen:
+{
+  "keytype: "ed25519",
+  "scheme": "ed25519",
+  "keyid": ...
+  "keyid_hash_algorithms": [...]
+  "keyval": {
+    "public": "..." # 32 bytes
+    "private": "..." # 32 bytes
+  }
+}
+*/
+func ParseEd25519FromPrivateJSON(JSONString string) (Key, error) {
+
+	var keyObj Key
+	err := json.Unmarshal([]uint8(JSONString), &keyObj)
+	if err != nil {
+		return keyObj, fmt.Errorf("this is not a valid JSON key object")
+	}
+
+	if keyObj.KeyType != "ed25519" || keyObj.Scheme != "ed25519" {
+		return keyObj, fmt.Errorf("this doesn't appear to be an ed25519 key")
+	}
+
+	if keyObj.KeyVal.Private == "" {
+		return keyObj, fmt.Errorf("this key is not a private key")
+	}
+
+	// 64 hexadecimal digits => 32 bytes for the private portion of the key
+	if len(keyObj.KeyVal.Private) != 64 {
+		return keyObj, fmt.Errorf("the private field on this key is malformed")
+	}
+
+	return keyObj, nil
+}
+
+/*
+GenerateEd25519Signature creates an ed25519 signature using the key and the
+signable buffer provided. It returns an error if the underlying signing library
+fails.
+*/
+func GenerateEd25519Signature(signable []byte, key Key) (Signature, error) {
+
+	var signature Signature
+
+	seed, err := hex.DecodeString(key.KeyVal.Private)
+	if err != nil {
+		return signature, err
+	}
+	privkey := ed25519.NewKeyFromSeed([]uint8(seed))
+	signatureBuffer := ed25519.Sign(privkey, signable)
+
+	signature.Sig = hex.EncodeToString(signatureBuffer)
+	signature.KeyId = key.KeyId
+
+	return signature, nil
 }
