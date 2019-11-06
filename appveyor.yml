@@ -2,9 +2,6 @@ build: off
 
 clone_folder: c:\gopath\src\github.com\in-toto\in-toto-golang
 
-environment:
-  GOPATH: c:\gopath
-
 install:
   - go version
   - go env
