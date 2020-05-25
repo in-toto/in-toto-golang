@@ -22,11 +22,13 @@ all files found in the current working directory as materials (before command
 execution) and products (after command execution).  A map with inspection names
 as keys and Metablocks containing the generated link metadata as values is
 returned.  The format is:
-  {
-    <inspection name> : Metablock,
-    <inspection name> : Metablock,
-    ...
-  }
+
+	{
+		<inspection name> : Metablock,
+		<inspection name> : Metablock,
+		...
+	}
+
 If executing the inspection command fails, or if the executed command has a
 non-zero exit code, the first return value is an empty Metablock map and the
 second return value is the error.
@@ -310,11 +312,13 @@ and Products are equal across links for a given step.  This function may be
 used at a time during the overall verification, where link threshold's have
 been verified and subsequent verification only needs one exemplary link per
 step.  The function returns a map with one Metablock (link) per step:
-  {
-    <step name> : Metablock,
-    <step name> : Metablock,
-    ...
-  }
+
+	{
+		<step name> : Metablock,
+		<step name> : Metablock,
+		...
+	}
+
 If links corresponding to the same step report different Materials or different
 Products, the first return value is an empty Metablock map and the second
 return value is the error.
@@ -405,19 +409,21 @@ VerifyLinkSignatureThesholds verifies that for each step of the passed layout,
 there are at least Threshold links, validly signed by different authorized
 functionaries.  The returned map of link metadata per steps contains only
 links with valid signatures from distinct functionaries and has the format:
-  {
-    <step name> : {
-      <key id>: Metablock,
-      <key id>: Metablock,
-      ...
-    },
-    <step name> : {
-      <key id>: Metablock,
-      <key id>: Metablock,
-      ...
-    }
-    ...
-  }
+
+	{
+		<step name> : {
+		<key id>: Metablock,
+		<key id>: Metablock,
+		...
+		},
+		<step name> : {
+		<key id>: Metablock,
+		<key id>: Metablock,
+		...
+		}
+		...
+	}
+
 If for any step of the layout there are not enough links available, the first
 return value is an empty map of Metablock maps and the second return value is
 the error.
@@ -484,19 +490,21 @@ the links may be passed using linkDir.  Link file names are constructed,
 using LinkNameFormat together with the corresponding step name and authorized
 functionary key ids.  A map of link metadata is returned and has the following
 format:
-  {
-    <step name> : {
-      <key id>: Metablock,
-      <key id>: Metablock,
-      ...
-    },
-    <step name> : {
-      <key id>: Metablock,
-      <key id>: Metablock,
-      ...
-    }
-    ...
-  }
+
+	{
+		<step name> : {
+			<key id>: Metablock,
+			<key id>: Metablock,
+			...
+		},
+		<step name> : {
+		<key id>: Metablock,
+		<key id>: Metablock,
+		...
+		}
+		...
+	}
+
 If a link cannot be loaded at a constructed link name or is invalid, it is
 ignored. Only a preliminary threshold check is performed, that is, if there
 aren't at least Threshold links for any given step, the first return value
