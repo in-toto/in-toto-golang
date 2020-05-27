@@ -11,11 +11,13 @@ import (
 /*
 RecordArtifact reads and hashes the contents of the file at the passed path
 using sha256 and returns a map in the following format:
-  {
-    "<path>": {
-      "sha256": <hex representation of hash>
-    }
-  }
+
+	{
+		"<path>": {
+			"sha256": <hex representation of hash>
+		}
+	}
+
 If reading the file fails, the first return value is nil and the second return
 value is the error.
 */
@@ -50,15 +52,17 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 RecordArtifacts walks through the passed slice of paths, traversing
 subdirectories, and calls RecordArtifact for each file.  It returns a map in
 the following format:
-  {
-    "<path>": {
-      "sha256": <hex representation of hash>
-    },
-    "<path>": {
-      "sha256": <hex representation of hash>
-    },
-    ...
-  }
+
+	{
+		"<path>": {
+			"sha256": <hex representation of hash>
+		},
+		"<path>": {
+		"sha256": <hex representation of hash>
+		},
+		...
+	}
+
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
@@ -124,11 +128,13 @@ func WaitErrToExitCode(err error) int {
 RunCommand executes the passed command in a subprocess.  The first element of
 cmdArgs is used as executable and the rest as command arguments.  It captures
 and returns stdout, stderr and exit code.  The format of the returned map is:
-  {
-    "return-value": <exit code>,
-    "stdout": "<standard output>",
-    "stderr": "<standard error>"
-  }
+
+	{
+		"return-value": <exit code>,
+		"stdout": "<standard output>",
+		"stderr": "<standard error>"
+	}
+
 If the command cannot be executed or no pipes for stdout or stderr can be
 created the first return value is nil and the second return value is the error.
 NOTE: Since stdout and stderr are captured, they cannot be seen during the

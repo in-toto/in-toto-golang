@@ -158,16 +158,17 @@ func VerifySignature(key Key, sig Signature, data []byte) error {
 /*
 ParseEd25519FromPrivateJSON parses an ed25519 private key from the json string.
 These ed25519 keys have the format as generated using in-toto-keygen:
-{
-  "keytype: "ed25519",
-  "scheme": "ed25519",
-  "keyid": ...
-  "keyid_hash_algorithms": [...]
-  "keyval": {
-    "public": "..." # 32 bytes
-    "private": "..." # 32 bytes
-  }
-}
+
+	{
+		"keytype: "ed25519",
+		"scheme": "ed25519",
+		"keyid": ...
+		"keyid_hash_algorithms": [...]
+		"keyval": {
+			"public": "..." # 32 bytes
+			"private": "..." # 32 bytes
+		}
+	}
 */
 func ParseEd25519FromPrivateJSON(JSONString string) (Key, error) {
 

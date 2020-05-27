@@ -20,24 +20,26 @@ var errorMsg string = "Wrong rule format, available formats are:\n" +
 UnpackRule parses the passed rule and extracts and returns the information
 required for rule processing.  It can be used to verify if a rule has a valid
 format.  Available rule formats are:
-  MATCH <pattern> [IN <source-path-prefix>] WITH (MATERIALS|PRODUCTS)
-      [IN <destination-path-prefix>] FROM <step>,
-  CREATE <pattern>,
-  DELETE <pattern>,
-  MODIFY <pattern>,
-  ALLOW <pattern>,
-  DISALLOW <pattern>
+
+	MATCH <pattern> [IN <source-path-prefix>] WITH (MATERIALS|PRODUCTS)
+		[IN <destination-path-prefix>] FROM <step>,
+	CREATE <pattern>,
+	DELETE <pattern>,
+	MODIFY <pattern>,
+	ALLOW <pattern>,
+	DISALLOW <pattern>
 
 Rule tokens are normalized to lower case before returning.  The returned map
 has the following format:
-  {
-    "type": "match" | "create" | "delete" |"modify" | "allow" | "disallow"
-    "pattern": "<file name pattern>",
-    "srcPrefix": "<path or empty string>", // MATCH rule only
-    "dstPrefix": "<path or empty string>", // MATCH rule only
-    "dstType": "materials" | "products">, // MATCH rule only
-    "dstName": "<step name>", // Match rule only
-  }
+
+	{
+		"type": "match" | "create" | "delete" |"modify" | "allow" | "disallow"
+		"pattern": "<file name pattern>",
+		"srcPrefix": "<path or empty string>", // MATCH rule only
+		"dstPrefix": "<path or empty string>", // MATCH rule only
+		"dstType": "materials" | "products">, // MATCH rule only
+		"dstName": "<step name>", // Match rule only
+	}
 
 If the rule does not match any of the available formats the first return value
 is nil and the second return value is the error.
@@ -81,7 +83,6 @@ func UnpackRule(rule []string) (map[string]string, error) {
 			dstType = ruleLower[5]
 			dstPrefix = rule[7]
 			dstName = rule[9]
-
 			// MATCH <pattern> IN <source-path-prefix> WITH (MATERIALS|PRODUCTS) \
 			// FROM <step>
 		} else if ruleLen == 8 && ruleLower[2] == "in" &&
