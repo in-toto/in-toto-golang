@@ -74,6 +74,6 @@ for each of the files.
 
 func createList() []string {
 
-	hash_func := []string{"sha256", "sha512", "md5"}
-	return hash_func
+	hashFunc := []string{"sha256", "sha512", "md5"}
+	return hashFunc
 }

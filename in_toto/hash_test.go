@@ -12,7 +12,7 @@ in the hash_func list inside hash.go file
 
 func TestHashFunctions(t *testing.T) {
 
-	hash_func := createList()
+	hashFunc := createList()
 	hashObjectMap := createMap()
 	expected := map[string]interface{}{
 		"sha256": "de31a0fb6adeb79b6017f39244ac52a4aea74548015c37d98f00a9e0e0914565",
@@ -21,7 +21,7 @@ func TestHashFunctions(t *testing.T) {
 	}
 
 	hashedContentsMap := make(map[string]interface{})
-	for _, element := range hash_func {
+	for _, element := range hashFunc {
 
 		result := hashObjectMap[element].Compute([]uint8("Hashing this string to test"))
 		hashedContentsMap[element] = result

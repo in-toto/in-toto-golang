@@ -36,8 +36,8 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 	}
 
 	// Create a map of all the hashes present in the hash_func list
-	hash_func := []string{"sha256"}
-	for _, element := range hash_func {
+	hashFunc := []string{"sha256"}
+	for _, element := range hashFunc {
 
 		result := hashObjectMap[element].Compute([]uint8(contents))
 
