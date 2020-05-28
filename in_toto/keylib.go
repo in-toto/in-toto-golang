@@ -52,10 +52,14 @@ file at path does not exist or is not a PEM formatted RSA public key.
 */
 func (k *Key) LoadPublicKey(path string) error {
 	keyFile, err := os.Open(path)
-	defer keyFile.Close()
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err := keyFile.Close(); err != nil {
+			fmt.Printf("Could not close key file: %s", err)
+		}
+	}()
 
 	// Read key bytes and decode PEM
 	keyBytes, err := ioutil.ReadAll(keyFile)

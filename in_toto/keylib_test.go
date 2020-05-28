@@ -1,6 +1,7 @@
 package in_toto
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -124,7 +125,9 @@ k7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=
 	// - Right key and data, but wrong signature
 	// - Right key and data, but invalid signature
 	var wrongKey Key
-	wrongKey.LoadPublicKey("alice.pub")
+	if err := wrongKey.LoadPublicKey("alice.pub"); err != nil {
+		fmt.Printf("Unable to load key alice.pub: %s", err)
+	}
 	wrongSig := Signature{
 		KeyId: validSig.KeyId,
 		Sig:   "b" + validSig.Sig[1:],

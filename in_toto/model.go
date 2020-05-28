@@ -451,10 +451,14 @@ a valid JSON formatted Metablock that contains a Link or Layout.
 func (mb *Metablock) Load(path string) error {
 	// Open file and close before returning
 	jsonFile, err := os.Open(path)
-	defer jsonFile.Close()
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err := jsonFile.Close(); err != nil {
+			fmt.Printf("Unable to close jsonFile: %s", err)
+		}
+	}()
 
 	// Read entire file
 	jsonBytes, err := ioutil.ReadAll(jsonFile)

@@ -53,7 +53,9 @@ func RunInspections(layout Layout) (map[string]Metablock, error) {
 
 		// Dump inspection link to cwd using the short link name format
 		linkName := fmt.Sprintf(LinkNameFormatShort, inspection.Name)
-		linkMb.Dump(linkName)
+		if err := linkMb.Dump(linkName); err != nil {
+			fmt.Printf("JSON serialization or writing failed: %s", err)
+		}
 
 		inspectionMetadata[inspection.Name] = linkMb
 	}

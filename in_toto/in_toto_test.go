@@ -35,11 +35,21 @@ func TestMain(m *testing.M) {
 	}
 
 	cwd, _ := os.Getwd()
-	os.Chdir(testDir)
-
+	err = os.Chdir(testDir)
+	if err != nil {
+		fmt.Printf("Unable to change dir to %s: %s", testDir, err)
+	}
 	// Always change back to where we were and remove the temp directory
-	defer os.Chdir(cwd)
-	defer os.RemoveAll(testDir)
+	defer func(cwd string) {
+		if err := os.Chdir(cwd); err != nil {
+			fmt.Printf("Unable to change to directory %s: %s", cwd, err)
+		}
+	}(cwd)
+	defer func(testDir string) {
+		if err := os.RemoveAll(testDir); err != nil {
+			fmt.Printf("Unable to remove directory %s: %s", testDir, err)
+		}
+	}(testDir)
 
 	// Run tests
 	os.Exit(m.Run())

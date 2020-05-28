@@ -93,7 +93,9 @@ func _encodeCanonical(obj interface{}, result *bytes.Buffer) (err error) {
 			// Note: `key` must be a `string` (see `case map[string]interface{}`) and
 			// canonicalization of strings cannot err out (see `case string`), thus
 			// no error handling is needed here.
-			_encodeCanonical(key, result)
+			if err := _encodeCanonical(key, result); err != nil {
+				return err
+			}
 
 			result.WriteString(":")
 			if err := _encodeCanonical(objAsserted[key], result); err != nil {

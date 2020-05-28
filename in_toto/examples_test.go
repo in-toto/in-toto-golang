@@ -23,7 +23,10 @@ func ExampleInTotoVerify() {
 	// InTotoVerify.  The layout represents the root of trust so it is a good
 	// idea to sign it using multiple keys.
 	var pubKey Key
-	pubKey.LoadPublicKey(LayoutKeyPath)
+	err := pubKey.LoadPublicKey(LayoutKeyPath)
+	if err != nil {
+		fmt.Printf("Unable to load public key: %s", err)
+	}
 	var layoutKeys = map[string]Key{
 		pubKey.KeyId: pubKey,
 	}
@@ -46,7 +49,9 @@ func ExampleInTotoVerify() {
 
 	// During verification the inspection "untar" was executed, generating a
 	// corresponding link metadata file "untar.link". You can safely remove it.
-	os.Remove("untar.link")
-
+	err = os.Remove("untar.link")
+	if err != nil {
+		fmt.Printf("Unable to remove untar.link: %s", err)
+	}
 	// Output: In-toto verification succeeded!
 }

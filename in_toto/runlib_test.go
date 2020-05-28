@@ -29,8 +29,12 @@ func TestRecordArtifact(t *testing.T) {
 
 func TestRecordArtifacts(t *testing.T) {
 	// Test successfully record multiple artifacts including temporary subdir
-	os.Mkdir("tmpdir", 0700)
-	ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400)
+	if err := os.Mkdir("tmpdir", 0700); err != nil {
+		t.Errorf("Could not create tmpdir: %s", err)
+	}
+	if err := ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400); err != nil {
+		t.Errorf("Could not write tmpfile: %s", err)
+	}
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
 		"demo.layout.template", "tmpdir/tmpfile"})
 	expected := map[string]interface{}{
@@ -48,7 +52,9 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
-	os.RemoveAll("tmpdir")
+	if err := os.RemoveAll("tmpdir"); err != nil {
+		t.Errorf("Could not remove tmpdir: %s", err)
+	}
 
 	// Test error by recording inexistent artifact
 	result, err = RecordArtifacts([]string{"file-does-not-exist"})
