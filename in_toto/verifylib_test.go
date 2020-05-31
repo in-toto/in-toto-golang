@@ -573,7 +573,7 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 	}
 	var mbLinkBroken Metablock
 	if err := mbLinkBroken.Load("foo.776a00e2.link"); err != nil {
-		t.Errorf("Unable to load link file", err)
+		t.Errorf("Unable to load link file: %s", err)
 	}
 	mbLinkBroken.Signatures[0].Sig = "breaksignature"
 
