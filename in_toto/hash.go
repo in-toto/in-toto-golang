@@ -54,7 +54,7 @@ func (hash *md5Hash) Compute(contents []uint8) string {
 }
 
 /*
-This fuction returns the map containing hash function name as key and
+This function returns the map containing hash function name as key and
 their respective reference object as value.
 */
 
@@ -68,7 +68,7 @@ func createMap() map[string]interface{ Compute(contents []uint8) string } {
 }
 
 /*
-This function return a list a hash fuctions that we want program to use
+This function return a list a hash functions that we want program to use
 for each of the files.
 */
 

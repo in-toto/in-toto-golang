@@ -626,7 +626,7 @@ func validateMetablock(mb Metablock) error {
 }
 
 /*
-Sign creates a sigature over the signed portion of the metablock using the Key
+Sign creates a signature over the signed portion of the metablock using the Key
 object provided. It then appends the resulting signature to the signatures
 field as provided. It returns an error if the Signed object cannot be
 canonicalized, or if the key is invalid or not supported.
