@@ -25,7 +25,7 @@ second return value is the error.
 func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
 	// TODO: There could be more key data in _, which we silently ignore here.
 	// Should we handle it / fail / say something about it?
-	data, _ := pem.Decode([]byte(pemBytes))
+	data, _ := pem.Decode(pemBytes)
 	if data == nil {
 		return nil, fmt.Errorf("Could not find a public key PEM block")
 	}
@@ -211,7 +211,7 @@ func GenerateEd25519Signature(signable []byte, key Key) (Signature, error) {
 	if err != nil {
 		return signature, err
 	}
-	privkey := ed25519.NewKeyFromSeed([]uint8(seed))
+	privkey := ed25519.NewKeyFromSeed(seed)
 	signatureBuffer := ed25519.Sign(privkey, signable)
 
 	signature.Sig = hex.EncodeToString(signatureBuffer)

@@ -208,13 +208,13 @@ func VerifyArtifacts(items []interface{},
 		// For each item we have to run rule verification, once per artifact type.
 		// Here we prepare the corresponding data for each round.
 		verificationDataList := []map[string]interface{}{
-			map[string]interface{}{
+			{
 				"srcType":       "materials",
 				"rules":         expectedMaterials,
 				"artifacts":     materials,
 				"artifactPaths": materialPaths,
 			},
-			map[string]interface{}{
+			{
 				"srcType":       "products",
 				"rules":         expectedProducts,
 				"artifacts":     products,
