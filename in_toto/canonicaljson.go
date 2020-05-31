@@ -81,7 +81,7 @@ func _encodeCanonical(obj interface{}, result *bytes.Buffer) (err error) {
 		result.WriteString("{")
 
 		// Make a list of keys
-		mapKeys := []string{}
+		var mapKeys []string
 		for key, _ := range objAsserted {
 			mapKeys = append(mapKeys, key)
 		}
