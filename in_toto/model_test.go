@@ -671,6 +671,17 @@ func TestValidateInspection(t *testing.T) {
 	if err.Error() != "inspection name cannot be empty" {
 		t.Error("validateInspection error - empty name not detected")
 	}
+
+	testInspection = Inspection{
+		Type: "inspection",
+		SupplyChainItem: SupplyChainItem{
+			Name: "inspect",
+		},
+	}
+	err = validateInspection(testInspection)
+	if err != nil {
+		t.Error("validateInspection should successfully validate an inspection")
+	}
 }
 
 func TestValidateHexSchema(t *testing.T) {
