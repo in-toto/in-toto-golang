@@ -1,7 +1,9 @@
 package in_toto
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 )
@@ -74,6 +76,12 @@ func TestLoadPublicKey(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), expectedError) {
 		t.Errorf("LoadPublicKey returned (%s), expected '%s' error", err,
 			expectedError)
+	}
+
+	// Test not existing file
+	err = key.LoadPublicKey("inToToRocks")
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("Invalid file load returned (%s), expected '%s' error", err, os.ErrNotExist)
 	}
 }
 
