@@ -448,15 +448,15 @@ Load parses JSON formatted metadata at the passed path into the Metablock
 object on which it was called.  It returns an error if it cannot parse
 a valid JSON formatted Metablock that contains a Link or Layout.
 */
-func (mb *Metablock) Load(path string) error {
+func (mb *Metablock) Load(path string) (err error) {
 	// Open file and close before returning
 	jsonFile, err := os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		if err := jsonFile.Close(); err != nil {
-			fmt.Printf("Unable to close jsonFile: %s", err)
+		if closeErr := jsonFile.Close(); closeErr != nil {
+			err = closeErr
 		}
 	}()
 

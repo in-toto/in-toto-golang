@@ -50,14 +50,14 @@ LoadPublicKey parses an RSA public key from a PEM formatted file at the passed
 path into the Key object on which it was called.  It returns an error if the
 file at path does not exist or is not a PEM formatted RSA public key.
 */
-func (k *Key) LoadPublicKey(path string) error {
+func (k *Key) LoadPublicKey(path string) (err error) {
 	keyFile, err := os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		if err := keyFile.Close(); err != nil {
-			fmt.Printf("Could not close key file: %s", err)
+		if closeErr := keyFile.Close(); closeErr != nil {
+			err = closeErr
 		}
 	}()
 
