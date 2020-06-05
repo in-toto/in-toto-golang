@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -63,7 +64,12 @@ func TestSymlinkToFolder(t *testing.T) {
 		t.Errorf("Could not create a symlink: %s", err)
 	}
 
-	if err := ioutil.WriteFile("symTest/symTest2/symTmpfile", []byte("abc"), 0400); err != nil {
+	// create a filepath from slash, because otherwise
+	// our tests are going to fail, because the path matching will
+	// not work correctly on Windows
+	p := filepath.FromSlash("symTest/symTest2/symTmpfile")
+
+	if err := ioutil.WriteFile(p, []byte("abc"), 0400); err != nil {
 		t.Errorf("Could not write symTmpfile: %s", err)
 	}
 
@@ -73,7 +79,7 @@ func TestSymlinkToFolder(t *testing.T) {
 	}
 
 	expected := map[string]interface{}{
-		"symTest/symTest2/symTmpfile": map[string]interface{}{
+		p: map[string]interface{}{
 			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
 		},
 	}
