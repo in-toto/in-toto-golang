@@ -80,6 +80,30 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 				if info.IsDir() {
 					return nil
 				}
+
+				// check for symlink and evaluate the last element in a symlink chain
+				// via filepath.EvalSymlinks. We use filepath.EvalSymlinks here, because
+				// filepath.EvalSymlinks returns last element in a symlink chain.
+				// With os.Readlink() we would just read the next element in a possible symlink chain.
+				if info.Mode()&os.ModeSymlink == os.ModeSymlink {
+					evalSym, err := filepath.EvalSymlinks(path)
+					if err != nil {
+						return err
+					}
+					// We recursively call RecordArtifacts() to follow the new path
+					// Note: filepath.EvalSymlinks() handles symlink chains and throws an error if
+					// it detects such a chain like: chain1 -> chain2, chain2 -> chain1
+					evalArtifacts, evalErr := RecordArtifacts([]string{evalSym})
+					if evalErr != nil {
+						return evalErr
+					}
+					for key, value := range evalArtifacts {
+						artifacts[key] = value
+					}
+					return nil
+
+				}
+
 				artifact, err := RecordArtifact(path)
 				// Abort if artifact can't be recorded, e.g. due to file permissions
 				if err != nil {
