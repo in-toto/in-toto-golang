@@ -104,7 +104,12 @@ func TestVerifySublayouts(t *testing.T) {
 	}
 	sublayoutDirectory := fmt.Sprintf(SublayoutLinkDirFormat, sublayoutName,
 		aliceKey.KeyId)
-	defer os.RemoveAll(sublayoutDirectory)
+	defer func(sublayoutDirectory string) {
+		if err := os.RemoveAll(sublayoutDirectory); err != nil {
+			t.Errorf("Unable to remove directory %s: %s", sublayoutDirectory, err)
+		}
+	}(sublayoutDirectory)
+
 	if err := os.Mkdir(sublayoutDirectory, 0700); err != nil {
 		t.Errorf("Unable to create sublayout directory")
 	}
@@ -153,7 +158,9 @@ func TestVerifySublayouts(t *testing.T) {
 func TestRunInspections(t *testing.T) {
 	// Load layout template used as basis for all tests
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout.template"); err != nil {
+		t.Errorf("Unable to parse template file: %s", err)
+	}
 	layout := mb.Signed.(Layout)
 
 	// Test 1
@@ -429,7 +436,9 @@ func TestVerifyMatchRule(t *testing.T) {
 
 func TestReduceStepsMetadata(t *testing.T) {
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout.template"); err != nil {
+		t.Errorf("Unable to parse template file: %s", err)
+	}
 	layout := mb.Signed.(Layout)
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{Name: "foo"}}}
 
@@ -498,13 +507,17 @@ func TestReduceStepsMetadata(t *testing.T) {
 				" metadata")
 		}
 	}()
-	ReduceStepsMetadata(layout, nil)
+	if _, err := ReduceStepsMetadata(layout, nil); err != nil {
+		t.Errorf("Error while calling ReduceStepsMetadata: %s", err)
+	}
 	//NOTE: This test won't get any further because of panic
 }
 
 func TestVerifyStepCommandAlignment(t *testing.T) {
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout.template"); err != nil {
+		t.Errorf("Unable to load template file: %s", err)
+	}
 	layout := mb.Signed.(Layout)
 	layout.Steps = []Step{
 		{
@@ -540,7 +553,9 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 	keyId3 := "abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca"
 
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout.template"); err != nil {
+		t.Errorf("Unable to load template file: %s", err)
+	}
 	layout := mb.Signed.(Layout)
 
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{
@@ -549,11 +564,17 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 		PubKeys:   []string{keyId1, keyId2, keyId3}}}
 
 	var mbLink1 Metablock
-	mbLink1.Load("foo.2f89b927.link")
+	if err := mbLink1.Load("foo.2f89b927.link"); err != nil {
+		t.Errorf("Unable to load link file: %s", err)
+	}
 	var mbLink2 Metablock
-	mbLink2.Load("foo.776a00e2.link")
+	if err := mbLink2.Load("foo.776a00e2.link"); err != nil {
+		t.Errorf("Unable to load link file: %s", err)
+	}
 	var mbLinkBroken Metablock
-	mbLinkBroken.Load("foo.776a00e2.link")
+	if err := mbLinkBroken.Load("foo.776a00e2.link"); err != nil {
+		t.Errorf("Unable to load link file: %s", err)
+	}
 	mbLinkBroken.Signatures[0].Sig = "breaksignature"
 
 	// Test less then threshold distinct valid links errors:
@@ -598,7 +619,9 @@ func TestLoadLinksForLayout(t *testing.T) {
 	keyId1 := "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498"
 	keyId2 := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout.template"); err != nil {
+		t.Errorf("Unable to load template file: %s", err)
+	}
 	layout := mb.Signed.(Layout)
 
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{
@@ -629,7 +652,9 @@ func TestLoadLinksForLayout(t *testing.T) {
 
 func TestVerifyLayoutExpiration(t *testing.T) {
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout.template"); err != nil {
+		t.Errorf("Unable to load template file: %s", err)
+	}
 	layout := mb.Signed.(Layout)
 
 	// Test layout expiration check failure:
@@ -657,9 +682,13 @@ func TestVerifyLayoutExpiration(t *testing.T) {
 
 func TestVerifyLayoutSignatures(t *testing.T) {
 	var mbLayout Metablock
-	mbLayout.Load("demo.layout.template")
+	if err := mbLayout.Load("demo.layout.template"); err != nil {
+		t.Errorf("Unable to load template file: %s", err)
+	}
 	var layoutKey Key
-	layoutKey.LoadPublicKey("alice.pub")
+	if err := layoutKey.LoadPublicKey("alice.pub"); err != nil {
+		t.Errorf("Unable to load public key file: %s", err)
+	}
 
 	// Test layout signature verification errors:
 	// - Not verification keys (must be at least one)

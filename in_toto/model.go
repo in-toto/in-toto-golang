@@ -448,13 +448,17 @@ Load parses JSON formatted metadata at the passed path into the Metablock
 object on which it was called.  It returns an error if it cannot parse
 a valid JSON formatted Metablock that contains a Link or Layout.
 */
-func (mb *Metablock) Load(path string) error {
+func (mb *Metablock) Load(path string) (err error) {
 	// Open file and close before returning
 	jsonFile, err := os.Open(path)
-	defer jsonFile.Close()
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if closeErr := jsonFile.Close(); closeErr != nil {
+			err = closeErr
+		}
+	}()
 
 	// Read entire file
 	jsonBytes, err := ioutil.ReadAll(jsonFile)
@@ -622,7 +626,7 @@ func validateMetablock(mb Metablock) error {
 }
 
 /*
-Sign creates a sigature over the signed portion of the metablock using the Key
+Sign creates a signature over the signed portion of the metablock using the Key
 object provided. It then appends the resulting signature to the signatures
 field as provided. It returns an error if the Signed object cannot be
 canonicalized, or if the key is invalid or not supported.

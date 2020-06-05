@@ -25,7 +25,7 @@ second return value is the error.
 func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
 	// TODO: There could be more key data in _, which we silently ignore here.
 	// Should we handle it / fail / say something about it?
-	data, _ := pem.Decode([]byte(pemBytes))
+	data, _ := pem.Decode(pemBytes)
 	if data == nil {
 		return nil, fmt.Errorf("Could not find a public key PEM block")
 	}
@@ -50,12 +50,16 @@ LoadPublicKey parses an RSA public key from a PEM formatted file at the passed
 path into the Key object on which it was called.  It returns an error if the
 file at path does not exist or is not a PEM formatted RSA public key.
 */
-func (k *Key) LoadPublicKey(path string) error {
+func (k *Key) LoadPublicKey(path string) (err error) {
 	keyFile, err := os.Open(path)
-	defer keyFile.Close()
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if closeErr := keyFile.Close(); closeErr != nil {
+			err = closeErr
+		}
+	}()
 
 	// Read key bytes and decode PEM
 	keyBytes, err := ioutil.ReadAll(keyFile)
@@ -207,7 +211,7 @@ func GenerateEd25519Signature(signable []byte, key Key) (Signature, error) {
 	if err != nil {
 		return signature, err
 	}
-	privkey := ed25519.NewKeyFromSeed([]uint8(seed))
+	privkey := ed25519.NewKeyFromSeed(seed)
 	signatureBuffer := ed25519.Sign(privkey, signable)
 
 	signature.Sig = hex.EncodeToString(signatureBuffer)

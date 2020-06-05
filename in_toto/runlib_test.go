@@ -19,7 +19,7 @@ func TestRecordArtifact(t *testing.T) {
 			result, err, expected)
 	}
 
-	// Test error by recording inexistent artifact
+	// Test error by recording nonexistent artifact
 	result, err = RecordArtifact("file-does-not-exist")
 	if !os.IsNotExist(err) {
 		t.Errorf("RecordArtifact returned '(%s, %s)', expected '(nil, %s)'",
@@ -29,8 +29,12 @@ func TestRecordArtifact(t *testing.T) {
 
 func TestRecordArtifacts(t *testing.T) {
 	// Test successfully record multiple artifacts including temporary subdir
-	os.Mkdir("tmpdir", 0700)
-	ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400)
+	if err := os.Mkdir("tmpdir", 0700); err != nil {
+		t.Errorf("Could not create tmpdir: %s", err)
+	}
+	if err := ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400); err != nil {
+		t.Errorf("Could not write tmpfile: %s", err)
+	}
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
 		"demo.layout.template", "tmpdir/tmpfile"})
 	expected := map[string]interface{}{
@@ -48,9 +52,11 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
-	os.RemoveAll("tmpdir")
+	if err := os.RemoveAll("tmpdir"); err != nil {
+		t.Errorf("Could not remove tmpdir: %s", err)
+	}
 
-	// Test error by recording inexistent artifact
+	// Test error by recording nonexistent artifact
 	result, err = RecordArtifacts([]string{"file-does-not-exist"})
 	if !os.IsNotExist(err) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
@@ -60,7 +66,7 @@ func TestRecordArtifacts(t *testing.T) {
 
 func TestWaitErrToExitCode(t *testing.T) {
 	// TODO: Find way to test/mock ExitError
-	// Test exit code from error assement
+	// Test exit code from error assessment
 	parameters := []error{
 		nil,
 		errors.New(""),
@@ -155,9 +161,9 @@ func TestInTotoRun(t *testing.T) {
 	}
 
 	// Test in-toto run errors:
-	// - error due to inexistent material path
-	// - error due to inexistent product path
-	// - error due to inexistent run command
+	// - error due to nonexistent material path
+	// - error due to nonexistent product path
+	// - error due to nonexistent run command
 	parameters = []map[string][]string{
 		{
 			"materialPaths": {"material-does-not-exist"},

@@ -1,6 +1,9 @@
 package in_toto
 
 import (
+	"errors"
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 )
@@ -74,6 +77,12 @@ func TestLoadPublicKey(t *testing.T) {
 		t.Errorf("LoadPublicKey returned (%s), expected '%s' error", err,
 			expectedError)
 	}
+
+	// Test not existing file
+	err = key.LoadPublicKey("inToToRocks")
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("Invalid file load returned (%s), expected '%s' error", err, os.ErrNotExist)
+	}
 }
 
 func TestVerifySignature(t *testing.T) {
@@ -124,7 +133,9 @@ k7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=
 	// - Right key and data, but wrong signature
 	// - Right key and data, but invalid signature
 	var wrongKey Key
-	wrongKey.LoadPublicKey("alice.pub")
+	if err := wrongKey.LoadPublicKey("alice.pub"); err != nil {
+		fmt.Printf("Unable to load key alice.pub: %s", err)
+	}
 	wrongSig := Signature{
 		KeyId: validSig.KeyId,
 		Sig:   "b" + validSig.Sig[1:],

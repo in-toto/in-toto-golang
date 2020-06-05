@@ -104,14 +104,18 @@ func TestMetablockLoad(t *testing.T) {
 
 	for i := 0; i < len(invalidJsonBytes); i++ {
 		fn := fmt.Sprintf("invalid-metadata-%v.tmp", i)
-		ioutil.WriteFile(fn, invalidJsonBytes[i], 0644)
+		if err := ioutil.WriteFile(fn, invalidJsonBytes[i], 0644); err != nil {
+			fmt.Printf("Could not write file: %s", err)
+		}
 		var mb Metablock
 		err := mb.Load(fn)
 		if err == nil || !strings.Contains(err.Error(), expectedErrors[i]) {
 			t.Errorf("Metablock.Load returned '%s', expected '%s' error", err,
 				expectedErrors[i])
 		}
-		os.Remove(fn)
+		if err := os.Remove(fn); err != nil {
+			t.Errorf("Unable to remove directory %s: %s", fn, err)
+		}
 	}
 }
 
@@ -193,24 +197,32 @@ func TestMetablockLoadDumpLoad(t *testing.T) {
 
 	fnExisting := "package.2f89b927.link"
 	fnTmp := fnExisting + ".tmp"
-	mbMemory.Dump(fnTmp)
+	if err := mbMemory.Dump(fnTmp); err != nil {
+		t.Errorf("JSON serialization failed: %s", err)
+	}
 	for _, fn := range []string{fnExisting, fnTmp} {
 		var mbFile Metablock
-		mbFile.Load(fn)
+		if err := mbFile.Load(fn); err != nil {
+			t.Errorf("Could not parse Metablock: %s", err)
+		}
 		if !reflect.DeepEqual(mbMemory, mbFile) {
 			t.Errorf("Dumped and Loaded Metablocks are not equal: \n%s\n\n\n%s\n",
 				mbMemory, mbFile)
 		}
 	}
 	// Remove temporary metablock file (keep other for remaining tests)
-	os.Remove(fnTmp)
+	if err := os.Remove(fnTmp); err != nil {
+		t.Errorf("Unable to remove directory %s: %s", fnTmp, err)
+	}
 }
 
 func TestMetablockGetSignableRepresentation(t *testing.T) {
 	// Test successful metadata canonicalization with encoding corner cases
 	// (unicode, escapes, non-string types, ...) and compare with reference
 	var mb Metablock
-	mb.Load("canonical-test.link")
+	if err := mb.Load("canonical-test.link"); err != nil {
+		t.Errorf("Cannot parse link file: %s", err)
+	}
 	// Use hex representation for unambiguous assignment
 	referenceHex := "7b225f74797065223a226c696e6b222" +
 		"c22627970726f6475637473223a7b7d2c22636f6d6d616e64223a5b5d2" +
@@ -237,7 +249,9 @@ func TestMetablockVerifySignature(t *testing.T) {
 	// - wrong signature for key
 	// - invalid metadata (can't canonicalize)
 	var key Key
-	key.LoadPublicKey("alice.pub")
+	if err := key.LoadPublicKey("alice.pub"); err != nil {
+		t.Errorf("Cannot load public key file: %s", err)
+	}
 	// Test missing key, bad signature and bad metadata
 	mbs := []Metablock{
 		{},
@@ -264,7 +278,9 @@ func TestMetablockVerifySignature(t *testing.T) {
 
 	// Test successful metablock signature verification
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout.template"); err != nil {
+		t.Errorf("Cannot parse template file: %s", err)
+	}
 	err := mb.VerifySignature(key)
 	if err != nil {
 		t.Errorf("Metablock.VerifySignature returned '%s', expected nil", err)
@@ -654,6 +670,17 @@ func TestValidateInspection(t *testing.T) {
 	err = validateInspection(testInspection)
 	if err.Error() != "inspection name cannot be empty" {
 		t.Error("validateInspection error - empty name not detected")
+	}
+
+	testInspection = Inspection{
+		Type: "inspection",
+		SupplyChainItem: SupplyChainItem{
+			Name: "inspect",
+		},
+	}
+	err = validateInspection(testInspection)
+	if err != nil {
+		t.Error("validateInspection should successfully validate an inspection")
 	}
 }
 
@@ -1137,9 +1164,13 @@ func TestMetablockSignWithEd25519(t *testing.T) {
 	// - Pass an ed25519 key and expect a signature back
 	var key Key
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout.template"); err != nil {
+		t.Errorf("Cannot parse template file: %s", err)
+	}
 
-	key.LoadPublicKey("alice.pub")
+	if err := key.LoadPublicKey("alice.pub"); err != nil {
+		t.Errorf("Cannot load public key file: %s", err)
+	}
 	err := mb.Sign(key)
 	if err == nil || !strings.Contains(err.Error(), "supported yet") {
 		t.Errorf("Metablock.Sign returned (%s), expected it to claim this "+
@@ -1160,7 +1191,10 @@ func TestMetablockSignWithEd25519(t *testing.T) {
 
 	// Trigger error in Sign/GenerateEd25519Signature with malformed key data
 	badkey, err = ParseEd25519FromPrivateJSON(validKey)
-	badkey.KeyVal.Private = "xyz"
+	// make sure to only set badkey, if prior operation has been successful
+	if err == nil {
+		badkey.KeyVal.Private = "xyz"
+	}
 	err = mb.Sign(badkey)
 	if err == nil || !strings.Contains(err.Error(), "invalid byte") {
 		t.Errorf("Metablock.Sign returned (%s), expected 'invalid byte' error ",

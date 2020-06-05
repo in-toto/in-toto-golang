@@ -53,7 +53,9 @@ func RunInspections(layout Layout) (map[string]Metablock, error) {
 
 		// Dump inspection link to cwd using the short link name format
 		linkName := fmt.Sprintf(LinkNameFormatShort, inspection.Name)
-		linkMb.Dump(linkName)
+		if err := linkMb.Dump(linkName); err != nil {
+			fmt.Printf("JSON serialization or writing failed: %s", err)
+		}
 
 		inspectionMetadata[inspection.Name] = linkMb
 	}
@@ -206,13 +208,13 @@ func VerifyArtifacts(items []interface{},
 		// For each item we have to run rule verification, once per artifact type.
 		// Here we prepare the corresponding data for each round.
 		verificationDataList := []map[string]interface{}{
-			map[string]interface{}{
+			{
 				"srcType":       "materials",
 				"rules":         expectedMaterials,
 				"artifacts":     materials,
 				"artifactPaths": materialPaths,
 			},
-			map[string]interface{}{
+			{
 				"srcType":       "products",
 				"rules":         expectedProducts,
 				"artifacts":     products,

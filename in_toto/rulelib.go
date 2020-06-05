@@ -6,7 +6,7 @@ import (
 )
 
 // An error message issued in UnpackRule if it receives a malformed rule.
-var errorMsg string = "Wrong rule format, available formats are:\n" +
+var errorMsg = "Wrong rule format, available formats are:\n" +
 	"\tMATCH <pattern> [IN <source-path-prefix>] WITH (MATERIALS|PRODUCTS)" +
 	" [IN <destination-path-prefix>] FROM <step>,\n" +
 	"\tCREATE <pattern>,\n" +
