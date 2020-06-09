@@ -43,7 +43,7 @@ func TestSymlinkToFile(t *testing.T) {
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 		},
 	}
-	result, err := RecordArtifacts([]string{"foo.tar.gz.sym"})
+	result, err := RecordArtifacts([]string{"foo.tar.gz.sym"}, 0)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
@@ -73,7 +73,7 @@ func TestSymlinkToFolder(t *testing.T) {
 		t.Errorf("Could not write symTmpfile: %s", err)
 	}
 
-	result, err := RecordArtifacts([]string{"symTmpfile.sym"})
+	result, err := RecordArtifacts([]string{"symTmpfile.sym"}, 0)
 	if err != nil {
 		t.Error(err)
 	}
@@ -124,37 +124,10 @@ func TestSymlinkCycle(t *testing.T) {
 		t.Errorf("Could not create a symlink: %s", err)
 	}
 
-	p1 := filepath.FromSlash("symlinkCycle/symCycleTestFile.txt")
-	p2 := filepath.FromSlash("symlinkCycle/symCycle.sym")
-
-	if err := ioutil.WriteFile(p1, []byte("abc"), 0400); err != nil {
-		t.Errorf("Could not write symCycleTestFile.txt: %s", err)
-	}
-
-	result, err := RecordArtifacts([]string{"symlinkCycle/symCycleTestFile.txt", "symlinkCycle/symCycle.sym", "foo.tar.gz"})
-	if err != nil {
-		t.Error(err)
-	}
-
-	expected := map[string]interface{}{
-		"foo.tar.gz": map[string]interface{}{
-			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
-		},
-		p1: map[string]interface{}{
-			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-		},
-		p2: map[string]interface{}{
-			"sha256": "...",
-		},
-	}
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
-			result, err, expected)
-	}
-
-	// make sure to clean up everything
-	if err := os.Remove("symlinkCycle/symCycleTestFile.txt"); err != nil {
-		t.Errorf("Could not remove path symlinkCycle/symCycleTestFile.txt: %s", err)
+	// provoke "symlink cycle detected" error
+	_, err = RecordArtifacts([]string{"symlinkCycle/symCycle.sym", "foo.tar.gz"}, 0)
+	if !errors.Is(err, SymCycleErr) {
+		t.Errorf("We expected: %s, we got: %s", SymCycleErr, err)
 	}
 
 	if err := os.Remove("symlinkCycle/symCycle.sym"); err != nil {
@@ -175,7 +148,7 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("Could not write tmpfile: %s", err)
 	}
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template", "tmpdir/tmpfile"})
+		"demo.layout.template", "tmpdir/tmpfile"}, 0)
 	expected := map[string]interface{}{
 		"foo.tar.gz": map[string]interface{}{
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
@@ -196,7 +169,7 @@ func TestRecordArtifacts(t *testing.T) {
 	}
 
 	// Test error by recording nonexistent artifact
-	result, err = RecordArtifacts([]string{"file-does-not-exist"})
+	result, err = RecordArtifacts([]string{"file-does-not-exist"}, 0)
 	if !os.IsNotExist(err) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
 			result, err, os.ErrNotExist)
