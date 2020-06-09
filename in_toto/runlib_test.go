@@ -105,7 +105,65 @@ func TestSymlinkToFolder(t *testing.T) {
 	if err := os.Remove("symTest/"); err != nil {
 		t.Errorf("Could not remove path symTest: %s", err)
 	}
+}
 
+// This test provokes a symlink cycle
+func TestSymlinkCycle(t *testing.T) {
+	if err := os.Mkdir("symlinkCycle/", 0700); err != nil {
+		t.Errorf("Could not create tmpdir: %s", err)
+	}
+
+	// we need to get the current working directory here, otherwise
+	// os.Symlink() will create a wrong symlink
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Error(err)
+	}
+	// create a cycle ./symlinkCycle/symCycle.sym -> ./symlinkCycle/
+	if err := os.Symlink(dir+"/symlinkCycle", "symlinkCycle/symCycle.sym"); err != nil {
+		t.Errorf("Could not create a symlink: %s", err)
+	}
+
+	p1 := filepath.FromSlash("symlinkCycle/symCycleTestFile.txt")
+	p2 := filepath.FromSlash("symlinkCycle/symCycle.sym")
+
+	if err := ioutil.WriteFile(p1, []byte("abc"), 0400); err != nil {
+		t.Errorf("Could not write symCycleTestFile.txt: %s", err)
+	}
+
+	result, err := RecordArtifacts([]string{"symlinkCycle/symCycleTestFile.txt", "symlinkCycle/symCycle.sym", "foo.tar.gz"})
+	if err != nil {
+		t.Error(err)
+	}
+
+	expected := map[string]interface{}{
+		"foo.tar.gz": map[string]interface{}{
+			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+		},
+		p1: map[string]interface{}{
+			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+		},
+		p2: map[string]interface{}{
+			"sha256": "...",
+		},
+	}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
+			result, err, expected)
+	}
+
+	// make sure to clean up everything
+	if err := os.Remove("symlinkCycle/symCycleTestFile.txt"); err != nil {
+		t.Errorf("Could not remove path symlinkCycle/symCycleTestFile.txt: %s", err)
+	}
+
+	if err := os.Remove("symlinkCycle/symCycle.sym"); err != nil {
+		t.Errorf("Could not remove path symlinkCycle/symCycle.sym: %s", err)
+	}
+
+	if err := os.Remove("symlinkCycle"); err != nil {
+		t.Errorf("Could not remove path symlinkCycle: %s", err)
+	}
 }
 
 func TestRecordArtifacts(t *testing.T) {
