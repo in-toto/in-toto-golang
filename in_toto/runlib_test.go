@@ -126,8 +126,8 @@ func TestSymlinkCycle(t *testing.T) {
 
 	// provoke "symlink cycle detected" error
 	_, err = RecordArtifacts([]string{"symlinkCycle/symCycle.sym", "foo.tar.gz"}, 0)
-	if !errors.Is(err, SymCycleErr) {
-		t.Errorf("We expected: %s, we got: %s", SymCycleErr, err)
+	if !errors.Is(err, ErrSymCycle) {
+		t.Errorf("We expected: %s, we got: %s", ErrSymCycle, err)
 	}
 
 	if err := os.Remove("symlinkCycle/symCycle.sym"); err != nil {

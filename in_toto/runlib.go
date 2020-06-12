@@ -50,9 +50,9 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 }
 
 /*
-SymCycleErr signals a detected symlink cycle in our RecordArtifacts() function.
+ErrSymCycle signals a detected symlink cycle in our RecordArtifacts() function.
 */
-var SymCycleErr error = errors.New("symlink cycle detected")
+var ErrSymCycle error = errors.New("symlink cycle detected")
 
 /*
 RecordArtifacts walks through the passed slice of paths, traversing
@@ -74,7 +74,7 @@ return value is the error.
 */
 func RecordArtifacts(paths []string, depth uint) (map[string]interface{}, error) {
 	if depth > 10 {
-		return nil, SymCycleErr
+		return nil, ErrSymCycle
 	}
 	artifacts := make(map[string]interface{})
 	// NOTE: Walk cannot follow symlinks
