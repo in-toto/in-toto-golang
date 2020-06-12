@@ -56,7 +56,7 @@ var ErrSymCycle error = errors.New("symlink cycle detected")
 
 /*
 RecordArtifacts walks through the passed slice of paths, traversing
-subdirectories, and calls RecordArtifact for each file.  It returns a map in
+subdirectories, and calls RecordArtifact for each file. It returns a map in
 the following format:
 
 	{
@@ -71,6 +71,9 @@ the following format:
 
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
+
+depth refers to the recursion depth. This function should be always called
+with depth = 0.
 */
 func RecordArtifacts(paths []string, depth uint) (map[string]interface{}, error) {
 	if depth > 10 {
@@ -81,7 +84,8 @@ func RecordArtifacts(paths []string, depth uint) (map[string]interface{}, error)
 	for _, path := range paths {
 		err := filepath.Walk(path,
 			func(path string, info os.FileInfo, err error) error {
-				// Abort if Walk function has a problem, e.g. path does not exist)
+				// Abort if Walk function has a problem,
+				// e.g. path does not exist
 				if err != nil {
 					return err
 				}
@@ -90,18 +94,19 @@ func RecordArtifacts(paths []string, depth uint) (map[string]interface{}, error)
 					return nil
 				}
 
-				// check for symlink and evaluate the last element in a symlink chain
-				// via filepath.EvalSymlinks. We use filepath.EvalSymlinks here, because
-				// filepath.EvalSymlinks returns last element in a symlink chain.
-				// With os.Readlink() we would just read the next element in a possible symlink chain.
+				// check for symlink and evaluate the last element in a symlink
+				// chain via filepath.EvalSymlinks. We use EvalSymlinks here,
+				// because with os.Readlink() we would just read the next
+				// element in a possible symlink chain. This would mean more
+				// iterations. infoMode()&os.ModeSymlink uses the file file
+				// type bitmap to check for a symlink.
 				if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 					evalSym, err := filepath.EvalSymlinks(path)
 					if err != nil {
 						return err
 					}
-					// We recursively call RecordArtifacts() to follow the new path
-					// Note: filepath.EvalSymlinks() handles symlink chains and throws an error if
-					// it detects such a chain like: chain1 -> chain2, chain2 -> chain1
+					// We recursively call RecordArtifacts() to follow
+					// the new path.
 					evalArtifacts, evalErr := RecordArtifacts([]string{evalSym}, depth+1)
 					if evalErr != nil {
 						return evalErr
@@ -112,7 +117,8 @@ func RecordArtifacts(paths []string, depth uint) (map[string]interface{}, error)
 					return nil
 				}
 				artifact, err := RecordArtifact(path)
-				// Abort if artifact can't be recorded, e.g. due to file permissions
+				// Abort if artifact can't be recorded, e.g.
+				// due to file permissions
 				if err != nil {
 					return err
 				}
