@@ -54,6 +54,58 @@ func TestSymlinkToFile(t *testing.T) {
 	}
 }
 
+// TestIndirectSymlinkCycles() tests for indirect symlink cycles in the form:
+// symTestA/linkToB -> symTestB and symTestB/linkToA -> symTestA
+func TestIndirectSymlinkCycles(t *testing.T) {
+	if err := os.Mkdir("symTestA", 0700); err != nil {
+		t.Errorf("Could not create tmpdir: %s", err)
+	}
+	if err := os.Mkdir("symTestB", 0700); err != nil {
+		t.Errorf("Could not create tmpdir: %s", err)
+	}
+
+	// we need to get the current working directory here, otherwise
+	// os.Symlink() will create a wrong symlink
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Error(err)
+	}
+
+	linkB := filepath.FromSlash("symTestA/linkToB.sym")
+	linkA := filepath.FromSlash("symTestB/linkToA.sym")
+
+	if err := os.Symlink(dir+"/symTestA", linkA); err != nil {
+		t.Errorf("Could not create a symlink: %s", err)
+	}
+	if err := os.Symlink(dir+"/symTestB", linkB); err != nil {
+		t.Errorf("Could not create a symlink: %s", err)
+	}
+
+	// provoke "symlink cycle detected" error
+	_, err = RecordArtifacts([]string{"symTestA/linkToB.sym", "symTestB/linkToA.sym", "foo.tar.gz"}, 0)
+	if !errors.Is(err, ErrSymCycle) {
+		t.Errorf("We expected: %s, we got: %s", ErrSymCycle, err)
+	}
+
+	// make sure to clean up everything
+	if err := os.Remove("symTestA/linkToB.sym"); err != nil {
+		t.Errorf("Could not remove path: %s", err)
+	}
+
+	if err := os.Remove("symTestB/linkToA.sym"); err != nil {
+		t.Errorf("Could not remove path: %s", err)
+	}
+
+	if err := os.Remove("symTestA"); err != nil {
+		t.Errorf("Could not remove path: %s", err)
+	}
+
+	if err := os.Remove("symTestB"); err != nil {
+		t.Errorf("Could not remove path: %s", err)
+	}
+
+}
+
 // TestSymlinkToFolder checks if we are successfully following symlinks to folders
 func TestSymlinkToFolder(t *testing.T) {
 	if err := os.MkdirAll("symTest/symTest2", 0700); err != nil {
