@@ -9,10 +9,11 @@ import (
 	"syscall"
 )
 
-/*
-ErrSymCycle signals a detected symlink cycle in our RecordArtifacts() function.
-*/
+// ErrSymCycle signals a detected symlink cycle in our RecordArtifacts() function.
 var ErrSymCycle = errors.New("symlink cycle detected")
+
+// visitedSymlinks is a hashset that contains all paths that we have visited.
+var visitedSymlinks map[string]struct{}
 
 /*
 RecordArtifact reads and hashes the contents of the file at the passed path
@@ -70,13 +71,12 @@ the following format:
 
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
-
-depth refers to the recursion depth. This function should be always called
-with depth = 0.
 */
-func RecordArtifacts(paths []string, depth uint) (map[string]interface{}, error) {
-	if depth > 10 {
-		return nil, ErrSymCycle
+func RecordArtifacts(paths []string) (map[string]interface{}, error) {
+	// check if visitedSymlinks has been initialized
+	// if not: generate a new hashset
+	if visitedSymlinks == nil {
+		visitedSymlinks = make(map[string]struct{})
 	}
 	artifacts := make(map[string]interface{})
 	// NOTE: Walk cannot follow symlinks
@@ -100,13 +100,23 @@ func RecordArtifacts(paths []string, depth uint) (map[string]interface{}, error)
 				// iterations. infoMode()&os.ModeSymlink uses the file file
 				// type bitmap to check for a symlink.
 				if info.Mode()&os.ModeSymlink == os.ModeSymlink {
+					// return with error if we detect a symlink cycle
+					if _, ok := visitedSymlinks[path]; ok {
+						// this error will get passed through
+						// to RecordArtifacts()
+						return ErrSymCycle
+					}
 					evalSym, err := filepath.EvalSymlinks(path)
 					if err != nil {
 						return err
 					}
+					// add symlink to visitedSymlinks hashset
+					// this way, we know which link we have visited already
+					// if we visit a symlink twice, we have detected a symlink cycle
+					visitedSymlinks[path] = struct{}{}
 					// We recursively call RecordArtifacts() to follow
 					// the new path.
-					evalArtifacts, evalErr := RecordArtifacts([]string{evalSym}, depth+1)
+					evalArtifacts, evalErr := RecordArtifacts([]string{evalSym})
 					if evalErr != nil {
 						return evalErr
 					}
@@ -217,7 +227,7 @@ NOTE: Currently InTotoRun cannot be used to sign Link metadata.
 func InTotoRun(name string, materialPaths []string, productPaths []string,
 	cmdArgs []string) (Metablock, error) {
 	var linkMb Metablock
-	materials, err := RecordArtifacts(materialPaths, 0)
+	materials, err := RecordArtifacts(materialPaths)
 	if err != nil {
 		return linkMb, err
 	}
@@ -227,7 +237,7 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		return linkMb, err
 	}
 
-	products, err := RecordArtifacts(productPaths, 0)
+	products, err := RecordArtifacts(productPaths)
 	if err != nil {
 		return linkMb, err
 	}

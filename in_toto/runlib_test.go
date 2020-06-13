@@ -43,7 +43,7 @@ func TestSymlinkToFile(t *testing.T) {
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 		},
 	}
-	result, err := RecordArtifacts([]string{"foo.tar.gz.sym"}, 0)
+	result, err := RecordArtifacts([]string{"foo.tar.gz.sym"})
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
@@ -82,7 +82,7 @@ func TestIndirectSymlinkCycles(t *testing.T) {
 	}
 
 	// provoke "symlink cycle detected" error
-	_, err = RecordArtifacts([]string{"symTestA/linkToB.sym", "symTestB/linkToA.sym", "foo.tar.gz"}, 0)
+	_, err = RecordArtifacts([]string{"symTestA/linkToB.sym", "symTestB/linkToA.sym", "foo.tar.gz"})
 	if !errors.Is(err, ErrSymCycle) {
 		t.Errorf("We expected: %s, we got: %s", ErrSymCycle, err)
 	}
@@ -125,7 +125,7 @@ func TestSymlinkToFolder(t *testing.T) {
 		t.Errorf("Could not write symTmpfile: %s", err)
 	}
 
-	result, err := RecordArtifacts([]string{"symTmpfile.sym"}, 0)
+	result, err := RecordArtifacts([]string{"symTmpfile.sym"})
 	if err != nil {
 		t.Error(err)
 	}
@@ -177,7 +177,7 @@ func TestSymlinkCycle(t *testing.T) {
 	}
 
 	// provoke "symlink cycle detected" error
-	_, err = RecordArtifacts([]string{"symlinkCycle/symCycle.sym", "foo.tar.gz"}, 0)
+	_, err = RecordArtifacts([]string{"symlinkCycle/symCycle.sym", "foo.tar.gz"})
 	if !errors.Is(err, ErrSymCycle) {
 		t.Errorf("We expected: %s, we got: %s", ErrSymCycle, err)
 	}
@@ -200,7 +200,7 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("Could not write tmpfile: %s", err)
 	}
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template", "tmpdir/tmpfile"}, 0)
+		"demo.layout.template", "tmpdir/tmpfile"})
 	expected := map[string]interface{}{
 		"foo.tar.gz": map[string]interface{}{
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
@@ -221,7 +221,7 @@ func TestRecordArtifacts(t *testing.T) {
 	}
 
 	// Test error by recording nonexistent artifact
-	result, err = RecordArtifacts([]string{"file-does-not-exist"}, 0)
+	result, err = RecordArtifacts([]string{"file-does-not-exist"})
 	if !os.IsNotExist(err) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
 			result, err, os.ErrNotExist)
