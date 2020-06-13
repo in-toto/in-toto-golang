@@ -10,6 +10,11 @@ import (
 )
 
 /*
+ErrSymCycle signals a detected symlink cycle in our RecordArtifacts() function.
+*/
+var ErrSymCycle = errors.New("symlink cycle detected")
+
+/*
 RecordArtifact reads and hashes the contents of the file at the passed path
 using sha256 and returns a map in the following format:
 
@@ -22,7 +27,6 @@ using sha256 and returns a map in the following format:
 If reading the file fails, the first return value is nil and the second return
 value is the error.
 */
-
 func RecordArtifact(path string) (map[string]interface{}, error) {
 
 	hashObjectMap := createMap()
@@ -48,11 +52,6 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 	// Return it in a format that is conformant with link metadata artifacts
 	return hashedContentsMap, nil
 }
-
-/*
-ErrSymCycle signals a detected symlink cycle in our RecordArtifacts() function.
-*/
-var ErrSymCycle error = errors.New("symlink cycle detected")
 
 /*
 RecordArtifacts walks through the passed slice of paths, traversing
