@@ -97,8 +97,8 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 				// chain via filepath.EvalSymlinks. We use EvalSymlinks here,
 				// because with os.Readlink() we would just read the next
 				// element in a possible symlink chain. This would mean more
-				// iterations. infoMode()&os.ModeSymlink uses the file file
-				// type bitmap to check for a symlink.
+				// iterations. infoMode()&os.ModeSymlink uses the file
+				// type bitmask to check for a symlink.
 				if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 					// return with error if we detect a symlink cycle
 					if _, ok := visitedSymlinks[path]; ok {
