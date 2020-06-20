@@ -13,7 +13,7 @@ import (
 var ErrSymCycle = errors.New("symlink cycle detected")
 
 // visitedSymlinks is a hashset that contains all paths that we have visited.
-var visitedSymlinks map[string]struct{}
+var visitedSymlinks Set
 
 /*
 RecordArtifact reads and hashes the contents of the file at the passed path
@@ -55,7 +55,10 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 }
 
 /*
-RecordArtifacts walks through the passed slice of paths, traversing
+RecordArtifacts is a wrapper around recordArtifacts.
+RecordArtifacts initializes a set for storing visited symlinks,
+calls recordArtifacts and deletes the set if no longer needed.
+recordArtifacts walks through the passed slice of paths, traversing
 subdirectories, and calls RecordArtifact for each file. It returns a map in
 the following format:
 
@@ -72,12 +75,38 @@ the following format:
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
-func RecordArtifacts(paths []string) (map[string]interface{}, error) {
+func RecordArtifacts(paths []string) (evalArtifacts map[string]interface{}, err error) {
 	// check if visitedSymlinks has been initialized
-	// if not: generate a new hashset
+	// if not: generate a new set
 	if visitedSymlinks == nil {
-		visitedSymlinks = make(map[string]struct{})
+		visitedSymlinks = NewSet()
 	}
+	evalArtifacts, err = recordArtifacts(paths)
+	// tear down visitedSymlinks
+	visitedSymlinks = nil
+	// pass result and error through
+	return evalArtifacts, err
+}
+
+/*
+recordArtifacts walks through the passed slice of paths, traversing
+subdirectories, and calls RecordArtifact for each file. It returns a map in
+the following format:
+
+	{
+		"<path>": {
+			"sha256": <hex representation of hash>
+		},
+		"<path>": {
+		"sha256": <hex representation of hash>
+		},
+		...
+	}
+
+If recording an artifact fails the first return value is nil and the second
+return value is the error.
+*/
+func recordArtifacts(paths []string) (map[string]interface{}, error) {
 	artifacts := make(map[string]interface{})
 	// NOTE: Walk cannot follow symlinks
 	for _, path := range paths {
@@ -101,7 +130,7 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 				// type bitmask to check for a symlink.
 				if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 					// return with error if we detect a symlink cycle
-					if _, ok := visitedSymlinks[path]; ok {
+					if ok := visitedSymlinks.Has(path); ok {
 						// this error will get passed through
 						// to RecordArtifacts()
 						return ErrSymCycle
@@ -110,13 +139,13 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 					if err != nil {
 						return err
 					}
-					// add symlink to visitedSymlinks hashset
+					// add symlink to visitedSymlinks set
 					// this way, we know which link we have visited already
 					// if we visit a symlink twice, we have detected a symlink cycle
-					visitedSymlinks[path] = struct{}{}
+					visitedSymlinks.Add(path)
 					// We recursively call RecordArtifacts() to follow
 					// the new path.
-					evalArtifacts, evalErr := RecordArtifacts([]string{evalSym})
+					evalArtifacts, evalErr := recordArtifacts([]string{evalSym})
 					if evalErr != nil {
 						return evalErr
 					}
