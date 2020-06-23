@@ -204,8 +204,14 @@ func TestGenerateEd25519Signature(t *testing.T) {
 
 	signature, err := GenerateEd25519Signature([]uint8("ohmywhatatest"), key)
 	if err != nil {
-		t.Errorf("GenerateEd25519Signature shouldn't have returned error (%s)",
+		t.Errorf("GenerateEd25519Signature shouldn't have returned an error (%s)",
 			err)
+	}
+
+	// validate signature
+	err = VerifyEd25519Signature(key, signature, []uint8("ohmywhatatest"))
+	if err != nil {
+		t.Errorf("VerifyEd25519Signature shouldn't have returned an error (%s)", err)
 	}
 
 	if signature.KeyId != key.KeyId {

@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"golang.org/x/crypto/ed25519"
 	"io/ioutil"
@@ -218,4 +219,24 @@ func GenerateEd25519Signature(signable []byte, key Key) (Signature, error) {
 	signature.KeyId = key.KeyId
 
 	return signature, nil
+}
+
+/*
+VerifyEd25519Signature uses the passed Key to verify the passed Signature over the
+passed data. It returns an error if the key is not a valid ed25519 public key or
+if the signature is not valid for the data.
+*/
+func VerifyEd25519Signature(key Key, sig Signature, data []byte) error {
+	pubHex, err := hex.DecodeString(key.KeyVal.Public)
+	if err != nil {
+		return err
+	}
+	sigHex, err := hex.DecodeString(sig.Sig)
+	if err != nil {
+		return err
+	}
+	if ok := ed25519.Verify(pubHex, data, sigHex); !ok {
+		return errors.New("invalid ed25519 signature")
+	}
+	return nil
 }
