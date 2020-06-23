@@ -569,7 +569,7 @@ func (mb *Metablock) GetSignableRepresentation() ([]byte, error) {
 }
 
 /*
-VerifySignature verifies the first signature, corresponding to the passed Key,
+VerifyRSASignature verifies the first signature, corresponding to the passed Key,
 that it finds in the Signatures field of the Metablock on which it was called.
 It returns an error if Signatures does not contain a Signature corresponding to
 the passed Key, the object in Signed cannot be canonicalized, or the Signature
@@ -593,7 +593,7 @@ func (mb *Metablock) VerifySignature(key Key) error {
 		return err
 	}
 
-	if err := VerifySignature(key, sig, dataCanonical); err != nil {
+	if err := VerifyRSASignature(key, sig, dataCanonical); err != nil {
 		return err
 	}
 	return nil

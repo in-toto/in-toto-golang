@@ -249,7 +249,7 @@ func TestMetablockVerifySignature(t *testing.T) {
 	// - wrong signature for key
 	// - invalid metadata (can't canonicalize)
 	var key Key
-	if err := key.LoadPublicKey("alice.pub"); err != nil {
+	if err := key.LoadRSAPublicKey("alice.pub"); err != nil {
 		t.Errorf("Cannot load public key file: %s", err)
 	}
 	// Test missing key, bad signature and bad metadata
@@ -271,7 +271,7 @@ func TestMetablockVerifySignature(t *testing.T) {
 	for i := 0; i < len(mbs); i++ {
 		err := mbs[i].VerifySignature(key)
 		if err == nil || !strings.Contains(err.Error(), expectedErrors[i]) {
-			t.Errorf("Metablock.VerifySignature returned '%s', expected '%s'",
+			t.Errorf("Metablock.VerifyRSASignature returned '%s', expected '%s'",
 				err, expectedErrors[i])
 		}
 	}
@@ -283,7 +283,7 @@ func TestMetablockVerifySignature(t *testing.T) {
 	}
 	err := mb.VerifySignature(key)
 	if err != nil {
-		t.Errorf("Metablock.VerifySignature returned '%s', expected nil", err)
+		t.Errorf("Metablock.VerifyRSASignature returned '%s', expected nil", err)
 	}
 }
 
@@ -1168,7 +1168,7 @@ func TestMetablockSignWithEd25519(t *testing.T) {
 		t.Errorf("Cannot parse template file: %s", err)
 	}
 
-	if err := key.LoadPublicKey("alice.pub"); err != nil {
+	if err := key.LoadRSAPublicKey("alice.pub"); err != nil {
 		t.Errorf("Cannot load public key file: %s", err)
 	}
 	err := mb.Sign(key)

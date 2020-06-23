@@ -59,27 +59,27 @@ yMxdI/24LUOOQ71cHW3ITIDImm6I8KmrXFM2NewTARKfAgMBAAE=
 func TestLoadPublicKey(t *testing.T) {
 	// Test loading valid public rsa key from pem-formatted file
 	var key Key
-	err := key.LoadPublicKey("alice.pub")
+	err := key.LoadRSAPublicKey("alice.pub")
 	if err != nil {
-		t.Errorf("LoadPublicKey returned %s, expected no error", err)
+		t.Errorf("LoadRSAPublicKey returned %s, expected no error", err)
 	}
 	expectedKeyID := "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b588f3e9cc48b35"
 	if key.KeyId != expectedKeyID {
-		t.Errorf("LoadPublicKey parsed KeyId '%s', expected '%s'",
+		t.Errorf("LoadRSAPublicKey parsed KeyId '%s', expected '%s'",
 			key.KeyId, expectedKeyID)
 	}
 
 	// Test loading error:
 	// - Not a pem formatted rsa public key
 	expectedError := "Could not find a public key PEM block"
-	err = key.LoadPublicKey("demo.layout.template")
+	err = key.LoadRSAPublicKey("demo.layout.template")
 	if err == nil || !strings.Contains(err.Error(), expectedError) {
-		t.Errorf("LoadPublicKey returned (%s), expected '%s' error", err,
+		t.Errorf("LoadRSAPublicKey returned (%s), expected '%s' error", err,
 			expectedError)
 	}
 
 	// Test not existing file
-	err = key.LoadPublicKey("inToToRocks")
+	err = key.LoadRSAPublicKey("inToToRocks")
 	if !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("Invalid file load returned (%s), expected '%s' error", err, os.ErrNotExist)
 	}
@@ -121,9 +121,9 @@ k7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=
 	validData := `{"_type":"link","byproducts":{},"command":[],"environment":{},"materials":{},"name":"foo","products":{}}`
 
 	// Test verifying valid signature
-	err := VerifySignature(validKey, validSig, []byte(validData))
+	err := VerifyRSASignature(validKey, validSig, []byte(validData))
 	if err != nil {
-		t.Errorf("VerifySignature returned '%s', expected nil", err)
+		t.Errorf("VerifyRSASignature returned '%s', expected nil", err)
 	}
 
 	// Test signature verification errors:
@@ -133,7 +133,7 @@ k7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=
 	// - Right key and data, but wrong signature
 	// - Right key and data, but invalid signature
 	var wrongKey Key
-	if err := wrongKey.LoadPublicKey("alice.pub"); err != nil {
+	if err := wrongKey.LoadRSAPublicKey("alice.pub"); err != nil {
 		fmt.Printf("Unable to load key alice.pub: %s", err)
 	}
 	wrongSig := Signature{
@@ -146,9 +146,9 @@ k7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=
 	data := []string{"bad data", validData, validData, validData, validData}
 
 	for i := 0; i < len(sigs); i++ {
-		err := VerifySignature(keys[i], sigs[i], []byte(data[i]))
+		err := VerifyRSASignature(keys[i], sigs[i], []byte(data[i]))
 		if err == nil {
-			t.Errorf("VerifySignature returned '%s', expected error", err)
+			t.Errorf("VerifyRSASignature returned '%s', expected error", err)
 		}
 	}
 }

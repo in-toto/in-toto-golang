@@ -24,7 +24,7 @@ func TestInTotoVerifyPass(t *testing.T) {
 	}
 
 	var pubKey Key
-	if err := pubKey.LoadPublicKey(pubKeyPath); err != nil {
+	if err := pubKey.LoadRSAPublicKey(pubKeyPath); err != nil {
 		t.Error(err)
 	}
 
@@ -99,7 +99,7 @@ func TestGetSummaryLink(t *testing.T) {
 func TestVerifySublayouts(t *testing.T) {
 	sublayoutName := "sub_layout"
 	var aliceKey Key
-	if err := aliceKey.LoadPublicKey("alice.pub"); err != nil {
+	if err := aliceKey.LoadRSAPublicKey("alice.pub"); err != nil {
 		t.Errorf("Unable to load Alice's public key")
 	}
 	sublayoutDirectory := fmt.Sprintf(SublayoutLinkDirFormat, sublayoutName,
@@ -686,7 +686,7 @@ func TestVerifyLayoutSignatures(t *testing.T) {
 		t.Errorf("Unable to load template file: %s", err)
 	}
 	var layoutKey Key
-	if err := layoutKey.LoadPublicKey("alice.pub"); err != nil {
+	if err := layoutKey.LoadRSAPublicKey("alice.pub"); err != nil {
 		t.Errorf("Unable to load public key file: %s", err)
 	}
 

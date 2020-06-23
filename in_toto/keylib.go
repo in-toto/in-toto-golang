@@ -46,11 +46,11 @@ func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
 }
 
 /*
-LoadPublicKey parses an RSA public key from a PEM formatted file at the passed
+LoadRSAPublicKey parses an RSA public key from a PEM formatted file at the passed
 path into the Key object on which it was called.  It returns an error if the
 file at path does not exist or is not a PEM formatted RSA public key.
 */
-func (k *Key) LoadPublicKey(path string) (err error) {
+func (k *Key) LoadRSAPublicKey(path string) (err error) {
 	keyFile, err := os.Open(path)
 	if err != nil {
 		return err
@@ -128,11 +128,11 @@ func (k *Key) LoadPublicKey(path string) (err error) {
 }
 
 /*
-VerifySignature uses the passed Key to verify the passed Signature over the
+VerifyRSASignature uses the passed Key to verify the passed Signature over the
 passed data.  It returns an error if the key is not a valid RSA public key or
 if the signature is not valid for the data.
 */
-func VerifySignature(key Key, sig Signature, data []byte) error {
+func VerifyRSASignature(key Key, sig Signature, data []byte) error {
 	// Create rsa.PublicKey object from DER encoded public key string as
 	// found in the public part of the keyval part of a securesystemslib key dict
 	keyReader := strings.NewReader(key.KeyVal.Public)
