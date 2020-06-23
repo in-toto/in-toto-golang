@@ -76,14 +76,9 @@ If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
 func RecordArtifacts(paths []string) (evalArtifacts map[string]interface{}, err error) {
-	// check if visitedSymlinks has been initialized
-	// if not: generate a new set
-	if visitedSymlinks == nil {
-		visitedSymlinks = NewSet()
-	}
+	// Make sure to initialize a fresh hashset for every RecordArtifacts call
+	visitedSymlinks = NewSet()
 	evalArtifacts, err = recordArtifacts(paths)
-	// tear down visitedSymlinks
-	visitedSymlinks = nil
 	// pass result and error through
 	return evalArtifacts, err
 }
