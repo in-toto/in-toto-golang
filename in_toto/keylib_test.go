@@ -224,3 +224,10 @@ func TestGenerateEd25519Signature(t *testing.T) {
 			signature.Sig)
 	}
 }
+
+func TestLoad25519PublicKey(t *testing.T) {
+	var rightKey Key
+	if err := rightKey.LoadEd25519PublicKey("bob.pub"); err != nil {
+		t.Errorf("Failed to load ed25519 public key from file: (%s)", err)
+	}
+}

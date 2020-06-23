@@ -176,7 +176,6 @@ These ed25519 keys have the format as generated using in-toto-keygen:
 	}
 */
 func ParseEd25519FromPrivateJSON(JSONString string) (Key, error) {
-
 	var keyObj Key
 	err := json.Unmarshal([]uint8(JSONString), &keyObj)
 	if err != nil {
@@ -195,6 +194,38 @@ func ParseEd25519FromPrivateJSON(JSONString string) (Key, error) {
 	if len(keyObj.KeyVal.Private) != 64 {
 		return keyObj, fmt.Errorf("the private field on this key is malformed")
 	}
+
+	return keyObj, nil
+}
+
+/*
+ParseEd25519FromPublicJSON parses an ed25519 public key from the json string.
+These ed25519 keys have the format as generated using in-toto-keygen:
+
+	{
+		"keytype": "ed25519",
+		"scheme": "ed25519",
+		"keyid_hash_algorithms": [...],
+		"keyval": {"public": "..."}
+	}
+
+*/
+func ParseEd25519FromPublicJSON(JSONString string) (Key, error) {
+	var keyObj Key
+	err := json.Unmarshal([]uint8(JSONString), &keyObj)
+	if err != nil {
+		return keyObj, fmt.Errorf("this is not a valid JSON key object")
+	}
+
+	if keyObj.KeyType != "ed25519" || keyObj.Scheme != "ed25519" {
+		return keyObj, fmt.Errorf("this doesn't appear to be an ed25519 key")
+	}
+
+	if keyObj.KeyVal.Private != "" {
+		return keyObj, fmt.Errorf("this key is not a public key")
+	}
+
+	// TODO: check for digits
 
 	return keyObj, nil
 }
@@ -242,8 +273,8 @@ func VerifyEd25519Signature(key Key, sig Signature, data []byte) error {
 }
 
 /* LoadEd25519PublicKey loads a ed25519 pub key file
-and parses it via ParseEd25519FromPrivateJSON.
-The pub key file has to be in the in-toto PrivateJSON format
+and parses it via ParseEd25519FromPublicJSON.
+The pub key file has to be in the in-toto PublicJSON format
 For example:
 
 	{
@@ -277,7 +308,7 @@ func (k *Key) LoadEd25519PublicKey(path string) (err error) {
 		return err
 	}
 	// contrary to LoadRSAPublicKey we use the returned key object
-	keyObj, err := ParseEd25519FromPrivateJSON(string(keyBytes))
+	keyObj, err := ParseEd25519FromPublicJSON(string(keyBytes))
 	if err != nil {
 		return err
 	}
