@@ -1,12 +1,19 @@
 package in_toto
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"syscall"
 )
+
+// ErrSymCycle signals a detected symlink cycle in our RecordArtifacts() function.
+var ErrSymCycle = errors.New("symlink cycle detected")
+
+// visitedSymlinks is a hashset that contains all paths that we have visited.
+var visitedSymlinks Set
 
 /*
 RecordArtifact reads and hashes the contents of the file at the passed path
@@ -21,7 +28,6 @@ using sha256 and returns a map in the following format:
 If reading the file fails, the first return value is nil and the second return
 value is the error.
 */
-
 func RecordArtifact(path string) (map[string]interface{}, error) {
 
 	hashObjectMap := createMap()
@@ -49,8 +55,11 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 }
 
 /*
-RecordArtifacts walks through the passed slice of paths, traversing
-subdirectories, and calls RecordArtifact for each file.  It returns a map in
+RecordArtifacts is a wrapper around recordArtifacts.
+RecordArtifacts initializes a set for storing visited symlinks,
+calls recordArtifacts and deletes the set if no longer needed.
+recordArtifacts walks through the passed slice of paths, traversing
+subdirectories, and calls RecordArtifact for each file. It returns a map in
 the following format:
 
 	{
@@ -66,13 +75,40 @@ the following format:
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
-func RecordArtifacts(paths []string) (map[string]interface{}, error) {
+func RecordArtifacts(paths []string) (evalArtifacts map[string]interface{}, err error) {
+	// Make sure to initialize a fresh hashset for every RecordArtifacts call
+	visitedSymlinks = NewSet()
+	evalArtifacts, err = recordArtifacts(paths)
+	// pass result and error through
+	return evalArtifacts, err
+}
+
+/*
+recordArtifacts walks through the passed slice of paths, traversing
+subdirectories, and calls RecordArtifact for each file. It returns a map in
+the following format:
+
+	{
+		"<path>": {
+			"sha256": <hex representation of hash>
+		},
+		"<path>": {
+		"sha256": <hex representation of hash>
+		},
+		...
+	}
+
+If recording an artifact fails the first return value is nil and the second
+return value is the error.
+*/
+func recordArtifacts(paths []string) (map[string]interface{}, error) {
 	artifacts := make(map[string]interface{})
 	// NOTE: Walk cannot follow symlinks
 	for _, path := range paths {
 		err := filepath.Walk(path,
 			func(path string, info os.FileInfo, err error) error {
-				// Abort if Walk function has a problem, e.g. path does not exist)
+				// Abort if Walk function has a problem,
+				// e.g. path does not exist
 				if err != nil {
 					return err
 				}
@@ -80,8 +116,42 @@ func RecordArtifacts(paths []string) (map[string]interface{}, error) {
 				if info.IsDir() {
 					return nil
 				}
+
+				// check for symlink and evaluate the last element in a symlink
+				// chain via filepath.EvalSymlinks. We use EvalSymlinks here,
+				// because with os.Readlink() we would just read the next
+				// element in a possible symlink chain. This would mean more
+				// iterations. infoMode()&os.ModeSymlink uses the file
+				// type bitmask to check for a symlink.
+				if info.Mode()&os.ModeSymlink == os.ModeSymlink {
+					// return with error if we detect a symlink cycle
+					if ok := visitedSymlinks.Has(path); ok {
+						// this error will get passed through
+						// to RecordArtifacts()
+						return ErrSymCycle
+					}
+					evalSym, err := filepath.EvalSymlinks(path)
+					if err != nil {
+						return err
+					}
+					// add symlink to visitedSymlinks set
+					// this way, we know which link we have visited already
+					// if we visit a symlink twice, we have detected a symlink cycle
+					visitedSymlinks.Add(path)
+					// We recursively call RecordArtifacts() to follow
+					// the new path.
+					evalArtifacts, evalErr := recordArtifacts([]string{evalSym})
+					if evalErr != nil {
+						return evalErr
+					}
+					for key, value := range evalArtifacts {
+						artifacts[key] = value
+					}
+					return nil
+				}
 				artifact, err := RecordArtifact(path)
-				// Abort if artifact can't be recorded, e.g. due to file permissions
+				// Abort if artifact can't be recorded, e.g.
+				// due to file permissions
 				if err != nil {
 					return err
 				}
