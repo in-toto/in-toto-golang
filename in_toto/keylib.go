@@ -225,7 +225,10 @@ func ParseEd25519FromPublicJSON(JSONString string) (Key, error) {
 		return keyObj, fmt.Errorf("this key is not a public key")
 	}
 
-	// TODO: check for digits
+	// 64 hexadecimal digits => 32 bytes for the public portion of the key
+	if len(keyObj.KeyVal.Public) != 64 {
+		return keyObj, fmt.Errorf("the public field on this key is malformed")
+	}
 
 	return keyObj, nil
 }

@@ -1,6 +1,7 @@
 package in_toto
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -208,10 +209,45 @@ func TestGenerateEd25519Signature(t *testing.T) {
 			err)
 	}
 
-	// validate signature
+	// validate correct signature
 	err = VerifyEd25519Signature(key, signature, []uint8("ohmywhatatest"))
 	if err != nil {
 		t.Errorf("VerifyEd25519Signature shouldn't have returned an error (%s)", err)
+	}
+
+	//validate incorrect signature
+	var incorrectSig Signature
+	incorrectSig.Sig = "e8912b58f47ae04a65d7437e3c82eb361f82d952"
+	err = VerifyEd25519Signature(key, incorrectSig, []uint8("ohmywhatatest"))
+	if err == nil {
+		t.Errorf("Given signature is valid, but should be invalid")
+	}
+
+	// validate InvalidByte signature
+	var malformedSig Signature
+	malformedSig.Sig = "InTotoRocks"
+	err = VerifyEd25519Signature(key, malformedSig, []uint8("ohmywhatatest"))
+	// use type conversion for checking for hex.InvalidByteError
+	var invalidByteError hex.InvalidByteError
+	if !errors.As(err, &invalidByteError) {
+		t.Errorf("We received %s, but we should get: invalid byte error", err)
+	}
+
+	// validate invalidLength signature
+	// the following signature is too short
+	var invLengthSig Signature
+	invLengthSig.Sig = "e8912b58f47ae04a65d74"
+	err = VerifyEd25519Signature(key, invLengthSig, []uint8("ohmywhatatest"))
+	if !errors.Is(err, hex.ErrLength) {
+		t.Errorf("We received %s, but we should get: %s", err, hex.ErrLength)
+	}
+
+	// validate invalidKey
+	wrongKey := key
+	wrongKey.KeyVal.Public = "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7"
+	err = VerifyEd25519Signature(wrongKey, signature, []uint8("ohmywhatatest"))
+	if err == nil {
+		t.Errorf("The invalid testKey passed the signature test, this should not happen")
 	}
 
 	if signature.KeyId != key.KeyId {
@@ -226,8 +262,51 @@ func TestGenerateEd25519Signature(t *testing.T) {
 }
 
 func TestLoad25519PublicKey(t *testing.T) {
-	var rightKey Key
-	if err := rightKey.LoadEd25519PublicKey("bob.pub"); err != nil {
+	var key Key
+	if err := key.LoadEd25519PublicKey("bob.pub"); err != nil {
 		t.Errorf("Failed to load ed25519 public key from file: (%s)", err)
+	}
+
+	expectedPubKey := "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7aac70"
+	if expectedPubKey != key.KeyVal.Public {
+		t.Errorf("Loaded pubkey is not the expected key")
+	}
+
+	// try to load nonexistent file
+	if err := key.LoadEd25519PublicKey("this-does-not-exist"); err == nil {
+		t.Errorf("LoadEd25519PublicKey loaded a file that does not exist")
+	}
+
+	// load invalid file
+	if err := key.LoadEd25519PublicKey("bob-invalid.pub"); err == nil {
+		t.Errorf("LoadEd25519PublicKey has successfully loaded an invalid key file")
+	}
+}
+
+func TestParseEd25519FromPublicJSON(t *testing.T) {
+	tables := []struct {
+		invalidKey    string
+		expectedError string
+	}{
+		{"not a json", "this is not a valid JSON key object"},
+		{`{"keytype": "ed25519", "scheme": "ed25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7aac70", "private": "861fd1b466cfc6f73"}}`, "this key is not a public key"},
+		{`{"keytype": "ed25519", "scheme": "ed25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "e8912b58f47ae04a65d74"}}`, "the public field on this key is malformed"},
+		{`{"keytype": "25519", "scheme": "ed25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7aac70"}}`, "this doesn't appear to be an ed25519 key"},
+		{`{"keytype": "ed25519", "scheme": "cd25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7aac70"}}`, "his doesn't appear to be an ed25519 key"},
+	}
+
+	for _, table := range tables {
+		_, err := ParseEd25519FromPublicJSON(table.invalidKey)
+		if err == nil || !strings.Contains(err.Error(), table.expectedError) {
+			t.Errorf("ParseEd25519FromPublicJSON returned (%s), expected '%s'", err, table.expectedError)
+		}
+	}
+
+	// Generated through in-toto run 0.4.1 and thus it should be a happy key
+	validKey := `{"keytype": "ed25519", "scheme": "ed25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7aac70"}}`
+	_, err := ParseEd25519FromPublicJSON(validKey)
+	if err != nil {
+		t.Errorf("ParseEd25519FromPublicJSON returned (%s), expected no error",
+			err)
 	}
 }
