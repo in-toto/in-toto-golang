@@ -240,3 +240,53 @@ func VerifyEd25519Signature(key Key, sig Signature, data []byte) error {
 	}
 	return nil
 }
+
+/* LoadEd25519PublicKey loads a ed25519 pub key file
+and parses it via ParseEd25519FromPrivateJSON.
+The pub key file has to be in the in-toto PrivateJSON format
+For example:
+
+	{
+		"keytype": "ed25519",
+		"scheme": "ed25519",
+		"keyid_hash_algorithms":
+			[
+				"sha256",
+				"sha512"
+			],
+		"keyval":
+			{
+				"public": "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7aac70"
+			}
+	}
+
+*/
+func (k *Key) LoadEd25519PublicKey(path string) (err error) {
+	keyFile, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := keyFile.Close(); closeErr != nil {
+			err = closeErr
+		}
+	}()
+
+	keyBytes, err := ioutil.ReadAll(keyFile)
+	if err != nil {
+		return err
+	}
+	// contrary to LoadRSAPublicKey we use the returned key object
+	keyObj, err := ParseEd25519FromPrivateJSON(string(keyBytes))
+	if err != nil {
+		return err
+	}
+	// I am not sure if there is a faster way to fill the Key struct
+	// without touching the ParseEd25519FromPrivateJSON function
+	k.KeyId = keyObj.KeyId
+	k.KeyType = keyObj.KeyType
+	k.KeyIdHashAlgorithms = keyObj.KeyIdHashAlgorithms
+	k.KeyVal = keyObj.KeyVal
+	k.Scheme = keyObj.Scheme
+	return nil
+}
