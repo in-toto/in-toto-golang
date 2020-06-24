@@ -36,5 +36,4 @@ we will try to provide them as soon as possible!
   cannot be used to create signed evidence (link metadata) for steps in a
   layout.*
 * [Hashing algorithms, other than `sha256` (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/31)
-* [Symbolic links (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/32)
 * [Exclude patterns (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/33)
