@@ -2,6 +2,7 @@ package in_toto
 
 import (
 	"crypto"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
@@ -253,8 +254,8 @@ func GenerateRSASignature(signable []byte, key Key) (Signature, error) {
 
 	hashed := sha256.Sum256(signable)
 
-	// TODO: verify if rand=nil is secure!!!
-	signatureBuffer, err := rsa.SignPSS(nil, rsaPriv, crypto.SHA256, hashed[:],
+	// We use rand.Reader as secure random source for rsa.SignPSS()
+	signatureBuffer, err := rsa.SignPSS(rand.Reader, rsaPriv, crypto.SHA256, hashed[:],
 		&rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
 	if err != nil {
 		return signature, err
