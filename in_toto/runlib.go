@@ -249,7 +249,7 @@ return value is an empty Metablock and the second return value is the error.
 NOTE: Currently InTotoRun cannot be used to sign Link metadata.
 */
 func InTotoRun(name string, materialPaths []string, productPaths []string,
-	cmdArgs []string) (Metablock, error) {
+	cmdArgs []string, key Key) (Metablock, error) {
 	var linkMb Metablock
 	materials, err := RecordArtifacts(materialPaths)
 	if err != nil {
@@ -266,8 +266,7 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		return linkMb, err
 	}
 
-	linkMb.Signatures = []Signature{}
-	linkMb.Signed = Link{
+	link := Link{
 		Type:        "link",
 		Name:        name,
 		Materials:   materials,
@@ -276,6 +275,15 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		Command:     cmdArgs,
 		Environment: map[string]interface{}{},
 	}
+
+	linkMb.Signatures = []Signature{}
+	// we expect that key has been initialized if it has a valid KeyId
+	if key.KeyId != "" {
+		if err := linkMb.Sign(key); err != nil {
+			return linkMb, err
+		}
+	}
+	linkMb.Signed = link
 
 	return linkMb, nil
 }

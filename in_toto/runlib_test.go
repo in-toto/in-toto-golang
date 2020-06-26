@@ -317,7 +317,7 @@ func TestInTotoRun(t *testing.T) {
 	}
 	for i := 0; i < len(parameters); i++ {
 		result, err := InTotoRun(linkName, parameters[i]["materialPaths"],
-			parameters[i]["productPaths"], parameters[i]["cmdArgs"])
+			parameters[i]["productPaths"], parameters[i]["cmdArgs"], Key{})
 		if !reflect.DeepEqual(result, expected[i]) {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'",
 				result, err, expected[i])
@@ -348,7 +348,7 @@ func TestInTotoRun(t *testing.T) {
 
 	for i := 0; i < len(parameters); i++ {
 		result, err := InTotoRun(linkName, parameters[i]["materialPaths"],
-			parameters[i]["productPaths"], parameters[i]["cmdArgs"])
+			parameters[i]["productPaths"], parameters[i]["cmdArgs"], Key{})
 		if err == nil {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, <error>)'",
 				result, err, expected[i])

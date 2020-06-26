@@ -1168,16 +1168,6 @@ func TestMetablockSignWithEd25519(t *testing.T) {
 		t.Errorf("Cannot parse template file: %s", err)
 	}
 
-	if err := key.LoadRSAPublicKey("alice.pub"); err != nil {
-		t.Errorf("Cannot load public key file: %s", err)
-	}
-	err := mb.Sign(key)
-	if err == nil || !strings.Contains(err.Error(), "supported yet") {
-		t.Errorf("Metablock.Sign returned (%s), expected it to claim this "+
-			"key type/scheme is unsupported", err)
-
-	}
-
 	pubkey := `{"keytype": "ed25519", "scheme": "ed25519", "keyid": "308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8f93f549eb4cca8dc2142fb655ba2d0955d1824f79474f354e38d6a359e9d440", "private": ""}}`
 
 	badkey, err := ParseEd25519FromPrivateJSON(pubkey)

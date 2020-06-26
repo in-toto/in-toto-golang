@@ -642,14 +642,20 @@ func (mb *Metablock) Sign(key Key) error {
 	// FIXME: we could be fancier about signature-generation using a dispatch
 	// table or something but for now let's just be explicit
 	// (also, lolnogenerics)
-	if key.KeyType == "ed25519" && key.Scheme == "ed25519" {
+	switch key.Scheme {
+	case "ed25519":
 		newSignature, err = GenerateEd25519Signature(dataCanonical, key)
 		if err != nil {
 			return err
 		}
-	} else {
-		return fmt.Errorf("This key type or signature (%s, %s) scheme is "+
-			"not supported yet!", key.KeyType, key.Scheme)
+	case "rsassa-pss-sha256":
+		newSignature, err = GenerateRSASignature(dataCanonical, key)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("this key type or signature (%s, %s) scheme is "+
+			"not supported yet", key.KeyType, key.Scheme)
 	}
 
 	mb.Signatures = append(mb.Signatures, newSignature)
