@@ -57,7 +57,7 @@ yMxdI/24LUOOQ71cHW3ITIDImm6I8KmrXFM2NewTARKfAgMBAAE=
 	}
 }
 
-func TestLoadPublicKey(t *testing.T) {
+func TestLoadRSAPublicKey(t *testing.T) {
 	// Test loading valid public rsa key from pem-formatted file
 	var key Key
 	err := key.LoadRSAPublicKey("alice.pub")
@@ -81,6 +81,35 @@ func TestLoadPublicKey(t *testing.T) {
 
 	// Test not existing file
 	err = key.LoadRSAPublicKey("inToToRocks")
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("Invalid file load returned (%s), expected '%s' error", err, os.ErrNotExist)
+	}
+}
+
+func TestLoadRSAPrivateKey(t *testing.T) {
+	// Test loading valid Private rsa key from pem-formatted file
+	var key Key
+	err := key.LoadRSAPrivateKey("dan")
+	if err != nil {
+		t.Errorf("LoadRSAPrivateKey returned %s, expected no error", err)
+	}
+	expectedKeyID := "f29cb6877d14ebcf28b136a96a4d64935522afaddcc84e6b70ff6b9eaefb8fcf"
+	if key.KeyId != expectedKeyID {
+		t.Errorf("LoadRSAPrivateKey parsed KeyId '%s', expected '%s'",
+			key.KeyId, expectedKeyID)
+	}
+
+	// Test loading error:
+	// - Not a pem formatted rsa Private key
+	expectedError := "Could not find a Private key PEM block"
+	err = key.LoadRSAPrivateKey("demo.layout.template")
+	if err == nil || !strings.Contains(err.Error(), expectedError) {
+		t.Errorf("LoadRSAPrivateKey returned (%s), expected '%s' error", err,
+			expectedError)
+	}
+
+	// Test not existing file
+	err = key.LoadRSAPrivateKey("inToToRocks")
 	if !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("Invalid file load returned (%s), expected '%s' error", err, os.ErrNotExist)
 	}

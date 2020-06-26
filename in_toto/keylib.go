@@ -47,6 +47,28 @@ func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
 }
 
 /*
+ParseRSAPrivateKeyFromPEM parses the passed pemBytes as e.g. read from a PEM
+formatted file, and instantiates and returns the corresponding RSA Private key.
+If the no RSA Private key can be parsed, the first return value is nil and the
+second return value is the error.
+*/
+func ParseRSAPrivateKeyFromPEM(pemBytes []byte) (*rsa.PrivateKey, error) {
+	// TODO: There could be more key data in _, which we silently ignore here.
+	// Should we handle it / fail / say something about it?
+	data, _ := pem.Decode(pemBytes)
+	if data == nil {
+		return nil, fmt.Errorf("Could not find a Private key PEM block")
+	}
+
+	priv, err := x509.ParsePKCS1PrivateKey(data.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return priv, nil
+}
+
+/*
 LoadRSAPublicKey parses an RSA public key from a PEM formatted file at the passed
 path into the Key object on which it was called.  It returns an error if the
 file at path does not exist or is not a PEM formatted RSA public key.
@@ -120,6 +142,88 @@ func (k *Key) LoadRSAPublicKey(path string) (err error) {
 	k.KeyType = keyType
 	k.KeyVal = KeyVal{
 		Public: string(keyBytesStripped),
+	}
+	k.Scheme = scheme
+	k.KeyIdHashAlgorithms = keyIdHashAlgorithms
+	k.KeyId = fmt.Sprintf("%x", keyHashed)
+
+	return nil
+}
+
+/*
+LoadRSAPrivateKey parses an RSA Private key from a PEM formatted file at the passed
+path into the Key object on which it was called.  It returns an error if the
+file at path does not exist or is not a PEM formatted RSA Private key.
+*/
+func (k *Key) LoadRSAPrivateKey(path string) (err error) {
+	keyFile, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := keyFile.Close(); closeErr != nil {
+			err = closeErr
+		}
+	}()
+
+	// Read key bytes and decode PEM
+	keyBytes, err := ioutil.ReadAll(keyFile)
+	if err != nil {
+		return err
+	}
+
+	// We only parse to see if this is indeed a pem formatted rsa Private key,
+	// but don't use the returned *rsa.PrivateKey. Instead, we continue with
+	// the original keyBytes from above.
+	_, err = ParseRSAPrivateKeyFromPEM(keyBytes)
+	if err != nil {
+		return err
+	}
+
+	// Strip leading and trailing data from PEM file like securesystemslib does
+	// TODO: Should we instead use the parsed Private key to reconstruct the PEM?
+	keyHeader := "-----BEGIN RSA PRIVATE KEY-----"
+	keyFooter := "-----END RSA PRIVATE KEY-----"
+	keyStart := strings.Index(string(keyBytes), keyHeader)
+	keyEnd := strings.Index(string(keyBytes), keyFooter) + len(keyFooter)
+	// Successful call to ParseRSAPrivateKeyFromPEM already guarantees that
+	// header and footer are present, i.e. `!(keyStart == -1 || keyEnd == -1)`
+	keyBytesStripped := keyBytes[keyStart:keyEnd]
+
+	// Declare values for key
+	// TODO: Do not hardcode here, but define defaults elsewhere and add support
+	// for parametrization
+	keyType := "rsa"
+	scheme := "rsassa-pss-sha256"
+	keyIdHashAlgorithms := []string{"sha256", "sha512"}
+
+	// Create partial key map used to create the keyid
+	// Unfortunately, we can't use the Key object because this also carries
+	// yet unwanted fields, such as KeyId and KeyVal.Private and therefore
+	// produces a different hash
+	var keyToBeHashed = map[string]interface{}{
+		"keytype":               keyType,
+		"scheme":                scheme,
+		"keyid_hash_algorithms": keyIdHashAlgorithms,
+		"keyval": map[string]string{
+			"Private": string(keyBytesStripped),
+		},
+	}
+
+	// Canonicalize key and get hex representation of hash
+	keyCanonical, err := EncodeCanonical(keyToBeHashed)
+	if err != nil {
+		return err
+	}
+	keyHashed := sha256.Sum256(keyCanonical)
+
+	// Unmarshalling the canonicalized key into the Key object would seem natural
+	// Unfortunately, our mandated canonicalization function produces a byte
+	// slice that cannot be unmarshalled by Golang's json decoder, hence we have
+	// to manually assign the values
+	k.KeyType = keyType
+	k.KeyVal = KeyVal{
+		Private: string(keyBytesStripped),
 	}
 	k.Scheme = scheme
 	k.KeyIdHashAlgorithms = keyIdHashAlgorithms
