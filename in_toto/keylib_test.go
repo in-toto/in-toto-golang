@@ -283,6 +283,28 @@ func TestLoad25519PublicKey(t *testing.T) {
 	}
 }
 
+func TestLoad25519PrivateKey(t *testing.T) {
+	var key Key
+	if err := key.LoadEd25519PrivateKey("carol"); err != nil {
+		t.Errorf("Failed to load ed25519 public key from file: (%s)", err)
+	}
+
+	expectedPrivateKey := "4cedf4d3369f8c83af472d0d329aedaa86265b74efb74b708f6a1ed23f290162"
+	if expectedPrivateKey != key.KeyVal.Private {
+		t.Errorf("Loaded pubkey is not the expected key")
+	}
+
+	// try to load nonexistent file
+	if err := key.LoadEd25519PrivateKey("this-does-not-exist"); err == nil {
+		t.Errorf("LoadEd25519PublicKey loaded a file that does not exist")
+	}
+
+	// load invalid file
+	if err := key.LoadEd25519PrivateKey("bob-invalid.pub"); err == nil {
+		t.Errorf("LoadEd25519PublicKey has successfully loaded an invalid key file")
+	}
+}
+
 func TestParseEd25519FromPublicJSON(t *testing.T) {
 	tables := []struct {
 		invalidKey    string
