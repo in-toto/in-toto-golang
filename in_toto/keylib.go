@@ -275,7 +275,7 @@ func VerifyEd25519Signature(key Key, sig Signature, data []byte) error {
 	return nil
 }
 
-/* LoadEd25519PublicKey loads a ed25519 pub key file
+/* LoadEd25519PublicKey loads an ed25519 pub key file
 and parses it via ParseEd25519FromPublicJSON.
 The pub key file has to be in the in-toto PublicJSON format
 For example:
@@ -283,15 +283,11 @@ For example:
 	{
 		"keytype": "ed25519",
 		"scheme": "ed25519",
-		"keyid_hash_algorithms":
-			[
-				"sha256",
-				"sha512"
-			],
+		"keyid_hash_algorithms": ["sha256", "sha512"],
 		"keyval":
-			{
-				"public": "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7aac70"
-			}
+		{
+			"public": "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037"
+		}
 	}
 
 */
@@ -325,27 +321,28 @@ func (k *Key) LoadEd25519PublicKey(path string) (err error) {
 	return nil
 }
 
-/* LoadEd25519PrivateKey loads a ed25519 private key file
+/* LoadEd25519PrivateKey loads an ed25519 private key file
 and parses it via ParseEd25519FromPrivateJSON.
-The pub key file has to be in the in-toto PrivateJSON format
+ParseEd25519FromPrivateKey does not support encrypted private keys yet.
+The private key file has to be in the in-toto PrivateJSON format
 For example:
 
 	{
 		"keytype": "ed25519",
 		"scheme": "ed25519",
-		"keyid_hash_algorithms":
-			[
-				"sha256",
-				"sha512"
-			],
+		"keyid": "d7c0baabc90b7bf218aa67461ec0c3c7f13a8a5d8552859c8fafe41588be01cf",
+		"keyid_hash_algorithms": ["sha256", "sha512"],
 		"keyval":
-			{
-				"public": "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7aac70"
-			}
+		{
+			"public": "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037",
+			"private": "4cedf4d3369f8c83af472d0d329aedaa86265b74efb74b708f6a1ed23f290162"
+		}
 	}
 
 */
 func (k *Key) LoadEd25519PrivateKey(path string) (err error) {
+	// TODO: Support for encrypted private Keys
+	// See also: https://github.com/secure-systems-lab/securesystemslib/blob/01a0c95af5f458235f96367922357958bfcf7b01/securesystemslib/keys.py#L1309
 	keyFile, err := os.Open(path)
 	if err != nil {
 		return err
