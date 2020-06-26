@@ -233,6 +233,40 @@ func (k *Key) LoadRSAPrivateKey(path string) (err error) {
 }
 
 /*
+GenerateRSASignature generates a rsassa-pss signature, based
+on the passed key and signable data. If something goes wrong
+it will return an uninitialized Signature with an error.
+If everything goes right, the function will return an initialized
+signature with err=nil.
+*/
+func GenerateRSASignature(signable []byte, key Key) (Signature, error) {
+	var signature Signature
+	keyReader := strings.NewReader(key.KeyVal.Private)
+	pemBytes, err := ioutil.ReadAll(keyReader)
+	if err != nil {
+		return signature, err
+	}
+	rsaPriv, err := ParseRSAPrivateKeyFromPEM(pemBytes)
+	if err != nil {
+		return signature, err
+	}
+
+	hashed := sha256.Sum256(signable)
+
+	// TODO: verify if rand=nil is secure!!!
+	signatureBuffer, err := rsa.SignPSS(nil, rsaPriv, crypto.SHA256, hashed[:],
+		&rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
+	if err != nil {
+		return signature, err
+	}
+
+	signature.Sig = hex.EncodeToString(signatureBuffer)
+	signature.KeyId = key.KeyId
+
+	return signature, nil
+}
+
+/*
 VerifyRSASignature uses the passed Key to verify the passed Signature over the
 passed data.  It returns an error if the key is not a valid RSA public key or
 if the signature is not valid for the data.
