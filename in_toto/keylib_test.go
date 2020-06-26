@@ -145,6 +145,17 @@ func TestGenerateRSASignature(t *testing.T) {
 	validKey := Key{
 		KeyId: "f29cb6877d14ebcf28b136a96a4d64935522afaddcc84e6b70ff6b9eaefb8fcf",
 		KeyVal: KeyVal{
+			Public: `-----BEGIN PUBLIC KEY-----
+MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAyCTik98953hKl6+B6n5l
+8DVIDwDnvrJfpasbJ3+Rw66YcawOZinRpMxPTqWBKs7sRop7jqsQNcslUoIZLrXP
+r3foPHF455TlrqPVfCZiFQ+O4CafxWOB4mL1NddvpFXTEjmUiwFrrL7PcvQKMbYz
+eUHH4tH9MNzqKWbbJoekBsDpCDIxp1NbgivGBKwjRGa281sClKgpd0Q0ebl+RTcT
+vpfZVDbXazQ7VqZkidt7geWq2BidOXZp/cjoXyVneKx/gYiOUv8x94svQMzSEhw2
+LFMQ04A1KnGn1jxO35/fd6/OW32njyWs96RKu9UQVacYHsQfsACPWwmVqgnX/sp5
+ujlvSDjyfZu7c5yUQ2asYfQPLvnjG+u7QcBukGf8hAfVgsezzX9QPiK35BKDgBU/
+Vk43riJs165TJGYGVuLUhIEhHgiQtwo8pUTJS5npEe5XMDuZoighNdzoWY2nfsBf
+p8348k6vJtDMB093/t6V9sTGYQcSbgKPyEQo5Pk6Wd4ZAgMBAAE=
+-----END PUBLIC KEY-----`,
 			Private: `-----BEGIN RSA PRIVATE KEY-----
 MIIG5QIBAAKCAYEAyCTik98953hKl6+B6n5l8DVIDwDnvrJfpasbJ3+Rw66YcawO
 ZinRpMxPTqWBKs7sRop7jqsQNcslUoIZLrXPr3foPHF455TlrqPVfCZiFQ+O4Caf
@@ -188,10 +199,14 @@ lQqaoEO7ScdRrzjgvVxXkEY3nwLcWdM61/RZTL0+be8goDw5cWt+PaA=
 	}
 	// We are not verifying the signature yet..
 	validData := `{"_type":"link","byproducts":{},"command":[],"environment":{},"materials":{},"name":"foo","products":{}}`
-	_, err := GenerateRSASignature([]byte(validData), validKey)
+	validSig, err := GenerateRSASignature([]byte(validData), validKey)
 	if err != nil {
 		t.Errorf("GenerateRSASignature from validKey and data failed: %s", err)
 	}
+	if err := VerifyRSASignature(validKey, validSig, []byte(validData)); err != nil {
+		t.Errorf("VerifyRSASignature from validSignature and data has failed: %s", err)
+	}
+
 }
 
 func TestVerifyRSASignature(t *testing.T) {
