@@ -57,7 +57,7 @@ func ParseRSAPrivateKeyFromPEM(pemBytes []byte) (*rsa.PrivateKey, error) {
 	// Should we handle it / fail / say something about it?
 	data, _ := pem.Decode(pemBytes)
 	if data == nil {
-		return nil, fmt.Errorf("Could not find a Private key PEM block")
+		return nil, fmt.Errorf("Could not find a private key PEM block")
 	}
 
 	priv, err := x509.ParsePKCS1PrivateKey(data.Bytes)

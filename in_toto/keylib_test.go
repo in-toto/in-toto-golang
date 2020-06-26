@@ -57,6 +57,32 @@ yMxdI/24LUOOQ71cHW3ITIDImm6I8KmrXFM2NewTARKfAgMBAAE=
 	}
 }
 
+func TestParseRSAPrivateKeyFromPEM(t *testing.T) {
+	// Test parsing errors:
+	// - Missing pem headers,
+	// - Missing pem body
+	// We only support RSA private keys, therefore we don't need to check for other keys.
+	// Other keys should fail at ParsePKCS1 stage already.
+	invalidRSA := []string{
+		"not a PEM block",
+		`-----BEGIN PRIVATE KEY-----
+
+-----END PRIVATE KEY-----`,
+	}
+	expectedErrors := []string{
+		"Could not find a private key PEM block",
+		"truncated",
+	}
+
+	for i := 0; i < len(invalidRSA); i++ {
+		result, err := ParseRSAPrivateKeyFromPEM([]byte(invalidRSA[i]))
+		if err == nil || !strings.Contains(err.Error(), expectedErrors[i]) {
+			t.Errorf("ParseRSAPrivateKeyFromPEM returned (%p, %s), expected '%s'"+
+				" error", result, err, expectedErrors[i])
+		}
+	}
+}
+
 func TestLoadRSAPublicKey(t *testing.T) {
 	// Test loading valid public rsa key from pem-formatted file
 	var key Key
@@ -101,7 +127,7 @@ func TestLoadRSAPrivateKey(t *testing.T) {
 
 	// Test loading error:
 	// - Not a pem formatted rsa Private key
-	expectedError := "Could not find a Private key PEM block"
+	expectedError := "Could not find a private key PEM block"
 	err = key.LoadRSAPrivateKey("demo.layout.template")
 	if err == nil || !strings.Contains(err.Error(), expectedError) {
 		t.Errorf("LoadRSAPrivateKey returned (%s), expected '%s' error", err,
