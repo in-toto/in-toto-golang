@@ -266,7 +266,7 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		return linkMb, err
 	}
 
-	link := Link{
+	linkMb.Signed = Link{
 		Type:        "link",
 		Name:        name,
 		Materials:   materials,
@@ -275,7 +275,6 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		Command:     cmdArgs,
 		Environment: map[string]interface{}{},
 	}
-
 	linkMb.Signatures = []Signature{}
 	// we expect that key has been initialized if it has a valid KeyId
 	if key.KeyId != "" {
@@ -283,7 +282,5 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 			return linkMb, err
 		}
 	}
-	linkMb.Signed = link
-
 	return linkMb, nil
 }

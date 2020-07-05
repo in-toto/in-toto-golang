@@ -284,16 +284,20 @@ func TestRunCommand(t *testing.T) {
 func TestInTotoRun(t *testing.T) {
 	// Successfully run InTotoRun
 	linkName := "Name"
-	parameters := []map[string][]string{
-		{
-			"materialPaths": {"demo.layout.template"},
-			"productPaths":  {"foo.tar.gz"},
-			"cmdArgs":       {"sh", "-c", "printf out; printf err >&2"},
-		},
+
+	var validKey Key
+	if err := validKey.LoadEd25519PrivateKey("carol"); err != nil {
+		t.Error(err)
 	}
-	expected := []Metablock{
-		{
-			Signatures: []Signature{},
+
+	tablesCorrect := []struct {
+		materialPaths []string
+		productPaths  []string
+		cmdArgs       []string
+		key           Key
+		result        Metablock
+	}{
+		{[]string{"demo.layout.template"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, validKey, Metablock{
 			Signed: Link{
 				Name: linkName,
 				Type: "link",
@@ -313,17 +317,22 @@ func TestInTotoRun(t *testing.T) {
 				Command:     []string{"sh", "-c", "printf out; printf err >&2"},
 				Environment: map[string]interface{}{},
 			},
+			Signatures: []Signature{{
+				KeyId: "d7c0baabc90b7bf218aa67461ec0c3c7f13a8a5d8552859c8fafe41588be01cf",
+				Sig:   "ce7f736866cee27e58544ad9daee88e211376b29451619f50a4d16abd796931b1bbb4b78dd120290998155bf5db458c4f7a768d26b39f70efeb74ac634625b0b",
+			}},
+		},
 		},
 	}
-	for i := 0; i < len(parameters); i++ {
-		result, err := InTotoRun(linkName, parameters[i]["materialPaths"],
-			parameters[i]["productPaths"], parameters[i]["cmdArgs"], Key{})
-		if !reflect.DeepEqual(result, expected[i]) {
-			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'",
-				result, err, expected[i])
+
+	for _, table := range tablesCorrect {
+		result, err := InTotoRun(linkName, table.materialPaths, table.productPaths, table.cmdArgs, table.key)
+		if !reflect.DeepEqual(result, table.result) {
+			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result)
 		}
 	}
 
+	// Run InToToRun with errors
 	tablesInvalid := []struct {
 		materialPaths []string
 		productPaths  []string
