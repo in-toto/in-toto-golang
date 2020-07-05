@@ -324,34 +324,30 @@ func TestInTotoRun(t *testing.T) {
 		}
 	}
 
-	// Test in-toto run errors:
-	// - error due to nonexistent material path
-	// - error due to nonexistent product path
-	// - error due to nonexistent run command
-	parameters = []map[string][]string{
-		{
-			"materialPaths": {"material-does-not-exist"},
-			"productPaths":  {""},
-			"cmdArgs":       {"sh", "-c", "printf test"},
-		},
-		{
-			"materialPaths": {},
-			"productPaths":  {"product-does-not-exist"},
-			"cmdArgs":       {"sh", "-c", "printf test"},
-		},
-		{
-			"materialPaths": {},
-			"productPaths":  {},
-			"cmdArgs":       {"command-does-not-exist"},
-		},
+	tablesInvalid := []struct {
+		materialPaths []string
+		productPaths  []string
+		cmdArgs       []string
+		key           Key
+	}{
+		{[]string{"material-does-not-exist"}, []string{""}, []string{"sh", "-c", "printf test"}, Key{}},
+		{[]string{"demo.layout.template"}, []string{"product-does-not-exist"}, []string{"sh", "-c", "printf test"}, Key{}},
+		{[]string{""}, []string{"/invalid-path/"}, []string{"sh", "-c", "printf test"}, Key{}},
+		{[]string{}, []string{}, []string{"command-does-not-exist"}, Key{}},
+		{[]string{"demo.layout.template"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, Key{
+			KeyId:               "this-is-invalid",
+			KeyIdHashAlgorithms: nil,
+			KeyType:             "",
+			KeyVal:              KeyVal{},
+			Scheme:              "",
+		}},
 	}
 
-	for i := 0; i < len(parameters); i++ {
-		result, err := InTotoRun(linkName, parameters[i]["materialPaths"],
-			parameters[i]["productPaths"], parameters[i]["cmdArgs"], Key{})
+	for _, table := range tablesInvalid {
+		result, err := InTotoRun(linkName, table.materialPaths, table.productPaths, table.cmdArgs, table.key)
 		if err == nil {
-			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, <error>)'",
-				result, err, expected[i])
+			t.Errorf("InTotoRun returned '(%s, %s)', expected error",
+				result, err)
 		}
 	}
 }
