@@ -325,8 +325,8 @@ func ParseEd25519FromPrivateJSON(JSONString string) (Key, error) {
 		return keyObj, fmt.Errorf("this doesn't appear to be an ed25519 key")
 	}
 
-	if keyObj.KeyVal.Private == "" {
-		return keyObj, fmt.Errorf("this key is not a private key")
+	if err := validatePrivateKey(keyObj); err != nil {
+		return keyObj, err
 	}
 
 	// 64 hexadecimal digits => 32 bytes for the private portion of the key
@@ -360,8 +360,8 @@ func ParseEd25519FromPublicJSON(JSONString string) (Key, error) {
 		return keyObj, fmt.Errorf("this doesn't appear to be an ed25519 key")
 	}
 
-	if keyObj.KeyVal.Private != "" {
-		return keyObj, fmt.Errorf("this key is not a public key")
+	if err := validatePubKey(keyObj); err != nil {
+		return keyObj, err
 	}
 
 	// 64 hexadecimal digits => 32 bytes for the public portion of the key

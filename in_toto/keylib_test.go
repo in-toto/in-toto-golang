@@ -293,7 +293,7 @@ func TestParseEd25519FromPrivateJSON(t *testing.T) {
 
 	expectedErrors := []string{
 		"this is not a valid JSON key object",
-		"this key is not a private key",
+		"in key '308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64': private key cannot be empty",
 		"the private field on this key is malformed",
 		"this doesn't appear to be an ed25519 key",
 		"this doesn't appear to be an ed25519 key",
@@ -386,11 +386,11 @@ func TestGenerateEd25519Signature(t *testing.T) {
 
 func TestLoad25519PublicKey(t *testing.T) {
 	var key Key
-	if err := key.LoadEd25519PublicKey("bob.pub"); err != nil {
+	if err := key.LoadEd25519PublicKey("carol.pub"); err != nil {
 		t.Errorf("Failed to load ed25519 public key from file: (%s)", err)
 	}
 
-	expectedPubKey := "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7aac70"
+	expectedPubKey := "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037"
 	if expectedPubKey != key.KeyVal.Public {
 		t.Errorf("Loaded pubkey is not the expected key")
 	}
@@ -434,10 +434,10 @@ func TestParseEd25519FromPublicJSON(t *testing.T) {
 		expectedError string
 	}{
 		{"not a json", "this is not a valid JSON key object"},
-		{`{"keytype": "ed25519", "scheme": "ed25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7aac70", "private": "861fd1b466cfc6f73"}}`, "this key is not a public key"},
-		{`{"keytype": "ed25519", "scheme": "ed25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "e8912b58f47ae04a65d74"}}`, "the public field on this key is malformed"},
-		{`{"keytype": "25519", "scheme": "ed25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7aac70"}}`, "this doesn't appear to be an ed25519 key"},
-		{`{"keytype": "ed25519", "scheme": "cd25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7aac70"}}`, "his doesn't appear to be an ed25519 key"},
+		{`{"keytype": "ed25519", "scheme": "ed25519", "keyid": "d7c0baabc90b7bf218aa67461ec0c3c7f13a8a5d8552859c8fafe41588be01cf", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037", "private": "4cedf4d3369f8c83af472d0d329aedaa86265b74efb74b708f6a1ed23f290162"}}`, "private key found"},
+		{`{"keytype": "ed25519", "scheme": "ed25519", "keyid": "d7c0baabc90b7bf218aa67461ec0c3c7f13a8a5d8552859c8fafe41588be01cf", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8c93f633f2378cc64"}}`, "the public field on this key is malformed"},
+		{`{"keytype": "25519", "scheme": "ed25519", "keyid": "d7c0baabc90b7bf218aa67461ec0c3c7f13a8a5d8552859c8fafe41588be01cf", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037"}}`, "this doesn't appear to be an ed25519 key"},
+		{`{"keytype": "ed25519", "scheme": "ec25519", "keyid": "d7c0baabc90b7bf218aa67461ec0c3c7f13a8a5d8552859c8fafe41588be01cf", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037"}}}`, "this is not a valid JSON key object"},
 	}
 
 	for _, table := range tables {
@@ -445,13 +445,5 @@ func TestParseEd25519FromPublicJSON(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), table.expectedError) {
 			t.Errorf("ParseEd25519FromPublicJSON returned (%s), expected '%s'", err, table.expectedError)
 		}
-	}
-
-	// Generated through in-toto run 0.4.1 and thus it should be a happy key
-	validKey := `{"keytype": "ed25519", "scheme": "ed25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "e8912b58f47ae04a65d7437e3c82eb361f82d952b4d1b3dc5d90c6f37d7aac70"}}`
-	_, err := ParseEd25519FromPublicJSON(validKey)
-	if err != nil {
-		t.Errorf("ParseEd25519FromPublicJSON returned (%s), expected no error",
-			err)
 	}
 }

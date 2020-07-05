@@ -64,6 +64,19 @@ func validatePubKey(key Key) error {
 }
 
 /*
+validatePrivateKey is a general function to validate if a key is a valid private key.
+*/
+func validatePrivateKey(key Key) error {
+	if err := validateHexString(key.KeyId); err != nil {
+		return fmt.Errorf("keyid: %s", err.Error())
+	}
+	if key.KeyVal.Private == "" {
+		return fmt.Errorf("in key '%s': private key cannot be empty", key.KeyId)
+	}
+	return nil
+}
+
+/*
 validateRSAPubKey checks if a passed key is a valid RSA public key.
 */
 func validateRSAPubKey(key Key) error {
