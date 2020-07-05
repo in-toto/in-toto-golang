@@ -698,6 +698,19 @@ func TestValidateHexSchema(t *testing.T) {
 	}
 }
 
+func TestValidatePrivateKey(t *testing.T) {
+	invalidKey := Key{
+		KeyId:               "invalid",
+		KeyIdHashAlgorithms: nil,
+		KeyType:             "",
+		KeyVal:              KeyVal{},
+		Scheme:              "",
+	}
+	if err := validatePrivateKey(invalidKey); err == nil {
+		t.Errorf("validating a private key with an invalid keyID should fail")
+	}
+}
+
 func TestValidatePubKey(t *testing.T) {
 	testKey := Key{
 		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
@@ -1153,6 +1166,24 @@ func TestValidateSupplyChainItem(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), tc.Expected) {
 			t.Errorf("%s: '%s' not in '%s'", name, tc.Expected, err)
 		}
+	}
+}
+
+func TestMetablockSignWithRSA(t *testing.T) {
+	var mb Metablock
+	if err := mb.Load("demo.layout.template"); err != nil {
+		t.Errorf("Cannot parse template file: %s", err)
+	}
+	invalidKey := Key{
+		KeyId:               "test",
+		KeyIdHashAlgorithms: nil,
+		KeyType:             "rsa",
+		KeyVal:              KeyVal{},
+		Scheme:              "rsassa-pss-sha256",
+	}
+
+	if err := mb.Sign(invalidKey); err == nil {
+		t.Errorf("signing with an invalid RSA key should fail")
 	}
 }
 
