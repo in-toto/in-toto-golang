@@ -434,10 +434,10 @@ func TestParseEd25519FromPublicJSON(t *testing.T) {
 		expectedError string
 	}{
 		{"not a json", "this is not a valid JSON key object"},
-		{`{"keytype": "ed25519", "scheme": "ed25519", "keyid": "d7c0baabc90b7bf218aa67461ec0c3c7f13a8a5d8552859c8fafe41588be01cf", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037", "private": "4cedf4d3369f8c83af472d0d329aedaa86265b74efb74b708f6a1ed23f290162"}}`, "private key found"},
-		{`{"keytype": "ed25519", "scheme": "ed25519", "keyid": "d7c0baabc90b7bf218aa67461ec0c3c7f13a8a5d8552859c8fafe41588be01cf", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8c93f633f2378cc64"}}`, "the public field on this key is malformed"},
-		{`{"keytype": "25519", "scheme": "ed25519", "keyid": "d7c0baabc90b7bf218aa67461ec0c3c7f13a8a5d8552859c8fafe41588be01cf", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037"}}`, "this doesn't appear to be an ed25519 key"},
-		{`{"keytype": "ed25519", "scheme": "ec25519", "keyid": "d7c0baabc90b7bf218aa67461ec0c3c7f13a8a5d8552859c8fafe41588be01cf", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037"}}}`, "this is not a valid JSON key object"},
+		{`{"keytype": "ed25519", "scheme": "ed25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037", "private": "4cedf4d3369f8c83af472d0d329aedaa86265b74efb74b708f6a1ed23f290162"}}`, "private key found"},
+		{`{"keytype": "ed25519", "scheme": "ed25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8c93f633f2378cc64"}}`, "the public field on this key is malformed"},
+		{`{"keytype": "25519", "scheme": "ed25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037"}}`, "this doesn't appear to be an ed25519 key"},
+		{`{"keytype": "ed25519", "scheme": "ec25519", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037"}}}`, "this is not a valid JSON key object"},
 	}
 
 	for _, table := range tables {

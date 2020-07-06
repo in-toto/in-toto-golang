@@ -19,6 +19,34 @@ import (
 )
 
 /*
+GenerateKeyId creates a partial key map and generates the key ID
+based on the created partial key map via the SHA256 method.
+The resulting keyID will be directly saved in the corresponding key object.
+*/
+func (k *Key) GenerateKeyId() error {
+	// Create partial key map used to create the keyid
+	// Unfortunately, we can't use the Key object because this also carries
+	// yet unwanted fields, such as KeyId and KeyVal.Private and therefore
+	// produces a different hash
+	var keyToBeHashed = map[string]interface{}{
+		"keytype":               k.KeyType,
+		"scheme":                k.Scheme,
+		"keyid_hash_algorithms": k.KeyIdHashAlgorithms,
+		"keyval": map[string]string{
+			"public": k.KeyVal.Public,
+		},
+	}
+	keyCanonical, err := EncodeCanonical(keyToBeHashed)
+	if err != nil {
+		return err
+	}
+	// calculate sha256 and return string representation of keyId
+	keyHashed := sha256.Sum256(keyCanonical)
+	k.KeyId = fmt.Sprintf("%x", keyHashed)
+	return nil
+}
+
+/*
 ParseRSAPublicKeyFromPEM parses the passed pemBytes as e.g. read from a PEM
 formatted file, and instantiates and returns the corresponding RSA public key.
 If the no RSA public key can be parsed, the first return value is nil and the
@@ -325,6 +353,13 @@ func ParseEd25519FromPrivateJSON(JSONString string) (Key, error) {
 		return keyObj, fmt.Errorf("this doesn't appear to be an ed25519 key")
 	}
 
+	// if the keyId is empty we try to generate the keyId
+	if keyObj.KeyId == "" {
+		if err := keyObj.GenerateKeyId(); err != nil {
+			return keyObj, err
+		}
+	}
+
 	if err := validatePrivateKey(keyObj); err != nil {
 		return keyObj, err
 	}
@@ -358,6 +393,13 @@ func ParseEd25519FromPublicJSON(JSONString string) (Key, error) {
 
 	if keyObj.KeyType != "ed25519" || keyObj.Scheme != "ed25519" {
 		return keyObj, fmt.Errorf("this doesn't appear to be an ed25519 key")
+	}
+
+	// if the keyId is empty we try to generate the keyId
+	if keyObj.KeyId == "" {
+		if err := keyObj.GenerateKeyId(); err != nil {
+			return keyObj, err
+		}
 	}
 
 	if err := validatePubKey(keyObj); err != nil {
