@@ -144,26 +144,6 @@ func (k *Key) LoadRSAPublicKey(path string) (err error) {
 	scheme := "rsassa-pss-sha256"
 	keyIdHashAlgorithms := []string{"sha256", "sha512"}
 
-	// Create partial key map used to create the keyid
-	// Unfortunately, we can't use the Key object because this also carries
-	// yet unwanted fields, such as KeyId and KeyVal.Private and therefore
-	// produces a different hash
-	var keyToBeHashed = map[string]interface{}{
-		"keytype":               keyType,
-		"scheme":                scheme,
-		"keyid_hash_algorithms": keyIdHashAlgorithms,
-		"keyval": map[string]string{
-			"public": string(keyBytesStripped),
-		},
-	}
-
-	// Canonicalize key and get hex representation of hash
-	keyCanonical, err := EncodeCanonical(keyToBeHashed)
-	if err != nil {
-		return err
-	}
-	keyHashed := sha256.Sum256(keyCanonical)
-
 	// Unmarshalling the canonicalized key into the Key object would seem natural
 	// Unfortunately, our mandated canonicalization function produces a byte
 	// slice that cannot be unmarshalled by Golang's json decoder, hence we have
@@ -174,7 +154,9 @@ func (k *Key) LoadRSAPublicKey(path string) (err error) {
 	}
 	k.Scheme = scheme
 	k.KeyIdHashAlgorithms = keyIdHashAlgorithms
-	k.KeyId = fmt.Sprintf("%x", keyHashed)
+	if err := k.GenerateKeyId(); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -226,26 +208,6 @@ func (k *Key) LoadRSAPrivateKey(path string) (err error) {
 	scheme := "rsassa-pss-sha256"
 	keyIdHashAlgorithms := []string{"sha256", "sha512"}
 
-	// Create partial key map used to create the keyid
-	// Unfortunately, we can't use the Key object because this also carries
-	// yet unwanted fields, such as KeyId and KeyVal.Private and therefore
-	// produces a different hash
-	var keyToBeHashed = map[string]interface{}{
-		"keytype":               keyType,
-		"scheme":                scheme,
-		"keyid_hash_algorithms": keyIdHashAlgorithms,
-		"keyval": map[string]string{
-			"Private": string(keyBytesStripped),
-		},
-	}
-
-	// Canonicalize key and get hex representation of hash
-	keyCanonical, err := EncodeCanonical(keyToBeHashed)
-	if err != nil {
-		return err
-	}
-	keyHashed := sha256.Sum256(keyCanonical)
-
 	// Unmarshalling the canonicalized key into the Key object would seem natural
 	// Unfortunately, our mandated canonicalization function produces a byte
 	// slice that cannot be unmarshalled by Golang's json decoder, hence we have
@@ -256,7 +218,9 @@ func (k *Key) LoadRSAPrivateKey(path string) (err error) {
 	}
 	k.Scheme = scheme
 	k.KeyIdHashAlgorithms = keyIdHashAlgorithms
-	k.KeyId = fmt.Sprintf("%x", keyHashed)
+	if err := k.GenerateKeyId(); err != nil {
+		return err
+	}
 
 	return nil
 }

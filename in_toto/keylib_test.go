@@ -119,7 +119,7 @@ func TestLoadRSAPrivateKey(t *testing.T) {
 	if err != nil {
 		t.Errorf("LoadRSAPrivateKey returned %s, expected no error", err)
 	}
-	expectedKeyID := "f29cb6877d14ebcf28b136a96a4d64935522afaddcc84e6b70ff6b9eaefb8fcf"
+	expectedKeyID := "564da1dce337f108dd6984454f5f521c2cc76b80e7e18bbd41a11c159a3003b3"
 	if key.KeyId != expectedKeyID {
 		t.Errorf("LoadRSAPrivateKey parsed KeyId '%s', expected '%s'",
 			key.KeyId, expectedKeyID)
