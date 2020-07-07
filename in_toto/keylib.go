@@ -127,16 +127,6 @@ func (k *Key) LoadRSAPublicKey(path string) (err error) {
 		return err
 	}
 
-	// Strip leading and trailing data from PEM file like securesystemslib does
-	// TODO: Should we instead use the parsed public key to reconstruct the PEM?
-	keyHeader := "-----BEGIN PUBLIC KEY-----"
-	keyFooter := "-----END PUBLIC KEY-----"
-	keyStart := strings.Index(string(keyBytes), keyHeader)
-	keyEnd := strings.Index(string(keyBytes), keyFooter) + len(keyFooter)
-	// Successful call to ParseRSAPublicKeyFromPEM already guarantees that
-	// header and footer are present, i.e. `!(keyStart == -1 || keyEnd == -1)`
-	keyBytesStripped := keyBytes[keyStart:keyEnd]
-
 	// Declare values for key
 	// TODO: Do not hardcode here, but define defaults elsewhere and add support
 	// for parametrization
@@ -150,7 +140,7 @@ func (k *Key) LoadRSAPublicKey(path string) (err error) {
 	// to manually assign the values
 	k.KeyType = keyType
 	k.KeyVal = KeyVal{
-		Public: string(keyBytesStripped),
+		Public: string(keyBytes),
 	}
 	k.Scheme = scheme
 	k.KeyIdHashAlgorithms = keyIdHashAlgorithms
@@ -178,28 +168,30 @@ func (k *Key) LoadRSAPrivateKey(path string) (err error) {
 	}()
 
 	// Read key bytes and decode PEM
-	keyBytes, err := ioutil.ReadAll(keyFile)
+	privateKeyBytes, err := ioutil.ReadAll(keyFile)
 	if err != nil {
 		return err
 	}
 
-	// We only parse to see if this is indeed a pem formatted rsa Private key,
-	// but don't use the returned *rsa.PrivateKey. Instead, we continue with
-	// the original keyBytes from above.
-	_, err = ParseRSAPrivateKeyFromPEM(keyBytes)
+	// We load the private key here for inferring the public key
+	// from the private key. We need the public key for keyId generation
+	privateKey, err := ParseRSAPrivateKeyFromPEM(privateKeyBytes)
+	if err != nil {
+		return err
+	}
+	pubKeyBytes, err := x509.MarshalPKIXPublicKey(privateKey.Public())
 	if err != nil {
 		return err
 	}
 
-	// Strip leading and trailing data from PEM file like securesystemslib does
-	// TODO: Should we instead use the parsed Private key to reconstruct the PEM?
-	keyHeader := "-----BEGIN RSA PRIVATE KEY-----"
-	keyFooter := "-----END RSA PRIVATE KEY-----"
-	keyStart := strings.Index(string(keyBytes), keyHeader)
-	keyEnd := strings.Index(string(keyBytes), keyFooter) + len(keyFooter)
-	// Successful call to ParseRSAPrivateKeyFromPEM already guarantees that
-	// header and footer are present, i.e. `!(keyStart == -1 || keyEnd == -1)`
-	keyBytesStripped := keyBytes[keyStart:keyEnd]
+	// construct pemBlock
+	publicKeyPemBlock := &pem.Block{
+		Type:    "PUBLIC KEY",
+		Headers: nil,
+		Bytes:   pubKeyBytes,
+	}
+
+	publicKeyPemBlockBytes := pem.EncodeToMemory(publicKeyPemBlock)
 
 	// Declare values for key
 	// TODO: Do not hardcode here, but define defaults elsewhere and add support
@@ -214,7 +206,8 @@ func (k *Key) LoadRSAPrivateKey(path string) (err error) {
 	// to manually assign the values
 	k.KeyType = keyType
 	k.KeyVal = KeyVal{
-		Private: string(keyBytesStripped),
+		Public:  string(publicKeyPemBlockBytes),
+		Private: string(privateKeyBytes),
 	}
 	k.Scheme = scheme
 	k.KeyIdHashAlgorithms = keyIdHashAlgorithms
