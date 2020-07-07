@@ -140,7 +140,7 @@ func (k *Key) LoadRSAPublicKey(path string) (err error) {
 	// to manually assign the values
 	k.KeyType = keyType
 	k.KeyVal = KeyVal{
-		Public: string(keyBytes),
+		Public: strings.TrimSpace(string(keyBytes)),
 	}
 	k.Scheme = scheme
 	k.KeyIdHashAlgorithms = keyIdHashAlgorithms
@@ -206,8 +206,8 @@ func (k *Key) LoadRSAPrivateKey(path string) (err error) {
 	// to manually assign the values
 	k.KeyType = keyType
 	k.KeyVal = KeyVal{
-		Public:  string(publicKeyPemBlockBytes),
-		Private: string(privateKeyBytes),
+		Public:  strings.TrimSpace(string(publicKeyPemBlockBytes)),
+		Private: strings.TrimSpace(string(privateKeyBytes)),
 	}
 	k.Scheme = scheme
 	k.KeyIdHashAlgorithms = keyIdHashAlgorithms

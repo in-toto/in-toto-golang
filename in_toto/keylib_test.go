@@ -90,7 +90,7 @@ func TestLoadRSAPublicKey(t *testing.T) {
 	if err != nil {
 		t.Errorf("LoadRSAPublicKey returned %s, expected no error", err)
 	}
-	expectedKeyID := "df265e976f626556ebc1f51957d75f60455337890fef08c8b7f4c681dbf6d5ee"
+	expectedKeyID := "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b588f3e9cc48b35"
 	if key.KeyId != expectedKeyID {
 		t.Errorf("LoadRSAPublicKey parsed KeyId '%s', expected '%s'",
 			key.KeyId, expectedKeyID)
@@ -119,7 +119,7 @@ func TestLoadRSAPrivateKey(t *testing.T) {
 	if err != nil {
 		t.Errorf("LoadRSAPrivateKey returned %s, expected no error", err)
 	}
-	expectedKeyID := "4e642891e4221fb79ef583e0f8342c93cd8fbd74584290ccb49714f8c11f057c"
+	expectedKeyID := "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401"
 	if key.KeyId != expectedKeyID {
 		t.Errorf("LoadRSAPrivateKey parsed KeyId '%s', expected '%s'",
 			key.KeyId, expectedKeyID)
