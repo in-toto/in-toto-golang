@@ -27,7 +27,9 @@ func (k *Key) GenerateKeyId() error {
 	// Create partial key map used to create the keyid
 	// Unfortunately, we can't use the Key object because this also carries
 	// yet unwanted fields, such as KeyId and KeyVal.Private and therefore
-	// produces a different hash
+	// produces a different hash. We generate the keyId exactly as we do in
+	// the securesystemslib  to keep interoperability between other in-toto
+	// implementations.
 	var keyToBeHashed = map[string]interface{}{
 		"keytype":               k.KeyType,
 		"scheme":                k.Scheme,
@@ -49,7 +51,7 @@ func (k *Key) GenerateKeyId() error {
 /*
 ParseRSAPublicKeyFromPEM parses the passed pemBytes as e.g. read from a PEM
 formatted file, and instantiates and returns the corresponding RSA public key.
-If the no RSA public key can be parsed, the first return value is nil and the
+If no RSA public key can be parsed, the first return value is nil and the
 second return value is the error.
 */
 func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
@@ -78,7 +80,7 @@ func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
 /*
 ParseRSAPrivateKeyFromPEM parses the passed pemBytes as e.g. read from a PEM
 formatted file, and instantiates and returns the corresponding RSA Private key.
-If the no RSA Private key can be parsed, the first return value is nil and the
+If no RSA Private key can be parsed, the first return value is nil and the
 second return value is the error.
 */
 func ParseRSAPrivateKeyFromPEM(pemBytes []byte) (*rsa.PrivateKey, error) {
@@ -152,9 +154,9 @@ func (k *Key) LoadRSAPublicKey(path string) (err error) {
 }
 
 /*
-LoadRSAPrivateKey parses an RSA Private key from a PEM formatted file at the passed
+LoadRSAPrivateKey parses an RSA private key from a PEM formatted file at the passed
 path into the Key object on which it was called.  It returns an error if the
-file at path does not exist or is not a PEM formatted RSA Private key.
+file at path does not exist or is not a PEM formatted RSA private key.
 */
 func (k *Key) LoadRSAPrivateKey(path string) (err error) {
 	keyFile, err := os.Open(path)
