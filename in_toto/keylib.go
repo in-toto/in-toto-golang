@@ -78,6 +78,120 @@ func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
 }
 
 /*
+GeneratePublicPemBlock creates a "PUBLIC KEY" PEM block from public key byte data.
+If successful it returns PEM block as []byte slice.
+*/
+func GeneratePublicPemBlock(pubKeyBytes []byte) []byte {
+	// construct PEM block
+	publicKeyPemBlock := &pem.Block{
+		Type:    "PUBLIC KEY",
+		Headers: nil,
+		Bytes:   pubKeyBytes,
+	}
+	return pem.EncodeToMemory(publicKeyPemBlock)
+}
+
+/*
+SetKeyComponents sets all components in our key object.
+Furthermore it makes sure to remove any trailing and leading whitespaces or newlines.
+*/
+func (k *Key) SetKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyType string, scheme string, keyIdHashAlgorithms []string) error {
+	if len(privateKeyBytes) > 0 {
+		// assume we have a privateKey
+		k.KeyVal = KeyVal{
+			Private: strings.TrimSpace(string(privateKeyBytes)),
+			Public:  strings.TrimSpace(string(GeneratePublicPemBlock(pubKeyBytes))),
+		}
+	} else {
+		k.KeyVal = KeyVal{
+			Public: strings.TrimSpace(string(pubKeyBytes)),
+		}
+	}
+	k.KeyType = keyType
+	k.Scheme = scheme
+	k.KeyIdHashAlgorithms = keyIdHashAlgorithms
+	if err := k.GenerateKeyId(); err != nil {
+		return err
+	}
+	return nil
+}
+
+/*
+LoadKey loads the key file at specified file path into the key object.
+It automatically derives the PEM type (PKCS1/PKCS8) and the key type (RSA/ed25519).
+On success it will return nil, otherwise an error.
+*/
+func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) error {
+	pemFile, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := pemFile.Close(); closeErr != nil {
+			err = closeErr
+		}
+	}()
+	// Read key bytes and decode PEM
+	pemBytes, err := ioutil.ReadAll(pemFile)
+	if err != nil {
+		return err
+	}
+
+	// TODO: There could be more key data in _, which we silently ignore here.
+	// Should we handle it / fail / say something about it?
+	data, _ := pem.Decode(pemBytes)
+	if data == nil {
+		return fmt.Errorf("could not find a private key PEM block")
+	}
+
+	// Try to load private key, if this fails try to load
+	// key as public key
+	key, err := x509.ParsePKCS8PrivateKey(data.Bytes)
+	if err.Error() == "x509: failed to parse private key (use ParsePKCS1PrivateKey instead for this key format)" {
+		key, err = x509.ParsePKCS1PrivateKey(data.Bytes)
+		if err != nil {
+			return fmt.Errorf("error while loading PKCS1PrivateKey: %s", err)
+		}
+	} else if err != nil {
+		var err2 error
+		key, err2 = x509.ParsePKIXPublicKey(data.Bytes)
+		if err2 != nil {
+			return fmt.Errorf("could not find a private key nor a public key: %s, %s", err, err2)
+		}
+	}
+	// Use type switch to identify the key format
+	switch key.(type) {
+	case *rsa.PublicKey:
+		if err := k.SetKeyComponents(pemBytes, []byte{}, "rsa", scheme, keyIdHashAlgorithms); err != nil {
+			return err
+		}
+	case *rsa.PrivateKey:
+		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*rsa.PrivateKey).Public())
+		if err != nil {
+			return err
+		}
+		if err := k.SetKeyComponents(pubKeyBytes, pemBytes, "rsa", scheme, keyIdHashAlgorithms); err != nil {
+			return err
+		}
+	case *ed25519.PublicKey:
+		if err := k.SetKeyComponents(pemBytes, []byte{}, "ed25519", scheme, keyIdHashAlgorithms); err != nil {
+			return err
+		}
+	case *ed25519.PrivateKey:
+		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*ed25519.PrivateKey).Public())
+		if err != nil {
+			return err
+		}
+		if err := k.SetKeyComponents(pubKeyBytes, pemBytes, "ed25519", scheme, keyIdHashAlgorithms); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unsupported key type: %T", key)
+	}
+	return nil
+}
+
+/*
 ParseRSAPrivateKeyFromPEM parses the passed pemBytes as e.g. read from a PEM
 formatted file, and instantiates and returns the corresponding RSA Private key.
 If no RSA Private key can be parsed, the first return value is nil and the
