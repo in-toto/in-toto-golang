@@ -60,35 +60,6 @@ func (k *Key) GenerateKeyId() error {
 }
 
 /*
-ParseRSAPublicKeyFromPEM parses the passed pemBytes as e.g. read from a PEM
-formatted file, and instantiates and returns the corresponding RSA public key.
-If no RSA public key can be parsed, the first return value is nil and the
-second return value is the error.
-*/
-func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
-	// TODO: There could be more key data in _, which we silently ignore here.
-	// Should we handle it / fail / say something about it?
-	data, _ := pem.Decode(pemBytes)
-	if data == nil {
-		return nil, fmt.Errorf("Could not find a public key PEM block")
-	}
-
-	pub, err := x509.ParsePKIXPublicKey(data.Bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	//ParsePKIXPublicKey might return an rsa, dsa, or ecdsa public key
-	rsaPub, isRsa := pub.(*rsa.PublicKey)
-	if !isRsa {
-		return nil, fmt.Errorf("We currently only support rsa keys: got '%s'",
-			reflect.TypeOf(pub))
-	}
-
-	return rsaPub, nil
-}
-
-/*
 GeneratePublicPemBlock creates a "PUBLIC KEY" PEM block from public key byte data.
 If successful it returns PEM block as []byte slice. This function should always
 succeed, if pubKeyBytes is empty the PEM block will have an empty byte block.
@@ -243,6 +214,35 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 }
 
 /*
+ParseRSAPublicKeyFromPEM parses the passed pemBytes as e.g. read from a PEM
+formatted file, and instantiates and returns the corresponding RSA public key.
+If no RSA public key can be parsed, the first return value is nil and the
+second return value is the error.
+*/
+func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
+	// TODO: There could be more key data in _, which we silently ignore here.
+	// Should we handle it / fail / say something about it?
+	data, _ := pem.Decode(pemBytes)
+	if data == nil {
+		return nil, ErrNoPEMBLock
+	}
+
+	pub, err := x509.ParsePKIXPublicKey(data.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	//ParsePKIXPublicKey might return an rsa, dsa, or ecdsa public key
+	rsaPub, isRsa := pub.(*rsa.PublicKey)
+	if !isRsa {
+		return nil, fmt.Errorf("We currently only support rsa keys: got '%s'",
+			reflect.TypeOf(pub))
+	}
+
+	return rsaPub, nil
+}
+
+/*
 ParseRSAPrivateKeyFromPEM parses the passed pemBytes as e.g. read from a PEM
 formatted file, and instantiates and returns the corresponding RSA Private key.
 If no RSA Private key can be parsed, the first return value is nil and the
@@ -253,7 +253,7 @@ func ParseRSAPrivateKeyFromPEM(pemBytes []byte) (*rsa.PrivateKey, error) {
 	// Should we handle it / fail / say something about it?
 	data, _ := pem.Decode(pemBytes)
 	if data == nil {
-		return nil, fmt.Errorf("Could not find a private key PEM block")
+		return nil, ErrNoPEMBLock
 	}
 
 	priv, err := x509.ParsePKCS1PrivateKey(data.Bytes)
@@ -265,124 +265,52 @@ func ParseRSAPrivateKeyFromPEM(pemBytes []byte) (*rsa.PrivateKey, error) {
 }
 
 /*
-LoadRSAPublicKey parses an RSA public key from a PEM formatted file at the passed
-path into the Key object on which it was called.  It returns an error if the
-file at path does not exist or is not a PEM formatted RSA public key.
+GenerateSignature will automatically detect the key type and sign the signable data
+with the provided key. If everything goes right GenerateSignature will return
+a for the key valid signature and err=nil. If something goes wrong it will
+return an not initialized signature and an error. Possible errors are:
+
+	* ErrNoPEMBlock
+	* ErrUnsupportedKeyType
+
 */
-func (k *Key) LoadRSAPublicKey(path string) (err error) {
-	keyFile, err := os.Open(path)
+func GenerateSignature(signable []byte, key Key) (Signature, error) {
+	var signature Signature
+	keyReader := strings.NewReader(key.KeyVal.Private)
+	pemBytes, err := ioutil.ReadAll(keyReader)
 	if err != nil {
-		return err
+		return signature, err
 	}
-	defer func() {
-		if closeErr := keyFile.Close(); closeErr != nil {
-			err = closeErr
+	// TODO: There could be more key data in _, which we silently ignore here.
+	// Should we handle it / fail / say something about it?
+	data, _ := pem.Decode(pemBytes)
+	if data == nil {
+		return signature, ErrNoPEMBLock
+	}
+	parsedKey, err := ParseKey(data.Bytes)
+	if err != nil {
+		return signature, err
+	}
+
+	var signatureBuffer []byte
+	// Go type switch for interfering the key type
+	switch parsedKey.(type) {
+	case *rsa.PrivateKey:
+		hashed := sha256.Sum256(signable)
+		// We use rand.Reader as secure random source for rsa.SignPSS()
+		signatureBuffer, err = rsa.SignPSS(rand.Reader, parsedKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:],
+			&rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
+		if err != nil {
+			return signature, err
 		}
-	}()
-
-	// Read key bytes and decode PEM
-	keyBytes, err := ioutil.ReadAll(keyFile)
-	if err != nil {
-		return err
+	case *ed25519.PrivateKey:
+		// TODO: implement signatures for ed25519 keys
+	default:
+		return signature, fmt.Errorf("%w: %T", ErrUnsupportedKeyType, parsedKey)
 	}
-
-	// We only parse to see if this is indeed a pem formatted rsa public key,
-	// but don't use the returned *rsa.PublicKey. Instead, we continue with
-	// the original keyBytes from above.
-	_, err = ParseRSAPublicKeyFromPEM(keyBytes)
-	if err != nil {
-		return err
-	}
-
-	// Declare values for key
-	// TODO: Do not hardcode here, but define defaults elsewhere and add support
-	// for parametrization
-	keyType := "rsa"
-	scheme := "rsassa-pss-sha256"
-	keyIdHashAlgorithms := []string{"sha256", "sha512"}
-
-	// Unmarshalling the canonicalized key into the Key object would seem natural
-	// Unfortunately, our mandated canonicalization function produces a byte
-	// slice that cannot be unmarshalled by Golang's json decoder, hence we have
-	// to manually assign the values
-	k.KeyType = keyType
-	k.KeyVal = KeyVal{
-		Public: strings.TrimSpace(string(keyBytes)),
-	}
-	k.Scheme = scheme
-	k.KeyIdHashAlgorithms = keyIdHashAlgorithms
-	if err := k.GenerateKeyId(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-/*
-LoadRSAPrivateKey parses an RSA private key from a PEM formatted file at the passed
-path into the Key object on which it was called.  It returns an error if the
-file at path does not exist or is not a PEM formatted RSA private key.
-*/
-func (k *Key) LoadRSAPrivateKey(path string) (err error) {
-	keyFile, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if closeErr := keyFile.Close(); closeErr != nil {
-			err = closeErr
-		}
-	}()
-
-	// Read key bytes and decode PEM
-	privateKeyBytes, err := ioutil.ReadAll(keyFile)
-	if err != nil {
-		return err
-	}
-
-	// We load the private key here for inferring the public key
-	// from the private key. We need the public key for keyId generation
-	privateKey, err := ParseRSAPrivateKeyFromPEM(privateKeyBytes)
-	if err != nil {
-		return err
-	}
-	pubKeyBytes, err := x509.MarshalPKIXPublicKey(privateKey.Public())
-	if err != nil {
-		return err
-	}
-
-	// construct pemBlock
-	publicKeyPemBlock := &pem.Block{
-		Type:    "PUBLIC KEY",
-		Headers: nil,
-		Bytes:   pubKeyBytes,
-	}
-
-	publicKeyPemBlockBytes := pem.EncodeToMemory(publicKeyPemBlock)
-
-	// Declare values for key
-	// TODO: Do not hardcode here, but define defaults elsewhere and add support
-	// for parametrization
-	keyType := "rsa"
-	scheme := "rsassa-pss-sha256"
-	keyIdHashAlgorithms := []string{"sha256", "sha512"}
-
-	// Unmarshalling the canonicalized key into the Key object would seem natural
-	// Unfortunately, our mandated canonicalization function produces a byte
-	// slice that cannot be unmarshalled by Golang's json decoder, hence we have
-	// to manually assign the values
-	k.KeyType = keyType
-	k.KeyVal = KeyVal{
-		Public:  strings.TrimSpace(string(publicKeyPemBlockBytes)),
-		Private: strings.TrimSpace(string(privateKeyBytes)),
-	}
-	k.Scheme = scheme
-	k.KeyIdHashAlgorithms = keyIdHashAlgorithms
-	if err := k.GenerateKeyId(); err != nil {
-		return err
-	}
-
-	return nil
+	signature.Sig = hex.EncodeToString(signatureBuffer)
+	signature.KeyId = key.KeyId
+	return signature, nil
 }
 
 /*
@@ -577,102 +505,5 @@ func VerifyEd25519Signature(key Key, sig Signature, data []byte) error {
 	if ok := ed25519.Verify(pubHex, data, sigHex); !ok {
 		return errors.New("invalid ed25519 signature")
 	}
-	return nil
-}
-
-/* LoadEd25519PublicKey loads an ed25519 pub key file
-and parses it via ParseEd25519FromPublicJSON.
-The pub key file has to be in the in-toto PublicJSON format
-For example:
-
-	{
-		"keytype": "ed25519",
-		"scheme": "ed25519",
-		"keyid_hash_algorithms": ["sha256", "sha512"],
-		"keyval":
-		{
-			"public": "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037"
-		}
-	}
-
-*/
-func (k *Key) LoadEd25519PublicKey(path string) (err error) {
-	keyFile, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if closeErr := keyFile.Close(); closeErr != nil {
-			err = closeErr
-		}
-	}()
-
-	keyBytes, err := ioutil.ReadAll(keyFile)
-	if err != nil {
-		return err
-	}
-	// contrary to LoadRSAPublicKey we use the returned key object
-	keyObj, err := ParseEd25519FromPublicJSON(string(keyBytes))
-	if err != nil {
-		return err
-	}
-	// I am not sure if there is a faster way to fill the Key struct
-	// without touching the ParseEd25519FromPrivateJSON function
-	k.KeyId = keyObj.KeyId
-	k.KeyType = keyObj.KeyType
-	k.KeyIdHashAlgorithms = keyObj.KeyIdHashAlgorithms
-	k.KeyVal = keyObj.KeyVal
-	k.Scheme = keyObj.Scheme
-	return nil
-}
-
-/* LoadEd25519PrivateKey loads an ed25519 private key file
-and parses it via ParseEd25519FromPrivateJSON.
-ParseEd25519FromPrivateKey does not support encrypted private keys yet.
-The private key file has to be in the in-toto PrivateJSON format
-For example:
-
-	{
-		"keytype": "ed25519",
-		"scheme": "ed25519",
-		"keyid": "d7c0baabc90b7bf218aa67461ec0c3c7f13a8a5d8552859c8fafe41588be01cf",
-		"keyid_hash_algorithms": ["sha256", "sha512"],
-		"keyval":
-		{
-			"public": "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037",
-			"private": "4cedf4d3369f8c83af472d0d329aedaa86265b74efb74b708f6a1ed23f290162"
-		}
-	}
-
-*/
-func (k *Key) LoadEd25519PrivateKey(path string) (err error) {
-	// TODO: Support for encrypted private Keys
-	// See also: https://github.com/secure-systems-lab/securesystemslib/blob/01a0c95af5f458235f96367922357958bfcf7b01/securesystemslib/keys.py#L1309
-	keyFile, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if closeErr := keyFile.Close(); closeErr != nil {
-			err = closeErr
-		}
-	}()
-
-	keyBytes, err := ioutil.ReadAll(keyFile)
-	if err != nil {
-		return err
-	}
-	// contrary to LoadRSAPublicKey we use the returned key object
-	keyObj, err := ParseEd25519FromPrivateJSON(string(keyBytes))
-	if err != nil {
-		return err
-	}
-	// I am not sure if there is a faster way to fill the Key struct
-	// without touching the ParseEd25519FromPrivateJSON function
-	k.KeyId = keyObj.KeyId
-	k.KeyType = keyObj.KeyType
-	k.KeyIdHashAlgorithms = keyObj.KeyIdHashAlgorithms
-	k.KeyVal = keyObj.KeyVal
-	k.Scheme = keyObj.Scheme
 	return nil
 }
