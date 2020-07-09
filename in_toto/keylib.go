@@ -22,6 +22,8 @@ import (
 GenerateKeyId creates a partial key map and generates the key ID
 based on the created partial key map via the SHA256 method.
 The resulting keyID will be directly saved in the corresponding key object.
+On success GenerateKeyId will return nil, in case of errors while encoding
+there will be an error.
 */
 func (k *Key) GenerateKeyId() error {
 	// Create partial key map used to create the keyid
@@ -79,7 +81,9 @@ func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
 
 /*
 GeneratePublicPemBlock creates a "PUBLIC KEY" PEM block from public key byte data.
-If successful it returns PEM block as []byte slice.
+If successful it returns PEM block as []byte slice. This function should always
+succeed, if pubKeyBytes is empty the PEM block will have an empty byte block.
+Therefore only header and footer will exist.
 */
 func GeneratePublicPemBlock(pubKeyBytes []byte) []byte {
 	// construct PEM block
@@ -118,8 +122,25 @@ func (k *Key) SetKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyTy
 
 /*
 LoadKey loads the key file at specified file path into the key object.
-It automatically derives the PEM type (PKCS1/PKCS8) and the key type (RSA/ed25519).
-On success it will return nil, otherwise an error.
+It automatically derives the PEM type and the key type.
+Right now the following PEM types are supported:
+
+	* PKCS1 for private keys
+	* PKCS8	for private keys
+	* PKIX for public keys
+
+The following key types are supported:
+
+	* ed25519
+	* RSA
+
+On success it will return nil. The following errors can happen:
+
+	* path not found or not readable
+	* no PEM block in the loaded file
+	* no valid PKCS8/PKCS1 private key or PKIX public key
+	* errors while marshalling
+	* unsupported key types
 */
 func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) error {
 	pemFile, err := os.Open(path)
@@ -146,19 +167,21 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 
 	// Try to load private key, if this fails try to load
 	// key as public key
+	// TODO: It might makes sense to make a dispatch table out of this
+	// Idea: Moving this section into an own function and looping over all parsing functions.
 	key, err := x509.ParsePKCS8PrivateKey(data.Bytes)
-	if err.Error() == "x509: failed to parse private key (use ParsePKCS1PrivateKey instead for this key format)" {
+	if err != nil {
+		var err2 error
 		key, err = x509.ParsePKCS1PrivateKey(data.Bytes)
 		if err != nil {
-			return fmt.Errorf("error while loading PKCS1PrivateKey: %s", err)
-		}
-	} else if err != nil {
-		var err2 error
-		key, err2 = x509.ParsePKIXPublicKey(data.Bytes)
-		if err2 != nil {
-			return fmt.Errorf("could not find a private key nor a public key: %s, %s", err, err2)
+			var err3 error
+			key, err = x509.ParsePKIXPublicKey(data.Bytes)
+			if err != nil {
+				return fmt.Errorf("unsupported key file. No public or private key: ('%s', '%s', '%s')", err, err2, err3)
+			}
 		}
 	}
+
 	// Use type switch to identify the key format
 	switch key.(type) {
 	case *rsa.PublicKey:
@@ -166,6 +189,8 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 			return err
 		}
 	case *rsa.PrivateKey:
+		// Note: We store the public key as PKCS8 key here, although the private key get's stored as PKCS1 key
+		// This behavior is consistent to the securesystemslib
 		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*rsa.PrivateKey).Public())
 		if err != nil {
 			return err
