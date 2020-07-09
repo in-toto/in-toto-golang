@@ -18,6 +18,15 @@ import (
 	"strings"
 )
 
+// ErrFailedPEMParsing gets returned when PKCS1, PKCS8 or PKIX key parsing fails
+var ErrFailedPEMParsing = errors.New("failed parsing the PEM block: unsupported PEM type")
+
+// ErrNoPEMBlock gets triggered when there is no PEM block in the provided file
+var ErrNoPEMBLock = errors.New("failed to decode the data as PEM block (are you sure this is a pem file?)")
+
+// ErrUnsupportedKeyType is returned when we are dealing with a key type different to ed25519 or RSA
+var ErrUnsupportedKeyType = errors.New("unsupported key type")
+
 /*
 GenerateKeyId creates a partial key map and generates the key ID
 based on the created partial key map via the SHA256 method.
@@ -121,6 +130,33 @@ func (k *Key) SetKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyTy
 }
 
 /*
+ParseKey tries to parse a PEM []byte slice.
+Supported are:
+
+	* PKCS8
+	* PKCS1
+	* PKIX
+
+On success it returns the parsed key and nil.
+On failure it returns nil and the error ErrFailedPEMParsing
+*/
+func ParseKey(data []byte) (interface{}, error) {
+	key, err := x509.ParsePKCS8PrivateKey(data)
+	if err == nil {
+		return key, nil
+	}
+	key, err = x509.ParsePKCS1PrivateKey(data)
+	if err == nil {
+		return key, nil
+	}
+	key, err = x509.ParsePKIXPublicKey(data)
+	if err == nil {
+		return key, nil
+	}
+	return nil, ErrFailedPEMParsing
+}
+
+/*
 LoadKey loads the key file at specified file path into the key object.
 It automatically derives the PEM type and the key type.
 Right now the following PEM types are supported:
@@ -162,24 +198,14 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 	// Should we handle it / fail / say something about it?
 	data, _ := pem.Decode(pemBytes)
 	if data == nil {
-		return fmt.Errorf("could not find a private key PEM block")
+		return ErrNoPEMBLock
 	}
 
 	// Try to load private key, if this fails try to load
 	// key as public key
-	// TODO: It might makes sense to make a dispatch table out of this
-	// Idea: Moving this section into an own function and looping over all parsing functions.
-	key, err := x509.ParsePKCS8PrivateKey(data.Bytes)
+	key, err := ParseKey(data.Bytes)
 	if err != nil {
-		var err2 error
-		key, err = x509.ParsePKCS1PrivateKey(data.Bytes)
-		if err != nil {
-			var err3 error
-			key, err = x509.ParsePKIXPublicKey(data.Bytes)
-			if err != nil {
-				return fmt.Errorf("unsupported key file. No public or private key: ('%s', '%s', '%s')", err, err2, err3)
-			}
-		}
+		return err
 	}
 
 	// Use type switch to identify the key format
@@ -211,7 +237,7 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 			return err
 		}
 	default:
-		return fmt.Errorf("unsupported key type: %T", key)
+		return fmt.Errorf("%w: %T", ErrUnsupportedKeyType, key)
 	}
 	return nil
 }

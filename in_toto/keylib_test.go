@@ -125,13 +125,10 @@ func TestLoadRSAPrivateKey(t *testing.T) {
 			key.KeyId, expectedKeyID)
 	}
 
-	// Test loading error:
-	// - Not a pem formatted rsa Private key
-	expectedError := "could not find a private key PEM block"
 	err = key.LoadKey("demo.layout.template", "", []string{})
-	if err == nil || !strings.Contains(err.Error(), expectedError) {
+	if err == nil || !errors.Is(err, ErrNoPEMBLock) {
 		t.Errorf("LoadKey returned (%s), expected '%s' error", err,
-			expectedError)
+			ErrNoPEMBLock.Error())
 	}
 
 	// Test not existing file
