@@ -249,7 +249,7 @@ func TestMetablockVerifySignature(t *testing.T) {
 	// - wrong signature for key
 	// - invalid metadata (can't canonicalize)
 	var key Key
-	if err := key.LoadRSAPublicKey("alice.pub"); err != nil {
+	if err := key.LoadKey("alice.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
 		t.Errorf("Cannot load public key file: %s", err)
 	}
 	// Test missing key, bad signature and bad metadata

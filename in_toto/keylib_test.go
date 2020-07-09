@@ -99,14 +99,14 @@ func TestLoadRSAPublicKey(t *testing.T) {
 	// Test loading error:
 	// - Not a pem formatted rsa public key
 	expectedError := "Could not find a public key PEM block"
-	err = key.LoadRSAPublicKey("demo.layout.template")
+	err = key.LoadKey("demo.layout.template", "rsassa-pss-sha256", []string{"sha256", "sha512"})
 	if err == nil || !strings.Contains(err.Error(), expectedError) {
 		t.Errorf("LoadRSAPublicKey returned (%s), expected '%s' error", err,
 			expectedError)
 	}
 
 	// Test not existing file
-	err = key.LoadRSAPublicKey("inToToRocks")
+	err = key.LoadKey("inToToRocks", "rsassa-pss-sha256", []string{"sha256", "sha512"})
 	if !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("Invalid file load returned (%s), expected '%s' error", err, os.ErrNotExist)
 	}
@@ -254,7 +254,7 @@ k7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=
 	// - Right key and data, but wrong signature
 	// - Right key and data, but invalid signature
 	var wrongKey Key
-	if err := wrongKey.LoadRSAPublicKey("alice.pub"); err != nil {
+	if err := wrongKey.LoadKey("alice.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
 		fmt.Printf("Unable to load key alice.pub: %s", err)
 	}
 	wrongSig := Signature{

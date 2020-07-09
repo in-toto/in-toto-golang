@@ -23,7 +23,7 @@ func ExampleInTotoVerify() {
 	// InTotoVerify.  The layout represents the root of trust so it is a good
 	// idea to sign it using multiple keys.
 	var pubKey Key
-	err := pubKey.LoadRSAPublicKey(LayoutKeyPath)
+	err := pubKey.LoadKey(LayoutKeyPath, "rsassa-pss-sha256", []string{"sha256", "sha512"})
 	if err != nil {
 		fmt.Printf("Unable to load public key: %s", err)
 	}
