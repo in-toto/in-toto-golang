@@ -138,7 +138,8 @@ func TestLoadRSAPrivateKey(t *testing.T) {
 
 func TestGenerateRSASignature(t *testing.T) {
 	validKey := Key{
-		KeyId: "f29cb6877d14ebcf28b136a96a4d64935522afaddcc84e6b70ff6b9eaefb8fcf",
+		KeyId:   "f29cb6877d14ebcf28b136a96a4d64935522afaddcc84e6b70ff6b9eaefb8fcf",
+		KeyType: "rsa",
 		KeyVal: KeyVal{
 			Public: `-----BEGIN PUBLIC KEY-----
 MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAyCTik98953hKl6+B6n5l
@@ -222,7 +223,8 @@ func TestVerifyRSASignature(t *testing.T) {
 	}
 
 	validKey := Key{
-		KeyId: "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498",
+		KeyId:   "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498",
+		KeyType: "rsa",
 		KeyVal: KeyVal{
 			Public: `-----BEGIN PUBLIC KEY-----
 MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAzgLBsMFSgwBiWTBmVsyW
@@ -345,7 +347,7 @@ func TestLoad25519PublicKey(t *testing.T) {
 		t.Errorf("Failed to load ed25519 public key from file: (%s)", err)
 	}
 
-	expectedPubKey := "ad238d901104293b031d95f516dc00c68b07c9b7a66b2f2c871dc71a6aae0e46"
+	expectedPubKey := "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6"
 	if expectedPubKey != key.KeyId {
 		t.Errorf("Loaded pubkey is not the expected key")
 	}
@@ -367,7 +369,7 @@ func TestLoad25519PrivateKey(t *testing.T) {
 		t.Errorf("Failed to load ed25519 public key from file: (%s)", err)
 	}
 
-	expectedPrivateKey := "ad238d901104293b031d95f516dc00c68b07c9b7a66b2f2c871dc71a6aae0e46"
+	expectedPrivateKey := "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6"
 	if expectedPrivateKey != key.KeyId {
 		t.Errorf("Loaded pubkey is not the expected key")
 	}

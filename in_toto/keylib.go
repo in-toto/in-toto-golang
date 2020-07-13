@@ -81,16 +81,35 @@ SetKeyComponents sets all components in our key object.
 Furthermore it makes sure to remove any trailing and leading whitespaces or newlines.
 */
 func (k *Key) SetKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyType string, scheme string, keyIdHashAlgorithms []string) error {
-	if len(privateKeyBytes) > 0 {
-		// assume we have a privateKey
-		k.KeyVal = KeyVal{
-			Private: strings.TrimSpace(string(privateKeyBytes)),
-			Public:  strings.TrimSpace(string(GeneratePublicPemBlock(pubKeyBytes))),
+	// assume we have a privateKey if the key size is bigger than 0
+	switch keyType {
+	case "rsa":
+		// We need to treat RSA differently, because of interoperability
+		// reasons with the securesystemslib and the in-toto python
+		// implementation
+		if len(privateKeyBytes) > 0 {
+			k.KeyVal = KeyVal{
+				Private: strings.TrimSpace(string(privateKeyBytes)),
+				Public:  strings.TrimSpace(string(GeneratePublicPemBlock(pubKeyBytes))),
+			}
+		} else {
+			k.KeyVal = KeyVal{
+				Public: strings.TrimSpace(string(pubKeyBytes)),
+			}
 		}
-	} else {
-		k.KeyVal = KeyVal{
-			Public: strings.TrimSpace(string(pubKeyBytes)),
+	case "ed25519":
+		if len(privateKeyBytes) > 0 {
+			k.KeyVal = KeyVal{
+				Private: strings.TrimSpace(hex.EncodeToString(privateKeyBytes)),
+				Public:  strings.TrimSpace(hex.EncodeToString(pubKeyBytes)),
+			}
+		} else {
+			k.KeyVal = KeyVal{
+				Public: strings.TrimSpace(hex.EncodeToString(pubKeyBytes)),
+			}
 		}
+	default:
+		return fmt.Errorf("%w: %s", ErrUnsupportedKeyType, keyType)
 	}
 	k.KeyType = keyType
 	k.Scheme = scheme
@@ -197,15 +216,12 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 			return err
 		}
 	case ed25519.PublicKey:
-		if err := k.SetKeyComponents(pemBytes, []byte{}, "ed25519", scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.SetKeyComponents(key.(ed25519.PublicKey), []byte{}, "ed25519", scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case ed25519.PrivateKey:
-		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(ed25519.PrivateKey).Public())
-		if err != nil {
-			return err
-		}
-		if err := k.SetKeyComponents(pubKeyBytes, pemBytes, "ed25519", scheme, keyIdHashAlgorithms); err != nil {
+		pubKeyBytes := key.(ed25519.PrivateKey).Public()
+		if err := k.SetKeyComponents(pubKeyBytes.(ed25519.PublicKey), key.(ed25519.PrivateKey), "ed25519", scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	default:
@@ -226,26 +242,27 @@ return an not initialized signature and an error. Possible errors are:
 */
 func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	var signature Signature
-	keyReader := strings.NewReader(key.KeyVal.Private)
-	pemBytes, err := ioutil.ReadAll(keyReader)
-	if err != nil {
-		return signature, err
-	}
-	// TODO: There could be more key data in _, which we silently ignore here.
-	// Should we handle it / fail / say something about it?
-	data, _ := pem.Decode(pemBytes)
-	if data == nil {
-		return signature, ErrNoPEMBLock
-	}
-	parsedKey, err := ParseKey(data.Bytes)
-	if err != nil {
-		return signature, err
-	}
-
 	var signatureBuffer []byte
-	// Go type switch for interfering the key type
-	switch parsedKey.(type) {
-	case *rsa.PrivateKey:
+	// The following switch block is needed for keeping interoperability
+	// with the securesystemslib and the python implementation
+	// in which we are storing RSA keys in PEM format, but ed25519 keys hex encoded.
+	switch key.KeyType {
+	case "rsa":
+		keyReader := strings.NewReader(key.KeyVal.Private)
+		pemBytes, err := ioutil.ReadAll(keyReader)
+		if err != nil {
+			return signature, err
+		}
+		// TODO: There could be more key data in _, which we silently ignore here.
+		// Should we handle it / fail / say something about it?
+		data, _ := pem.Decode(pemBytes)
+		if data == nil {
+			return signature, ErrNoPEMBLock
+		}
+		parsedKey, err := ParseKey(data.Bytes)
+		if err != nil {
+			return signature, err
+		}
 		hashed := sha256.Sum256(signable)
 		// We use rand.Reader as secure random source for rsa.SignPSS()
 		signatureBuffer, err = rsa.SignPSS(rand.Reader, parsedKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:],
@@ -253,10 +270,16 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		if err != nil {
 			return signature, err
 		}
-	case ed25519.PrivateKey:
-		signatureBuffer = ed25519.Sign(parsedKey.(ed25519.PrivateKey), signable)
+	case "ed25519":
+		seed, err := hex.DecodeString(key.KeyVal.Private)
+		if err != nil {
+			return signature, err
+		}
+		// Note: We can directly use the key for signing and do not
+		// need to use ed25519.NewKeyFromSeed().
+		signatureBuffer = ed25519.Sign(seed, signable)
 	default:
-		return signature, fmt.Errorf("%w: %T", ErrUnsupportedKeyType, parsedKey)
+		return signature, fmt.Errorf("%w: %s", ErrUnsupportedKeyType, key.KeyType)
 	}
 	signature.Sig = hex.EncodeToString(signatureBuffer)
 	signature.KeyId = key.KeyId
@@ -264,41 +287,45 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 }
 
 func VerifySignature(key Key, sig Signature, unverified []byte) error {
-	// Create rsa.PublicKey object from DER encoded public key string as
-	// found in the public part of the keyval part of a securesystemslib key dict
-	keyReader := strings.NewReader(key.KeyVal.Public)
-	pemBytes, err := ioutil.ReadAll(keyReader)
-	if err != nil {
-		return err
-	}
-	// TODO: There could be more key data in _, which we silently ignore here.
-	// Should we handle it / fail / say something about it?
-	data, _ := pem.Decode(pemBytes)
-	if data == nil {
-		return ErrNoPEMBLock
-	}
-	parsedKey, err := ParseKey(data.Bytes)
-	if err != nil {
-		return err
-	}
-	switch parsedKey.(type) {
-	case *rsa.PublicKey:
+	switch key.KeyType {
+	case "rsa":
+		// Create rsa.PublicKey object from DER encoded public key string as
+		// found in the public part of the keyval part of a securesystemslib key dict
+		keyReader := strings.NewReader(key.KeyVal.Public)
+		pemBytes, err := ioutil.ReadAll(keyReader)
+		if err != nil {
+			return err
+		}
+		// TODO: There could be more key data in _, which we silently ignore here.
+		// Should we handle it / fail / say something about it?
+		data, _ := pem.Decode(pemBytes)
+		if data == nil {
+			return ErrNoPEMBLock
+		}
+		parsedKey, err := ParseKey(data.Bytes)
+		if err != nil {
+			return err
+		}
 		hashed := sha256.Sum256(unverified)
 		sigHex, _ := hex.DecodeString(sig.Sig)
-		err := rsa.VerifyPSS(parsedKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], sigHex, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
+		err = rsa.VerifyPSS(parsedKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], sigHex, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
 		if err != nil {
 			return fmt.Errorf("%w: %s", ErrInvalidSignature, err)
 		}
-	case *ed25519.PublicKey:
+	case "ed25519":
+		pubHex, err := hex.DecodeString(key.KeyVal.Public)
+		if err != nil {
+			return err
+		}
 		sigHex, err := hex.DecodeString(sig.Sig)
 		if err != nil {
 			return err
 		}
-		if ok := ed25519.Verify(parsedKey.(ed25519.PublicKey), unverified, sigHex); !ok {
+		if ok := ed25519.Verify(pubHex, unverified, sigHex); !ok {
 			return fmt.Errorf("%w: ed25519", ErrInvalidSignature)
 		}
 	default:
-		return fmt.Errorf("%w: Key has type %T", ErrInvalidSignature, parsedKey)
+		return fmt.Errorf("%w: Key has type %s", ErrInvalidSignature, key.KeyType)
 	}
 	return nil
 }
