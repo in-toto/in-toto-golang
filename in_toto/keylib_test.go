@@ -345,8 +345,8 @@ func TestLoad25519PublicKey(t *testing.T) {
 		t.Errorf("Failed to load ed25519 public key from file: (%s)", err)
 	}
 
-	expectedPubKey := "8c93f633f2378cc64dd7cbb0ed35eac59e1f28065f90cbbddb59878436fec037"
-	if expectedPubKey != key.KeyVal.Public {
+	expectedPubKey := "ad238d901104293b031d95f516dc00c68b07c9b7a66b2f2c871dc71a6aae0e46"
+	if expectedPubKey != key.KeyId {
 		t.Errorf("Loaded pubkey is not the expected key")
 	}
 
@@ -367,8 +367,8 @@ func TestLoad25519PrivateKey(t *testing.T) {
 		t.Errorf("Failed to load ed25519 public key from file: (%s)", err)
 	}
 
-	expectedPrivateKey := "4cedf4d3369f8c83af472d0d329aedaa86265b74efb74b708f6a1ed23f290162"
-	if expectedPrivateKey != key.KeyVal.Private {
+	expectedPrivateKey := "ad238d901104293b031d95f516dc00c68b07c9b7a66b2f2c871dc71a6aae0e46"
+	if expectedPrivateKey != key.KeyId {
 		t.Errorf("Loaded pubkey is not the expected key")
 	}
 

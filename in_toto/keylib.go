@@ -196,12 +196,12 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		if err := k.SetKeyComponents(pubKeyBytes, pemBytes, "rsa", scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
-	case *ed25519.PublicKey:
+	case ed25519.PublicKey:
 		if err := k.SetKeyComponents(pemBytes, []byte{}, "ed25519", scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
-	case *ed25519.PrivateKey:
-		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*ed25519.PrivateKey).Public())
+	case ed25519.PrivateKey:
+		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(ed25519.PrivateKey).Public())
 		if err != nil {
 			return err
 		}
