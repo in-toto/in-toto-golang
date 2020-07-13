@@ -1187,69 +1187,69 @@ func TestMetablockSignWithRSA(t *testing.T) {
 	}
 }
 
-func TestMetablockSignWithEd25519(t *testing.T) {
-	// Test metablock signing (with ed25519)
-	// - Pass non-ed25519 key
-	// - Pass malformed ed25519 key
-	// - Pass unsupported invalid key type
-	// - Pass an ed25519 key and expect a signature back
-	var key Key
-	var mb Metablock
-	if err := mb.Load("demo.layout.template"); err != nil {
-		t.Errorf("Cannot parse template file: %s", err)
-	}
-
-	pubkey := `{"keytype": "ed25519", "scheme": "ed25519", "keyid": "308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8f93f549eb4cca8dc2142fb655ba2d0955d1824f79474f354e38d6a359e9d440", "private": ""}}`
-
-	badkey, err := ParseEd25519FromPrivateJSON(pubkey)
-	if err == nil || !strings.Contains(err.Error(), "private key cannot be empty") {
-		t.Errorf("Metablock.Sign returned (%s), expected it to claim this "+
-			"key is not a private key", err)
-
-	}
-
-	validKey := `{"keytype": "ed25519", "scheme": "ed25519", "keyid": "308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8f93f549eb4cca8dc2142fb655ba2d0955d1824f79474f354e38d6a359e9d440", "private": "861fd1b466cfc6f73f8ed630f99d8eda250421f0e3a6123fd5c311cc001bda49"}}`
-
-	// Trigger error in Sign/GenerateEd25519Signature with malformed key data
-	badkey, err = ParseEd25519FromPrivateJSON(validKey)
-	// make sure to only set badkey, if prior operation has been successful
-	if err == nil {
-		badkey.KeyVal.Private = "xyz"
-	}
-	err = mb.Sign(badkey)
-	if err == nil || !strings.Contains(err.Error(), "invalid byte") {
-		t.Errorf("Metablock.Sign returned (%s), expected 'invalid byte' error ",
-			err)
-	}
-
-	badkey, err = ParseEd25519FromPrivateJSON(validKey)
-	if err != nil {
-		t.Errorf("ParseEd25519FromPrivateJSON returned (%s), expected no error",
-			err)
-	}
-
-	badkey.Scheme = "ecdsa"
-	err = mb.Sign(badkey)
-	if err == nil || !strings.Contains(err.Error(), "not supported") {
-		t.Errorf("Metablock.Sign returned (%s), expected it to claim this "+
-			"key type/scheme is unsupported", err)
-	}
-
-	key, err = ParseEd25519FromPrivateJSON(validKey)
-	if err != nil {
-		t.Errorf("ParseEd25519FromPrivateJSON returned (%s), expected no error",
-			err)
-	}
-
-	err = mb.Sign(key)
-	if err != nil {
-		t.Errorf("Metablock.Sign returned (%s), expected no error", err)
-	}
-
-	// note, there's a 2 because this template is already signed hehe
-	if len(mb.Signatures) != 2 {
-		t.Errorf("Expected a new signature to be appended, but got (%+v) (%d)",
-			mb.Signatures, len(mb.Signatures))
-	}
-
-}
+//func TestMetablockSignWithEd25519(t *testing.T) {
+//	// Test metablock signing (with ed25519)
+//	// - Pass non-ed25519 key
+//	// - Pass malformed ed25519 key
+//	// - Pass unsupported invalid key type
+//	// - Pass an ed25519 key and expect a signature back
+//	var key Key
+//	var mb Metablock
+//	if err := mb.Load("demo.layout.template"); err != nil {
+//		t.Errorf("Cannot parse template file: %s", err)
+//	}
+//
+//	pubkey := `{"keytype": "ed25519", "scheme": "ed25519", "keyid": "308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8f93f549eb4cca8dc2142fb655ba2d0955d1824f79474f354e38d6a359e9d440", "private": ""}}`
+//
+//	badkey, err := ParseEd25519FromPrivateJSON(pubkey)
+//	if err == nil || !strings.Contains(err.Error(), "private key cannot be empty") {
+//		t.Errorf("Metablock.Sign returned (%s), expected it to claim this "+
+//			"key is not a private key", err)
+//
+//	}
+//
+//	validKey := `{"keytype": "ed25519", "scheme": "ed25519", "keyid": "308e3f53523b632983a988b72a2e39c85fe8fc967116043ce51fa8d92a6aef64", "keyid_hash_algorithms": ["sha256", "sha512"], "keyval": {"public": "8f93f549eb4cca8dc2142fb655ba2d0955d1824f79474f354e38d6a359e9d440", "private": "861fd1b466cfc6f73f8ed630f99d8eda250421f0e3a6123fd5c311cc001bda49"}}`
+//
+//	// Trigger error in Sign/GenerateEd25519Signature with malformed key data
+//	badkey, err = ParseEd25519FromPrivateJSON(validKey)
+//	// make sure to only set badkey, if prior operation has been successful
+//	if err == nil {
+//		badkey.KeyVal.Private = "xyz"
+//	}
+//	err = mb.Sign(badkey)
+//	if err == nil || !strings.Contains(err.Error(), "invalid byte") {
+//		t.Errorf("Metablock.Sign returned (%s), expected 'invalid byte' error ",
+//			err)
+//	}
+//
+//	badkey, err = ParseEd25519FromPrivateJSON(validKey)
+//	if err != nil {
+//		t.Errorf("ParseEd25519FromPrivateJSON returned (%s), expected no error",
+//			err)
+//	}
+//
+//	badkey.Scheme = "ecdsa"
+//	err = mb.Sign(badkey)
+//	if err == nil || !strings.Contains(err.Error(), "not supported") {
+//		t.Errorf("Metablock.Sign returned (%s), expected it to claim this "+
+//			"key type/scheme is unsupported", err)
+//	}
+//
+//	key, err = ParseEd25519FromPrivateJSON(validKey)
+//	if err != nil {
+//		t.Errorf("ParseEd25519FromPrivateJSON returned (%s), expected no error",
+//			err)
+//	}
+//
+//	err = mb.Sign(key)
+//	if err != nil {
+//		t.Errorf("Metablock.Sign returned (%s), expected no error", err)
+//	}
+//
+//	// note, there's a 2 because this template is already signed hehe
+//	if len(mb.Signatures) != 2 {
+//		t.Errorf("Expected a new signature to be appended, but got (%+v) (%d)",
+//			mb.Signatures, len(mb.Signatures))
+//	}
+//
+//}

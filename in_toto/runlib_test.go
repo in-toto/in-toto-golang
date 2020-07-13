@@ -286,7 +286,7 @@ func TestInTotoRun(t *testing.T) {
 	linkName := "Name"
 
 	var validKey Key
-	if err := validKey.LoadEd25519PrivateKey("carol"); err != nil {
+	if err := validKey.LoadKey("carol", "ed25519", []string{"sha256", "sha512"}); err != nil {
 		t.Error(err)
 	}
 

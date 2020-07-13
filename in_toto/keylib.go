@@ -7,14 +7,12 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
-	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
 	"golang.org/x/crypto/ed25519"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"strings"
 )
 
@@ -26,6 +24,9 @@ var ErrNoPEMBLock = errors.New("failed to decode the data as PEM block (are you 
 
 // ErrUnsupportedKeyType is returned when we are dealing with a key type different to ed25519 or RSA
 var ErrUnsupportedKeyType = errors.New("unsupported key type")
+
+// ErrInvalidSignature is returned when the signature is invalid
+var ErrInvalidSignature = errors.New("invalid signature")
 
 /*
 GenerateKeyId creates a partial key map and generates the key ID
@@ -214,57 +215,6 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 }
 
 /*
-ParseRSAPublicKeyFromPEM parses the passed pemBytes as e.g. read from a PEM
-formatted file, and instantiates and returns the corresponding RSA public key.
-If no RSA public key can be parsed, the first return value is nil and the
-second return value is the error.
-*/
-func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
-	// TODO: There could be more key data in _, which we silently ignore here.
-	// Should we handle it / fail / say something about it?
-	data, _ := pem.Decode(pemBytes)
-	if data == nil {
-		return nil, ErrNoPEMBLock
-	}
-
-	pub, err := x509.ParsePKIXPublicKey(data.Bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	//ParsePKIXPublicKey might return an rsa, dsa, or ecdsa public key
-	rsaPub, isRsa := pub.(*rsa.PublicKey)
-	if !isRsa {
-		return nil, fmt.Errorf("We currently only support rsa keys: got '%s'",
-			reflect.TypeOf(pub))
-	}
-
-	return rsaPub, nil
-}
-
-/*
-ParseRSAPrivateKeyFromPEM parses the passed pemBytes as e.g. read from a PEM
-formatted file, and instantiates and returns the corresponding RSA Private key.
-If no RSA Private key can be parsed, the first return value is nil and the
-second return value is the error.
-*/
-func ParseRSAPrivateKeyFromPEM(pemBytes []byte) (*rsa.PrivateKey, error) {
-	// TODO: There could be more key data in _, which we silently ignore here.
-	// Should we handle it / fail / say something about it?
-	data, _ := pem.Decode(pemBytes)
-	if data == nil {
-		return nil, ErrNoPEMBLock
-	}
-
-	priv, err := x509.ParsePKCS1PrivateKey(data.Bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	return priv, nil
-}
-
-/*
 GenerateSignature will automatically detect the key type and sign the signable data
 with the provided key. If everything goes right GenerateSignature will return
 a for the key valid signature and err=nil. If something goes wrong it will
@@ -304,7 +254,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 			return signature, err
 		}
 	case *ed25519.PrivateKey:
-		// TODO: implement signatures for ed25519 keys
+		signatureBuffer = ed25519.Sign(parsedKey.(ed25519.PrivateKey), signable)
 	default:
 		return signature, fmt.Errorf("%w: %T", ErrUnsupportedKeyType, parsedKey)
 	}
@@ -313,46 +263,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	return signature, nil
 }
 
-/*
-GenerateRSASignature generates a rsassa-pss signature, based
-on the passed key and signable data. If something goes wrong
-it will return an uninitialized Signature with an error.
-If everything goes right, the function will return an initialized
-signature with err=nil.
-*/
-func GenerateRSASignature(signable []byte, key Key) (Signature, error) {
-	var signature Signature
-	keyReader := strings.NewReader(key.KeyVal.Private)
-	pemBytes, err := ioutil.ReadAll(keyReader)
-	if err != nil {
-		return signature, err
-	}
-	rsaPriv, err := ParseRSAPrivateKeyFromPEM(pemBytes)
-	if err != nil {
-		return signature, err
-	}
-
-	hashed := sha256.Sum256(signable)
-
-	// We use rand.Reader as secure random source for rsa.SignPSS()
-	signatureBuffer, err := rsa.SignPSS(rand.Reader, rsaPriv, crypto.SHA256, hashed[:],
-		&rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
-	if err != nil {
-		return signature, err
-	}
-
-	signature.Sig = hex.EncodeToString(signatureBuffer)
-	signature.KeyId = key.KeyId
-
-	return signature, nil
-}
-
-/*
-VerifyRSASignature uses the passed Key to verify the passed Signature over the
-passed data.  It returns an error if the key is not a valid RSA public key or
-if the signature is not valid for the data.
-*/
-func VerifyRSASignature(key Key, sig Signature, data []byte) error {
+func VerifySignature(key Key, sig Signature, unverified []byte) error {
 	// Create rsa.PublicKey object from DER encoded public key string as
 	// found in the public part of the keyval part of a securesystemslib key dict
 	keyReader := strings.NewReader(key.KeyVal.Public)
@@ -360,150 +271,34 @@ func VerifyRSASignature(key Key, sig Signature, data []byte) error {
 	if err != nil {
 		return err
 	}
-	rsaPub, err := ParseRSAPublicKeyFromPEM(pemBytes)
+	// TODO: There could be more key data in _, which we silently ignore here.
+	// Should we handle it / fail / say something about it?
+	data, _ := pem.Decode(pemBytes)
+	if data == nil {
+		return ErrNoPEMBLock
+	}
+	parsedKey, err := ParseKey(data.Bytes)
 	if err != nil {
 		return err
 	}
-
-	hashed := sha256.Sum256(data)
-
-	// Create hex bytes from the signature hex string
-	sigHex, _ := hex.DecodeString(sig.Sig)
-
-	// SecSysLib uses a SaltLength of `hashes.SHA256().digest_size`, i.e. 32
-	if err := rsa.VerifyPSS(rsaPub, crypto.SHA256, hashed[:], sigHex,
-		&rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-/*
-ParseEd25519FromPrivateJSON parses an ed25519 private key from the json string.
-These ed25519 keys have the format as generated using in-toto-keygen:
-
-	{
-		"keytype: "ed25519",
-		"scheme": "ed25519",
-		"keyid": ...
-		"keyid_hash_algorithms": [...]
-		"keyval": {
-			"public": "..." # 32 bytes
-			"private": "..." # 32 bytes
+	switch parsedKey.(type) {
+	case *rsa.PublicKey:
+		hashed := sha256.Sum256(unverified)
+		sigHex, _ := hex.DecodeString(sig.Sig)
+		err := rsa.VerifyPSS(parsedKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], sigHex, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
+		if err != nil {
+			return fmt.Errorf("%w: %s", ErrInvalidSignature, err)
 		}
-	}
-*/
-func ParseEd25519FromPrivateJSON(JSONString string) (Key, error) {
-	var keyObj Key
-	err := json.Unmarshal([]uint8(JSONString), &keyObj)
-	if err != nil {
-		return keyObj, fmt.Errorf("this is not a valid JSON key object")
-	}
-
-	if keyObj.KeyType != "ed25519" || keyObj.Scheme != "ed25519" {
-		return keyObj, fmt.Errorf("this doesn't appear to be an ed25519 key")
-	}
-
-	// if the keyId is empty we try to generate the keyId
-	if keyObj.KeyId == "" {
-		if err := keyObj.GenerateKeyId(); err != nil {
-			return keyObj, err
+	case *ed25519.PublicKey:
+		sigHex, err := hex.DecodeString(sig.Sig)
+		if err != nil {
+			return err
 		}
-	}
-
-	if err := validatePrivateKey(keyObj); err != nil {
-		return keyObj, err
-	}
-
-	// 64 hexadecimal digits => 32 bytes for the private portion of the key
-	if len(keyObj.KeyVal.Private) != 64 {
-		return keyObj, fmt.Errorf("the private field on this key is malformed")
-	}
-
-	return keyObj, nil
-}
-
-/*
-ParseEd25519FromPublicJSON parses an ed25519 public key from the json string.
-These ed25519 keys have the format as generated using in-toto-keygen:
-
-	{
-		"keytype": "ed25519",
-		"scheme": "ed25519",
-		"keyid_hash_algorithms": [...],
-		"keyval": {"public": "..."}
-	}
-
-*/
-func ParseEd25519FromPublicJSON(JSONString string) (Key, error) {
-	var keyObj Key
-	err := json.Unmarshal([]uint8(JSONString), &keyObj)
-	if err != nil {
-		return keyObj, fmt.Errorf("this is not a valid JSON key object")
-	}
-
-	if keyObj.KeyType != "ed25519" || keyObj.Scheme != "ed25519" {
-		return keyObj, fmt.Errorf("this doesn't appear to be an ed25519 key")
-	}
-
-	// if the keyId is empty we try to generate the keyId
-	if keyObj.KeyId == "" {
-		if err := keyObj.GenerateKeyId(); err != nil {
-			return keyObj, err
+		if ok := ed25519.Verify(parsedKey.(ed25519.PublicKey), unverified, sigHex); !ok {
+			return fmt.Errorf("%w: ed25519", ErrInvalidSignature)
 		}
-	}
-
-	if err := validatePubKey(keyObj); err != nil {
-		return keyObj, err
-	}
-
-	// 64 hexadecimal digits => 32 bytes for the public portion of the key
-	if len(keyObj.KeyVal.Public) != 64 {
-		return keyObj, fmt.Errorf("the public field on this key is malformed")
-	}
-
-	return keyObj, nil
-}
-
-/*
-GenerateEd25519Signature creates an ed25519 signature using the key and the
-signable buffer provided. It returns an error if the underlying signing library
-fails.
-*/
-func GenerateEd25519Signature(signable []byte, key Key) (Signature, error) {
-
-	var signature Signature
-
-	seed, err := hex.DecodeString(key.KeyVal.Private)
-	if err != nil {
-		return signature, err
-	}
-	privkey := ed25519.NewKeyFromSeed(seed)
-	signatureBuffer := ed25519.Sign(privkey, signable)
-
-	signature.Sig = hex.EncodeToString(signatureBuffer)
-	signature.KeyId = key.KeyId
-
-	return signature, nil
-}
-
-/*
-VerifyEd25519Signature uses the passed Key to verify the passed Signature over the
-passed data. It returns an error if the key is not a valid ed25519 public key or
-if the signature is not valid for the data.
-*/
-func VerifyEd25519Signature(key Key, sig Signature, data []byte) error {
-	pubHex, err := hex.DecodeString(key.KeyVal.Public)
-	if err != nil {
-		return err
-	}
-	sigHex, err := hex.DecodeString(sig.Sig)
-	if err != nil {
-		return err
-	}
-	if ok := ed25519.Verify(pubHex, data, sigHex); !ok {
-		return errors.New("invalid ed25519 signature")
+	default:
+		return fmt.Errorf("%w: Key has type %T", ErrInvalidSignature, parsedKey)
 	}
 	return nil
 }

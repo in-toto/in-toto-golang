@@ -606,7 +606,7 @@ func (mb *Metablock) VerifySignature(key Key) error {
 		return err
 	}
 
-	if err := VerifyRSASignature(key, sig, dataCanonical); err != nil {
+	if err := VerifySignature(key, sig, dataCanonical); err != nil {
 		return err
 	}
 	return nil
@@ -657,12 +657,12 @@ func (mb *Metablock) Sign(key Key) error {
 	// (also, lolnogenerics)
 	switch key.Scheme {
 	case "ed25519":
-		newSignature, err = GenerateEd25519Signature(dataCanonical, key)
+		newSignature, err = GenerateSignature(dataCanonical, key)
 		if err != nil {
 			return err
 		}
 	case "rsassa-pss-sha256":
-		newSignature, err = GenerateRSASignature(dataCanonical, key)
+		newSignature, err = GenerateSignature(dataCanonical, key)
 		if err != nil {
 			return err
 		}
