@@ -253,7 +253,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		if err != nil {
 			return signature, err
 		}
-	case *ed25519.PrivateKey:
+	case ed25519.PrivateKey:
 		signatureBuffer = ed25519.Sign(parsedKey.(ed25519.PrivateKey), signable)
 	default:
 		return signature, fmt.Errorf("%w: %T", ErrUnsupportedKeyType, parsedKey)
