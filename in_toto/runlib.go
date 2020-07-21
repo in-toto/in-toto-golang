@@ -246,7 +246,6 @@ metadata.  Link metadata contains recorded products at the passed productPaths
 and materials at the passed materialPaths.  The returned link is wrapped in a
 Metablock object.  If command execution or artifact recording fails the first
 return value is an empty Metablock and the second return value is the error.
-NOTE: Currently InTotoRun cannot be used to sign Link metadata.
 */
 func InTotoRun(name string, materialPaths []string, productPaths []string,
 	cmdArgs []string, key Key) (Metablock, error) {
