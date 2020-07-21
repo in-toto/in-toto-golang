@@ -253,8 +253,9 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		if err != nil {
 			return signature, err
 		}
-		// TODO: There could be more key data in _, which we silently ignore here.
-		// Should we handle it / fail / say something about it?
+		// pam.Decode returns the parsed pem block and a rest.
+		// The rest is everything, that could not be parsed as PEM block.
+		// Therefore we can drop this via using the blank identifier "_"
 		data, _ := pem.Decode(pemBytes)
 		if data == nil {
 			return signature, ErrNoPEMBLock
@@ -296,8 +297,9 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		if err != nil {
 			return err
 		}
-		// TODO: There could be more key data in _, which we silently ignore here.
-		// Should we handle it / fail / say something about it?
+		// pam.Decode returns the parsed pem block and a rest.
+		// The rest is everything, that could not be parsed as PEM block.
+		// Therefore we can drop this via using the blank identifier "_"
 		data, _ := pem.Decode(pemBytes)
 		if data == nil {
 			return ErrNoPEMBLock
