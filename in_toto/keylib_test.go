@@ -128,7 +128,6 @@ lQqaoEO7ScdRrzjgvVxXkEY3nwLcWdM61/RZTL0+be8goDw5cWt+PaA=
 	if err := VerifySignature(validKey, validSig, []byte(validData)); err != nil {
 		t.Errorf("VerifyRSASignature from validSignature and data has failed: %s", err)
 	}
-
 }
 
 func TestVerifyRSASignature(t *testing.T) {
@@ -200,7 +199,7 @@ k7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=
 	}
 }
 
-func TestLoad25519PublicKey(t *testing.T) {
+func TestLoadEd25519PublicKey(t *testing.T) {
 	var key Key
 	if err := key.LoadKey("carol.pub", "ed25519", []string{"sha256", "sha512"}); err != nil {
 		t.Errorf("Failed to load ed25519 public key from file: (%s)", err)
@@ -222,7 +221,7 @@ func TestLoad25519PublicKey(t *testing.T) {
 	}
 }
 
-func TestLoad25519PrivateKey(t *testing.T) {
+func TestLoadEd25519PrivateKey(t *testing.T) {
 	var key Key
 	if err := key.LoadKey("carol", "ed25519", []string{"sha256", "sha512"}); err != nil {
 		t.Errorf("Failed to load ed25519 public key from file: (%s)", err)
@@ -241,5 +240,135 @@ func TestLoad25519PrivateKey(t *testing.T) {
 	// load invalid file
 	if err := key.LoadKey("bob-invalid.pub", "ed25519", []string{"sha256", "sha512"}); err == nil {
 		t.Errorf("LoadEd25519PublicKey has successfully loaded an invalid key file")
+	}
+}
+
+func TestGenerateEd25519Signature(t *testing.T) {
+	validKey := Key{
+		KeyId:   "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+		KeyType: "ed25519",
+		KeyVal: KeyVal{
+			Public:  "393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c",
+			Private: "29ad59693fe94c9d623afbb66554b4f6bb248c47761689ada4875ebda94840ae393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c",
+		},
+	}
+	// We are not verifying the signature yet..
+	validData := `{"_type":"link","byproducts":{},"command":[],"environment":{},"materials":{},"name":"foo","products":{}}`
+	validSig, err := GenerateSignature([]byte(validData), validKey)
+	if err != nil {
+		t.Errorf("GenerateEd25519Signature from validKey and data failed: %s", err)
+	}
+	if err := VerifySignature(validKey, validSig, []byte(validData)); err != nil {
+		t.Errorf("VerifyEd25519Signature from validSignature and data has failed: %s", err)
+	}
+}
+
+func TestVerifyEd25519Signature(t *testing.T) {
+	validSig := Signature{
+		KeyId: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+		Sig:   "f41d704809c0ae2356e1beaaf3432f4abfaaa4a26c043087d9eb6dc12b4a3c5df73f8c47a4e969e815a5d2c9853d7eba208b48c7459f6b865cd0b51a94e6d704",
+	}
+
+	validKey := Key{
+		KeyId:   "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+		KeyType: "ed25519",
+		KeyVal: KeyVal{
+			Public: "393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c",
+		},
+	}
+	validData := `{"_type":"link","byproducts":{},"command":[],"environment":{},"materials":{},"name":"foo","products":{}}`
+
+	// Test verifying valid signature
+	err := VerifySignature(validKey, validSig, []byte(validData))
+	if err != nil {
+		t.Errorf("VerifyEd25519Signature returned '%s', expected nil", err)
+	}
+}
+
+func TestInvalidKeyComponent(t *testing.T) {
+	// The following is an invalid SetKeyComponents call
+	var key Key
+	err := key.SetKeyComponents([]byte{}, []byte{}, "inToTo", "scheme", []string{"md5", "yolo"})
+	if !errors.Is(err, ErrUnsupportedKeyType) {
+		t.Errorf("TestInvalidKeyComponent failed. We got: %s, we should have got: %s", err, ErrUnsupportedKeyType)
+	}
+}
+
+func TestInvalidPEMKey(t *testing.T) {
+	_, err := ParseKey([]byte{})
+	if !errors.Is(err, ErrFailedPEMParsing) {
+		t.Errorf("TestInvalidPEMKey failed with zero byte data as test key. We got: %s, we should have got: %s", err, ErrFailedPEMParsing)
+	}
+}
+
+func TestLoadKey(t *testing.T) {
+	tables := []struct {
+		name                string
+		path                string
+		scheme              string
+		keyIdHashAlgorithms []string
+		result              string
+	}{
+		{"Test non existing path", "this/path/is/invalid.txt", "ed25519", []string{"sha256", "sha512"}, "open this/path/is/invalid.txt: no such file or directory"},
+		{"Test invalid file", "canonical-test.link", "ecdsa", []string{"sha256", "sha512"}, "failed to decode the data as PEM block (are you sure this is a pem file?)"},
+		{"Test unsupported EC private key", "erin", "ecdsa", []string{"sha256", "sha512"}, "failed parsing the PEM block: unsupported PEM type"},
+		{"Test unsupported PKCS8 EC key", "frank", "ecdsa", []string{"sha256", "sha512"}, "unsupported key type: *ecdsa.PrivateKey"},
+	}
+
+	for _, table := range tables {
+		// initialize empty key object
+		var key Key
+		err := key.LoadKey(table.path, table.scheme, table.keyIdHashAlgorithms)
+		// NOTE: some errors do not support errors.Is() yet, therefore we need to compare the error strings here
+		// This can lead to nil pointer dereference
+		if err.Error() != table.result {
+			t.Errorf("%s: Loadkey('%s', '%s', '%s') failed with '%s', should got '%s'", table.name, table.path, table.scheme, table.keyIdHashAlgorithms, err, table.result)
+		}
+	}
+}
+
+func TestGenerateKey(t *testing.T) {
+	tables := []struct {
+		name     string
+		signable []byte
+		key      Key
+		result   string
+	}{
+		{"Test unsupported EC private key", []byte{}, Key{
+			KeyId:               "",
+			KeyIdHashAlgorithms: []string{"sha256", "sha512"},
+			KeyType:             "ecdsa",
+			KeyVal: KeyVal{
+				Private: "-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIJ+y3Jy7kstRBzPmoOfak4t70DsLpFmlZLtppfcP14V3oAcGBSuBBAAK\noUQDQgAELToC9CwqXL8bRTG54QMn3k6dqwI0sDMTOZkriRklJ4HXQbJUWRpv2X8k\nspRECJZDoiOV1OaMMIXjY4XNeoEBmw==\n-----END EC PRIVATE KEY-----\n",
+				Public:  "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAELToC9CwqXL8bRTG54QMn3k6dqwI0sDMT\nOZkriRklJ4HXQbJUWRpv2X8kspRECJZDoiOV1OaMMIXjY4XNeoEBmw==\n-----END PUBLIC KEY-----\n",
+			},
+			Scheme: "ecdsa",
+		}, "unsupported key type: ecdsa"},
+		{"Test wrong KeyType", []byte{}, Key{
+			KeyId:               "",
+			KeyIdHashAlgorithms: []string{"sha256", "sha512"},
+			KeyType:             "rsa",
+			KeyVal: KeyVal{
+				Private: "-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIJ+y3Jy7kstRBzPmoOfak4t70DsLpFmlZLtppfcP14V3oAcGBSuBBAAK\noUQDQgAELToC9CwqXL8bRTG54QMn3k6dqwI0sDMTOZkriRklJ4HXQbJUWRpv2X8k\nspRECJZDoiOV1OaMMIXjY4XNeoEBmw==\n-----END EC PRIVATE KEY-----\n",
+				Public:  "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAELToC9CwqXL8bRTG54QMn3k6dqwI0sDMT\nOZkriRklJ4HXQbJUWRpv2X8kspRECJZDoiOV1OaMMIXjY4XNeoEBmw==\n-----END PUBLIC KEY-----\n",
+			},
+			Scheme: "ecdsa",
+		}, "failed parsing the PEM block: unsupported PEM type"},
+		{"Test wrong KeyType, but valid PKCS8 key", []byte{}, Key{
+			KeyId:               "",
+			KeyIdHashAlgorithms: []string{"sha256", "sha512"},
+			KeyType:             "rsa",
+			KeyVal: KeyVal{
+				Private: "-----BEGIN PRIVATE KEY-----\nMIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIB6fQnV71xKx6kFgJv\nYTMq0ytvWi2mDlYu6aNm1761c1OSInbBxBNb0ligpM65KyaeeRce6JR9eQW6TB6R\n+5pNzvOhgYkDgYYABAFy0CeDAyV/2mY1NqxLLgqEXSxaqM3fM8gYn/ZWzrLnO+1h\nK2QAanID3JuPff1NdhehhL/U1prXdyyaItA5X4ChkQHMTsiS/3HkWRuLR8L22SGs\nB+7KqOeO5ELkqHO5tsy4kvsNrmersCGRQGY6A5V/0JFhP1u1JUvAVVhfRbdQXuu3\nrw==\n-----END PRIVATE KEY-----\n",
+				Public:  "-----BEGIN PUBLIC KEY-----\nMIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQBctAngwMlf9pmNTasSy4KhF0sWqjN\n3zPIGJ/2Vs6y5zvtYStkAGpyA9ybj339TXYXoYS/1Naa13csmiLQOV+AoZEBzE7I\nkv9x5Fkbi0fC9tkhrAfuyqjnjuRC5KhzubbMuJL7Da5nq7AhkUBmOgOVf9CRYT9b\ntSVLwFVYX0W3UF7rt68=\n-----END PUBLIC KEY-----",
+			},
+		}, "unsupported key type: *ecdsa.PrivateKey"},
+	}
+
+	for _, table := range tables {
+		_, err := GenerateSignature(table.signable, table.key)
+		if err.Error() != table.result {
+			t.Errorf("%s: GenerateKey failed with '%s', should got '%s'", table.name, table.result, err)
+		}
 	}
 }

@@ -265,20 +265,25 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 			return signature, err
 		}
 		hashed := sha256.Sum256(signable)
-		// We use rand.Reader as secure random source for rsa.SignPSS()
-		signatureBuffer, err = rsa.SignPSS(rand.Reader, parsedKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:],
-			&rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
-		if err != nil {
-			return signature, err
+		switch parsedKey.(type) {
+		case *rsa.PrivateKey:
+			// We use rand.Reader as secure random source for rsa.SignPSS()
+			signatureBuffer, err = rsa.SignPSS(rand.Reader, parsedKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:],
+				&rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
+			if err != nil {
+				return signature, err
+			}
+		default:
+			return signature, fmt.Errorf("%w: %T", ErrUnsupportedKeyType, parsedKey)
 		}
 	case "ed25519":
-		seed, err := hex.DecodeString(key.KeyVal.Private)
+		privateHex, err := hex.DecodeString(key.KeyVal.Private)
 		if err != nil {
 			return signature, err
 		}
 		// Note: We can directly use the key for signing and do not
 		// need to use ed25519.NewKeyFromSeed().
-		signatureBuffer = ed25519.Sign(seed, signable)
+		signatureBuffer = ed25519.Sign(privateHex, signable)
 	default:
 		return signature, fmt.Errorf("%w: %s", ErrUnsupportedKeyType, key.KeyType)
 	}
