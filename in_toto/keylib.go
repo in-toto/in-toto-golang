@@ -20,7 +20,7 @@ import (
 var ErrFailedPEMParsing = errors.New("failed parsing the PEM block: unsupported PEM type")
 
 // ErrNoPEMBlock gets triggered when there is no PEM block in the provided file
-var ErrNoPEMBLock = errors.New("failed to decode the data as PEM block (are you sure this is a pem file?)")
+var ErrNoPEMBlock = errors.New("failed to decode the data as PEM block (are you sure this is a pem file?)")
 
 // ErrUnsupportedKeyType is returned when we are dealing with a key type different to ed25519 or RSA
 var ErrUnsupportedKeyType = errors.New("unsupported key type")
@@ -189,7 +189,7 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 	// Should we handle it / fail / say something about it?
 	data, _ := pem.Decode(pemBytes)
 	if data == nil {
-		return ErrNoPEMBLock
+		return ErrNoPEMBlock
 	}
 
 	// Try to load private key, if this fails try to load
@@ -258,7 +258,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		// Therefore we can drop this via using the blank identifier "_"
 		data, _ := pem.Decode(pemBytes)
 		if data == nil {
-			return signature, ErrNoPEMBLock
+			return signature, ErrNoPEMBlock
 		}
 		parsedKey, err := ParseKey(data.Bytes)
 		if err != nil {
@@ -307,7 +307,7 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		// Therefore we can drop this via using the blank identifier "_"
 		data, _ := pem.Decode(pemBytes)
 		if data == nil {
-			return ErrNoPEMBLock
+			return ErrNoPEMBlock
 		}
 		parsedKey, err := ParseKey(data.Bytes)
 		if err != nil {

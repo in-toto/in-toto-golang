@@ -25,7 +25,7 @@ func TestLoadRSAPublicKey(t *testing.T) {
 	// - Not a pem formatted rsa public key
 	expectedError := "Could not find a public key PEM block"
 	err = key.LoadKey("demo.layout.template", "rsassa-pss-sha256", []string{"sha256", "sha512"})
-	if !errors.Is(err, ErrNoPEMBLock) {
+	if !errors.Is(err, ErrNoPEMBlock) {
 		t.Errorf("LoadRSAPublicKey returned (%s), expected '%s' error", err,
 			expectedError)
 	}
@@ -51,9 +51,9 @@ func TestLoadRSAPrivateKey(t *testing.T) {
 	}
 
 	err = key.LoadKey("demo.layout.template", "", []string{})
-	if err == nil || !errors.Is(err, ErrNoPEMBLock) {
+	if err == nil || !errors.Is(err, ErrNoPEMBlock) {
 		t.Errorf("LoadKey returned (%s), expected '%s' error", err,
-			ErrNoPEMBLock.Error())
+			ErrNoPEMBlock.Error())
 	}
 
 	// Test not existing file
@@ -211,8 +211,8 @@ k7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=
 	}
 	// just trigger pem.Decode function
 	err = VerifySignature(invalidKey, Signature{}, []byte{})
-	if !errors.Is(err, ErrNoPEMBLock) {
-		t.Errorf("VerifySignature returned '%s', should got '%s'", err, ErrNoPEMBLock)
+	if !errors.Is(err, ErrNoPEMBlock) {
+		t.Errorf("VerifySignature returned '%s', should got '%s'", err, ErrNoPEMBlock)
 	}
 
 	// Test ParseKey errors via providing an EC key, but with wrong key type
