@@ -374,7 +374,7 @@ func TestLoadKey(t *testing.T) {
 		keyIdHashAlgorithms []string
 		result              string
 	}{
-		{"Test non existing path", "this/path/is/invalid.txt", "ed25519", []string{"sha256", "sha512"}, "open this/path/is/invalid.txt: no such file or directory"},
+		{"Test non existing path", "invalid.txt", "ed25519", []string{"sha256", "sha512"}, "open invalid.txt: no such file or directory"},
 		{"Test invalid file", "canonical-test.link", "ecdsa", []string{"sha256", "sha512"}, "failed to decode the data as PEM block (are you sure this is a pem file?)"},
 		{"Test unsupported EC private key", "erin", "ecdsa", []string{"sha256", "sha512"}, "failed parsing the PEM block: unsupported PEM type"},
 		{"Test unsupported PKCS8 EC key", "frank", "ecdsa", []string{"sha256", "sha512"}, "unsupported key type: *ecdsa.PrivateKey"},
@@ -384,9 +384,14 @@ func TestLoadKey(t *testing.T) {
 		// initialize empty key object
 		var key Key
 		err := key.LoadKey(table.path, table.scheme, table.keyIdHashAlgorithms)
-		// NOTE: some errors do not support errors.Is() yet, therefore we need to compare the error strings here
-		// This can lead to nil pointer dereference
-		if err.Error() != table.result {
+		// We need to handle the non existing path error differently, because OS produce different error messages here.
+		if table.name == "Test non existing path" {
+			if err == nil {
+				t.Errorf("%s: Loadkey('%s', '%s', '%s') failed with '%s', should got nil", table.name, table.path, table.scheme, table.keyIdHashAlgorithms, err)
+			}
+			// NOTE: some errors do not support errors.Is() yet, therefore we need to compare the error strings here
+			// This can lead to nil pointer dereference
+		} else if err.Error() != table.result {
 			t.Errorf("%s: Loadkey('%s', '%s', '%s') failed with '%s', should got '%s'", table.name, table.path, table.scheme, table.keyIdHashAlgorithms, err, table.result)
 		}
 	}
