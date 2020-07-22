@@ -1,6 +1,7 @@
 package in_toto
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -197,6 +198,36 @@ k7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=
 			t.Errorf("VerifyRSASignature returned '%s', expected error", err)
 		}
 	}
+
+	// pem.Decode errors
+	invalidKey := Key{
+		KeyId:               "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498",
+		KeyIdHashAlgorithms: []string{"sha256", "sha512"},
+		KeyType:             "rsa",
+		KeyVal: KeyVal{
+			Public: "INVALID",
+		},
+		Scheme: "rsassa-pss-sha256",
+	}
+	// just trigger pem.Decode function
+	err = VerifySignature(invalidKey, Signature{}, []byte{})
+	if !errors.Is(err, ErrNoPEMBLock) {
+		t.Errorf("VerifySignature returned '%s', should got '%s'", err, ErrNoPEMBLock)
+	}
+
+	// Test ParseKey errors via providing an EC key, but with wrong key type
+	invalidECKey := Key{
+		KeyId:   "",
+		KeyType: "rsa",
+		KeyVal: KeyVal{
+			Public: "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAELToC9CwqXL8bRTG54QMn3k6dqwI0sDMT\nOZkriRklJ4HXQbJUWRpv2X8kspRECJZDoiOV1OaMMIXjY4XNeoEBmw==\n-----END PUBLIC KEY-----\n",
+		},
+	}
+	// just trigger ParseKey function
+	err = VerifySignature(invalidECKey, Signature{}, []byte{})
+	if !errors.Is(err, ErrFailedPEMParsing) {
+		t.Errorf("VerifySignature returned '%s', should got '%s'", err, ErrFailedPEMParsing)
+	}
 }
 
 func TestLoadEd25519PublicKey(t *testing.T) {
@@ -283,6 +314,40 @@ func TestVerifyEd25519Signature(t *testing.T) {
 	if err != nil {
 		t.Errorf("VerifyEd25519Signature returned '%s', expected nil", err)
 	}
+
+	invalidSig := Signature{
+		KeyId: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+		Sig:   "f41d704809c0ae2356e1beaaf3432f4abfaa",
+	}
+
+	invalidKey := Key{
+		KeyId:   "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+		KeyType: "ed25519",
+		KeyVal: KeyVal{
+			Public: "INVALID",
+		},
+	}
+
+	invalidHexSig := Signature{
+		KeyId: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+		Sig:   "INVALID",
+	}
+
+	err = VerifySignature(validKey, invalidSig, []byte(validData))
+	if !errors.Is(err, ErrInvalidSignature) {
+		t.Errorf("VerifyEd25519Signature returned '%s', expected '%s'", err, ErrInvalidSignature)
+	}
+
+	err = VerifySignature(invalidKey, validSig, []byte(validData))
+	var hexError hex.InvalidByteError
+	if !errors.As(err, &hexError) {
+		t.Errorf("VerifyEd25519Signature returned '%s', expected '%s'", err, hexError)
+	}
+
+	err = VerifySignature(validKey, invalidHexSig, []byte(validData))
+	if !errors.As(err, &hexError) {
+		t.Errorf("VerifyEd25519Signature returned '%s', expected '%s'", err, hexError)
+	}
 }
 
 func TestInvalidKeyComponent(t *testing.T) {
@@ -363,10 +428,24 @@ func TestGenerateKey(t *testing.T) {
 				Public:  "-----BEGIN PUBLIC KEY-----\nMIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQBctAngwMlf9pmNTasSy4KhF0sWqjN\n3zPIGJ/2Vs6y5zvtYStkAGpyA9ybj339TXYXoYS/1Naa13csmiLQOV+AoZEBzE7I\nkv9x5Fkbi0fC9tkhrAfuyqjnjuRC5KhzubbMuJL7Da5nq7AhkUBmOgOVf9CRYT9b\ntSVLwFVYX0W3UF7rt68=\n-----END PUBLIC KEY-----",
 			},
 		}, "unsupported key type: *ecdsa.PrivateKey"},
+		{"Test invalid hex string for ed25519", []byte{}, Key{
+			KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+			KeyIdHashAlgorithms: []string{"sha256", "sha512"},
+			KeyType:             "ed25519",
+			KeyVal: KeyVal{
+				Private: "INVALID",
+				Public:  "INVALID",
+			},
+			Scheme: "ed25519",
+		}, "encoding/hex: invalid byte: U+0049 'I'"},
 	}
 
 	for _, table := range tables {
 		_, err := GenerateSignature(table.signable, table.key)
+		// Note: Some of our errors do not yet support Go 1.13 error handling
+		// Thus we need to compare strings :(, this can lead to a nil pointer
+		// dereference. If you encounter a nil pointer dereference, expect that
+		// the GenerateSignature() func failed.
 		if err.Error() != table.result {
 			t.Errorf("%s: GenerateKey failed with '%s', should got '%s'", table.name, table.result, err)
 		}
