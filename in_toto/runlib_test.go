@@ -329,6 +329,22 @@ func TestInTotoRun(t *testing.T) {
 		result, err := InTotoRun(linkName, table.materialPaths, table.productPaths, table.cmdArgs, table.key)
 		if !reflect.DeepEqual(result, table.result) {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result)
+		} else {
+			// we do not need to check if result == nil here, because our reflect.DeepEqual was successful
+			if err := result.Dump(linkName + ".link"); err != nil {
+				t.Errorf("Error while dumping link metablock to file")
+			}
+			var loadedResult Metablock
+			if err := loadedResult.Load(linkName + ".link"); err != nil {
+				t.Errorf("Error while loading link metablock from file")
+			}
+			if !reflect.DeepEqual(loadedResult, result) {
+				t.Errorf("Dump and loading of signed Link failed. Loaded result: '%s', dumped result '%s'", loadedResult, result)
+			} else {
+				if err := os.Remove(linkName + ".link"); err != nil {
+					t.Errorf("Removing created link file failed")
+				}
+			}
 		}
 	}
 
