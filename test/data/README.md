@@ -1,5 +1,40 @@
 # Test Data
 
+## How to generate the test data
+
+We load keys from disk only in PKCS8, PKCS1 or PKCX format.
+The next sections describe, how you can generate such keys via openssl.
+Currently only keys **without password protection** are supported.
+
+### RSA
+
+TODO: write description for RSA key generation
+
+### ECDSA
+
+First you need to generate an ecdsa key in traditional ec key format via:
+
+`$ openssl ecparam -name secp521r1 -genkey -noout -out <filename>.ec`
+
+Then you can transform this key into PKCS8 format via:
+
+`$ openssl pkcs8 -topk8 -nocrypt -in <filename>.ec -out <filename>`
+
+Next generate the public key via:
+
+`$ openssl ec -in <filename> -pubout -out <filename>.pub`
+
+
+### ED25519
+
+Private key:
+
+`$ openssl genpkey -algorithm ed25519 -outform PEM -out <filename>`
+
+Public key:
+
+`$ openssl pkey -in <filename>  -pubout > <filename>.pub`
+
 ## Go Specifics
 
 ### ECDSA
