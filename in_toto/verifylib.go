@@ -44,7 +44,7 @@ func RunInspections(layout Layout) (map[string]Metablock, error) {
 			return nil, err
 		}
 
-		retVal := linkMb.Signed.(Link).ByProducts["return-value"]
+		retVal := linkMb.Signed.(Link).ByProducts.ReturnValue
 		if retVal != 0 {
 			return nil, fmt.Errorf("Inspection command '%s' of inspection '%s'"+
 				" returned a non-zero value: %d", inspection.Run, inspection.Name,

@@ -143,9 +143,19 @@ type Link struct {
 	Name        string                 `json:"name"`
 	Materials   map[string]interface{} `json:"materials"`
 	Products    map[string]interface{} `json:"products"`
-	ByProducts  map[string]interface{} `json:"byproducts"`
+	ByProducts  ByProducts `json:"byproducts"`
 	Command     []string               `json:"command"`
 	Environment map[string]interface{} `json:"environment"`
+}
+
+// ByProducts represents our byproducts of executed commands.
+// We can not use a a map[string]interface{} here,
+// because otherwise unserialization would fail.
+// We store integers, but Go only serializes to float.
+type ByProducts struct {
+	ReturnValue int `json:"return-value,omitempty"`
+	Stdout string `json:"stdout,omitempty"`
+	Stderr string `json:"stderr,omitempty"`
 }
 
 /*
