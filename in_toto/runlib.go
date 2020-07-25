@@ -210,20 +210,20 @@ created the first return value is nil and the second return value is the error.
 NOTE: Since stdout and stderr are captured, they cannot be seen during the
 command execution.
 */
-func RunCommand(cmdArgs []string) (ByProducts, error) {
+func RunCommand(cmdArgs []string) (map[string]interface{}, error) {
 
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		return ByProducts{}, err
+		return nil, err
 	}
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		return ByProducts{}, err
+		return nil, err
 	}
 
 	if err := cmd.Start(); err != nil {
-		return ByProducts{}, err
+		return nil, err
 	}
 
 	// TODO: duplicate stdout, stderr
@@ -232,10 +232,10 @@ func RunCommand(cmdArgs []string) (ByProducts, error) {
 
 	retVal := WaitErrToExitCode(cmd.Wait())
 
-	return ByProducts{
-		ReturnValue: retVal,
-		Stdout:       string(stdout),
-		Stderr:       string(stderr),
+	return map[string]interface{}{
+		"return-value": retVal,
+		"stdout":       stdout,
+		"stderr":       stderr,
 	}, nil
 }
 

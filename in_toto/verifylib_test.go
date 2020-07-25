@@ -90,8 +90,8 @@ func TestGetSummaryLink(t *testing.T) {
 	}
 	if !reflect.DeepEqual(summaryLink.Signed.(Link).ByProducts,
 		packageLink.Signed.(Link).ByProducts) {
-		t.Errorf("Summary Link by-products don't match. Expected '%#v', "+
-			"returned '%#v", packageLink.Signed.(Link).ByProducts,
+		t.Errorf("Summary Link by-products don't match. Expected '%s', "+
+			"returned '%s", packageLink.Signed.(Link).ByProducts,
 			summaryLink.Signed.(Link).ByProducts)
 	}
 }

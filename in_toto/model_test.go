@@ -169,10 +169,10 @@ func TestMetablockLoadDumpLoad(t *testing.T) {
 					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 				},
 			},
-			ByProducts: ByProducts{
-				ReturnValue: 0,
-				Stderr:       "a foo.py\n",
-				Stdout:       "",
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
 			},
 			Environment: map[string]interface{}{},
 		},
@@ -316,10 +316,10 @@ func TestValidateLink(t *testing.T) {
 					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 				},
 			},
-			ByProducts: ByProducts{
-				ReturnValue: 0,
-				Stderr:       "a foo.py\n",
-				Stdout:       "",
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
 			},
 			Environment: map[string]interface{}{},
 		},
@@ -351,10 +351,10 @@ func TestValidateLink(t *testing.T) {
 						"36c1e5aabb7c98514f355",
 				},
 			},
-			ByProducts: ByProducts{
-				ReturnValue: 0,
-				Stderr:       "a foo.py\n",
-				Stdout:       "",
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
 			},
 			Environment: map[string]interface{}{},
 		},
@@ -386,10 +386,10 @@ func TestValidateLink(t *testing.T) {
 					"sha256": "!@#$%",
 				},
 			},
-			ByProducts: ByProducts{
-				ReturnValue: 0,
-				Stderr:       "a foo.py\n",
-				Stdout:       "",
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
 			},
 			Environment: map[string]interface{}{},
 		},
@@ -934,10 +934,10 @@ func TestValidateMetablock(t *testing.T) {
 						"1e5aabb7c98514f355",
 				},
 			},
-			ByProducts: ByProducts{
-				ReturnValue: 0,
-				Stderr:       "a foo.py\n",
-				Stdout:       "",
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
 			},
 			Environment: map[string]interface{}{},
 		},
@@ -1025,10 +1025,10 @@ func TestValidateMetablock(t *testing.T) {
 						"1e5aabb7c98514f355",
 				},
 			},
-			ByProducts: ByProducts{
-				ReturnValue: 0,
-				Stderr:       "a foo.py\n",
-				Stdout:       "",
+			ByProducts: map[string]interface{}{
+				"return-value": float64(0),
+				"stderr":       "a foo.py\n",
+				"stdout":       "",
 			},
 			Environment: map[string]interface{}{},
 		},

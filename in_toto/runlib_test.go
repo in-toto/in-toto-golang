@@ -259,24 +259,24 @@ func TestRunCommand(t *testing.T) {
 		{"sh", "-c", "printf out"},
 		{"sh", "-c", "printf err >&2"},
 	}
-	expected := []ByProducts{
-		{ReturnValue: 0, Stdout: "", Stderr: ""},
-		{ReturnValue: 1, Stdout: "", Stderr: ""},
-		{ReturnValue: 0, Stdout: "out", Stderr: ""},
-		{ReturnValue: 0, Stdout: "", Stderr: "err"},
+	expected := []map[string]interface{}{
+		{"return-value": 0, "stdout": []byte(""), "stderr": []byte("")},
+		{"return-value": 1, "stdout": []byte(""), "stderr": []byte("")},
+		{"return-value": 0, "stdout": []byte("out"), "stderr": []byte("")},
+		{"return-value": 0, "stdout": []byte(""), "stderr": []byte("err")},
 	}
 	for i := 0; i < len(parameters); i++ {
 		result, err := RunCommand(parameters[i])
 		if !reflect.DeepEqual(result, expected[i]) || err != nil {
-			t.Errorf("RunCommand returned '(%#v, %s)', expected '(%#v, nil)'",
+			t.Errorf("RunCommand returned '(%s, %s)', expected '(%s, nil)'",
 				result, err, expected[i])
 		}
 	}
 
 	// Fail run command
 	result, err := RunCommand([]string{"command-does-not-exist"})
-	if err == nil {
-		t.Errorf("RunCommand returned '(%#v, %s)', expected '(nil, *exec.Error)'",
+	if result != nil || err == nil {
+		t.Errorf("RunCommand returned '(%s, %s)', expected '(nil, *exec.Error)'",
 			result, err)
 	}
 }
@@ -311,15 +311,15 @@ func TestInTotoRun(t *testing.T) {
 						"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 					},
 				},
-				ByProducts: ByProducts{
-					ReturnValue: 0, Stdout: "out", Stderr: "err",
+				ByProducts: map[string]interface{}{
+					"return-value": 0, "stdout": []byte("out"), "stderr": []byte("err"),
 				},
 				Command:     []string{"sh", "-c", "printf out; printf err >&2"},
 				Environment: map[string]interface{}{},
 			},
 			Signatures: []Signature{{
 				KeyId: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
-				Sig:   "98500032c08c4d8a0d023fad192af3d6d618d3f0ffa10ac7f67046e57d6dcb503832a8c338a98f1f6fa663b0dcc5f0713ca012275aca4170e667513676514e08",
+				Sig:   "4e2af0ae36ad51aba2a9a0dc9e1864ab3fe5f3ec4f4de9c958d6648963999a99a5f663282a415b237f5d3e53972cf7f21151b65eb189f9c9add5eaf409455209",
 			}},
 		},
 		},
@@ -328,7 +328,7 @@ func TestInTotoRun(t *testing.T) {
 	for _, table := range tablesCorrect {
 		result, err := InTotoRun(linkName, table.materialPaths, table.productPaths, table.cmdArgs, table.key)
 		if !reflect.DeepEqual(result, table.result) {
-			t.Errorf("InTotoRun returned '(%#v, %s)', expected '(%#v, nil)'", result, err, table.result)
+			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result)
 		} else {
 			// we do not need to check if result == nil here, because our reflect.DeepEqual was successful
 			if err := result.Dump(linkName + ".link"); err != nil {
@@ -339,7 +339,7 @@ func TestInTotoRun(t *testing.T) {
 				t.Errorf("Error while loading link metablock from file")
 			}
 			if !reflect.DeepEqual(loadedResult, result) {
-				t.Errorf("Dump and loading of signed Link failed. Loaded result: '%#v', dumped result '%#v'", loadedResult, result)
+				t.Errorf("Dump and loading of signed Link failed. Loaded result: '%s', dumped result '%s'", loadedResult, result)
 			} else {
 				if err := os.Remove(linkName + ".link"); err != nil {
 					t.Errorf("Removing created link file failed")
