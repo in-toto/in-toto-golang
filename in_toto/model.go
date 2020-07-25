@@ -522,7 +522,6 @@ func (mb *Metablock) Load(path string) (err error) {
 		if err := decoder.Decode(&link); err != nil {
 			return err
 		}
-
 		mb.Signed = link
 
 	} else if signed["_type"] == "layout" {

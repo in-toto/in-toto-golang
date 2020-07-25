@@ -260,10 +260,10 @@ func TestRunCommand(t *testing.T) {
 		{"sh", "-c", "printf err >&2"},
 	}
 	expected := []map[string]interface{}{
-		{"return-value": 0, "stdout": []byte(""), "stderr": []byte("")},
-		{"return-value": 1, "stdout": []byte(""), "stderr": []byte("")},
-		{"return-value": 0, "stdout": []byte("out"), "stderr": []byte("")},
-		{"return-value": 0, "stdout": []byte(""), "stderr": []byte("err")},
+		{"return-value": float64(0), "stdout": "", "stderr": ""},
+		{"return-value": float64(1), "stdout": "", "stderr": ""},
+		{"return-value": float64(0), "stdout": "out", "stderr": ""},
+		{"return-value": float64(0), "stdout": "", "stderr": "err"},
 	}
 	for i := 0; i < len(parameters); i++ {
 		result, err := RunCommand(parameters[i])
@@ -312,14 +312,14 @@ func TestInTotoRun(t *testing.T) {
 					},
 				},
 				ByProducts: map[string]interface{}{
-					"return-value": 0, "stdout": []byte("out"), "stderr": []byte("err"),
+					"return-value": float64(0), "stdout": "out", "stderr": "err",
 				},
 				Command:     []string{"sh", "-c", "printf out; printf err >&2"},
 				Environment: map[string]interface{}{},
 			},
 			Signatures: []Signature{{
 				KeyId: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
-				Sig:   "4e2af0ae36ad51aba2a9a0dc9e1864ab3fe5f3ec4f4de9c958d6648963999a99a5f663282a415b237f5d3e53972cf7f21151b65eb189f9c9add5eaf409455209",
+				Sig:   "08a6c42b8433502f2869bb3dc73f8348f6b6f89e42bbc63f91a33e7171d762e138ed5d695fb83cebec958203e17b2285f95b198d758bc62cf30e1f7408d6c10c",
 			}},
 		},
 		},

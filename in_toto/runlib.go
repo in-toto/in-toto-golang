@@ -233,9 +233,9 @@ func RunCommand(cmdArgs []string) (map[string]interface{}, error) {
 	retVal := WaitErrToExitCode(cmd.Wait())
 
 	return map[string]interface{}{
-		"return-value": retVal,
-		"stdout":       stdout,
-		"stderr":       stderr,
+		"return-value": float64(retVal),
+		"stdout":       string(stdout),
+		"stderr":       string(stderr),
 	}, nil
 }
 
