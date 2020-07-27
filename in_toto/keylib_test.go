@@ -8,6 +8,11 @@ import (
 	"testing"
 )
 
+/*
+TestLoadRSAPublicKey loads the key test/data/alice.pub and compares it against
+our specified keyID. Furthermore it will try to load a file, that is not a key
+and makes sure, that LoadKey fails with such files. Same for non existing file paths.
+*/
 func TestLoadRSAPublicKey(t *testing.T) {
 	// Test loading valid public rsa key from pem-formatted file
 	var key Key
@@ -37,6 +42,10 @@ func TestLoadRSAPublicKey(t *testing.T) {
 	}
 }
 
+/*
+TestLoadRSAPrivateKey loads the RSA private key test/data/dan and will compare it
+against our specified keyID
+*/
 func TestLoadRSAPrivateKey(t *testing.T) {
 	// Test loading valid Private rsa key from pem-formatted file
 	var key Key
@@ -63,6 +72,10 @@ func TestLoadRSAPrivateKey(t *testing.T) {
 	}
 }
 
+/*
+TestGenerateRSASignature generates a valid in-memory RSA key for generating a signature.
+This signature should always be valid, with our specified in-memory RSA key.
+*/
 func TestGenerateRSASignature(t *testing.T) {
 	validKey := Key{
 		KeyId:   "f29cb6877d14ebcf28b136a96a4d64935522afaddcc84e6b70ff6b9eaefb8fcf",
@@ -131,6 +144,10 @@ lQqaoEO7ScdRrzjgvVxXkEY3nwLcWdM61/RZTL0+be8goDw5cWt+PaA=
 	}
 }
 
+/*
+TestVerifyRSASignature uses in-memory signatures and keys for validating,
+that we succeed and fail as expected.
+*/
 func TestVerifyRSASignature(t *testing.T) {
 	validSig := Signature{
 		KeyId: "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498",
@@ -230,6 +247,11 @@ k7Gtvz/iYzaLrZv33cFWWTsEOqK1gKqigSqgW9T26wO9AgMBAAE=
 	}
 }
 
+/*
+TestLoadEd25519PublicKey will load the ed25519 public key test/data/carol.pub and will
+compare it against our specified keyID. It will also try to load different non existing keys, while
+specifying the ed25519 scheme (although the keys are all invalid).
+*/
 func TestLoadEd25519PublicKey(t *testing.T) {
 	var key Key
 	if err := key.LoadKey("carol.pub", "ed25519", []string{"sha256", "sha512"}); err != nil {
@@ -252,6 +274,10 @@ func TestLoadEd25519PublicKey(t *testing.T) {
 	}
 }
 
+/*
+TestLoadEd25519PrivateKey loads the ed25519 private key test/data/carol and compares it against our specified
+keyID.
+*/
 func TestLoadEd25519PrivateKey(t *testing.T) {
 	var key Key
 	if err := key.LoadKey("carol", "ed25519", []string{"sha256", "sha512"}); err != nil {
@@ -274,6 +300,9 @@ func TestLoadEd25519PrivateKey(t *testing.T) {
 	}
 }
 
+/*
+TestGenerateEd25519Signature will use an in-memory ed25519 key for testing the signature generation.
+*/
 func TestGenerateEd25519Signature(t *testing.T) {
 	validKey := Key{
 		KeyId:   "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
@@ -294,6 +323,9 @@ func TestGenerateEd25519Signature(t *testing.T) {
 	}
 }
 
+/*
+VerifyEd25519Signature will test the generic VerifySignature function with ed25519 signatures and keys.
+*/
 func TestVerifyEd25519Signature(t *testing.T) {
 	validSig := Signature{
 		KeyId: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
@@ -350,6 +382,9 @@ func TestVerifyEd25519Signature(t *testing.T) {
 	}
 }
 
+/*
+TestInvalidKeyComponent will test for invalid Key components like keyType, scheme or hash-algorithms
+*/
 func TestInvalidKeyComponent(t *testing.T) {
 	// The following is an invalid SetKeyComponents call
 	var key Key
@@ -359,6 +394,9 @@ func TestInvalidKeyComponent(t *testing.T) {
 	}
 }
 
+/*
+TestInvalidPEMKey tests the ParseKey function with an empty byte slice.
+*/
 func TestInvalidPEMKey(t *testing.T) {
 	_, err := ParseKey([]byte{})
 	if !errors.Is(err, ErrFailedPEMParsing) {
@@ -366,6 +404,10 @@ func TestInvalidPEMKey(t *testing.T) {
 	}
 }
 
+/*
+TestLoadKey loads various invalid keys and makes sure none of them can be loaded.
+Also it checks the correct error message.
+*/
 func TestLoadKey(t *testing.T) {
 	tables := []struct {
 		name                string
@@ -397,7 +439,11 @@ func TestLoadKey(t *testing.T) {
 	}
 }
 
-func TestGenerateKey(t *testing.T) {
+/*
+TestGenerateSignature tries to generate a signature with unsupported keys, like pure EC private keys or
+ecdsa keys with wrong ciphers.
+*/
+func TestGenerateSignature(t *testing.T) {
 	tables := []struct {
 		name     string
 		signable []byte

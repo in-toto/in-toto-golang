@@ -185,8 +185,9 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		return err
 	}
 
-	// TODO: There could be more key data in _, which we silently ignore here.
-	// Should we handle it / fail / say something about it?
+	// pam.Decode returns the parsed pem block and a rest.
+	// The rest is everything, that could not be parsed as PEM block.
+	// Therefore we can drop this via using the blank identifier "_"
 	data, _ := pem.Decode(pemBytes)
 	if data == nil {
 		return ErrNoPEMBlock
@@ -292,6 +293,20 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	return signature, nil
 }
 
+/*
+VerifySignature will verify unverified byte data via a passed key and signature.
+Supported key types are:
+
+	* RSA
+	* ED25519
+
+When encountering a RSA key, VerifySignature will decode the PEM block in the key
+and will call rsa.VerifyPSS() for verifying the RSA signature.
+When encountering an ed25519 key, Verifysignature will decode the hex string encoded
+public key and will use ed25519.Verify() for verifying the ed25519 signature.
+On success it will return nil. In case of an unsupported key type or any other error
+it will return an error.
+*/
 func VerifySignature(key Key, sig Signature, unverified []byte) error {
 	switch key.KeyType {
 	case "rsa":
