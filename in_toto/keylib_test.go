@@ -419,7 +419,6 @@ func TestLoadKey(t *testing.T) {
 		{"Test non existing path", "invalid.txt", "ed25519", []string{"sha256", "sha512"}, "open invalid.txt: no such file or directory"},
 		{"Test invalid file", "canonical-test.link", "ecdsa", []string{"sha256", "sha512"}, "failed to decode the data as PEM block (are you sure this is a pem file?)"},
 		{"Test unsupported EC private key", "erin", "ecdsa", []string{"sha256", "sha512"}, "failed parsing the PEM block: unsupported PEM type"},
-		{"Test unsupported PKCS8 EC key", "frank", "ecdsa", []string{"sha256", "sha512"}, "unsupported key type: *ecdsa.PrivateKey"},
 	}
 
 	for _, table := range tables {
@@ -459,7 +458,7 @@ func TestGenerateSignature(t *testing.T) {
 				Public:  "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAELToC9CwqXL8bRTG54QMn3k6dqwI0sDMT\nOZkriRklJ4HXQbJUWRpv2X8kspRECJZDoiOV1OaMMIXjY4XNeoEBmw==\n-----END PUBLIC KEY-----\n",
 			},
 			Scheme: "ecdsa",
-		}, "unsupported key type: ecdsa"},
+		}, "failed parsing the PEM block: unsupported PEM type"},
 		{"Test wrong KeyType", []byte{}, Key{
 			KeyId:               "",
 			KeyIdHashAlgorithms: []string{"sha256", "sha512"},
@@ -478,7 +477,7 @@ func TestGenerateSignature(t *testing.T) {
 				Private: "-----BEGIN PRIVATE KEY-----\nMIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIB6fQnV71xKx6kFgJv\nYTMq0ytvWi2mDlYu6aNm1761c1OSInbBxBNb0ligpM65KyaeeRce6JR9eQW6TB6R\n+5pNzvOhgYkDgYYABAFy0CeDAyV/2mY1NqxLLgqEXSxaqM3fM8gYn/ZWzrLnO+1h\nK2QAanID3JuPff1NdhehhL/U1prXdyyaItA5X4ChkQHMTsiS/3HkWRuLR8L22SGs\nB+7KqOeO5ELkqHO5tsy4kvsNrmersCGRQGY6A5V/0JFhP1u1JUvAVVhfRbdQXuu3\nrw==\n-----END PRIVATE KEY-----\n",
 				Public:  "-----BEGIN PUBLIC KEY-----\nMIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQBctAngwMlf9pmNTasSy4KhF0sWqjN\n3zPIGJ/2Vs6y5zvtYStkAGpyA9ybj339TXYXoYS/1Naa13csmiLQOV+AoZEBzE7I\nkv9x5Fkbi0fC9tkhrAfuyqjnjuRC5KhzubbMuJL7Da5nq7AhkUBmOgOVf9CRYT9b\ntSVLwFVYX0W3UF7rt68=\n-----END PUBLIC KEY-----",
 			},
-		}, "unsupported key type: *ecdsa.PrivateKey"},
+		}, "valid key, but not matching key type detected"},
 		{"Test invalid hex string for ed25519", []byte{}, Key{
 			KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
 			KeyIdHashAlgorithms: []string{"sha256", "sha512"},

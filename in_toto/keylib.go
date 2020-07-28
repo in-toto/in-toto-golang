@@ -2,6 +2,7 @@ package in_toto
 
 import (
 	"crypto"
+	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -12,6 +13,7 @@ import (
 	"fmt"
 	"golang.org/x/crypto/ed25519"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"strings"
 )
@@ -27,6 +29,9 @@ var ErrUnsupportedKeyType = errors.New("unsupported key type")
 
 // ErrInvalidSignature is returned when the signature is invalid
 var ErrInvalidSignature = errors.New("invalid signature")
+
+// ErrInvalidKeyType is returned when the key is valid, but it has a wrong key type attached to it
+var ErrInvalidKeyType = errors.New("valid key, but not matching key type detected")
 
 /*
 GenerateKeyId creates a partial key map and generates the key ID
@@ -83,7 +88,7 @@ Furthermore it makes sure to remove any trailing and leading whitespaces or newl
 func (k *Key) SetKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyType string, scheme string, keyIdHashAlgorithms []string) error {
 	// assume we have a privateKey if the key size is bigger than 0
 	switch keyType {
-	case "rsa":
+	case "rsa", "ecdsa":
 		// We need to treat RSA differently, because of interoperability
 		// reasons with the securesystemslib and the in-toto python
 		// implementation
@@ -160,6 +165,7 @@ The following key types are supported:
 
 	* ed25519
 	* RSA
+	* ecdsa
 
 On success it will return nil. The following errors can happen:
 
@@ -225,6 +231,14 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		if err := k.SetKeyComponents(pubKeyBytes.(ed25519.PublicKey), key.(ed25519.PrivateKey), "ed25519", scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
+	case *ecdsa.PrivateKey:
+		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*ecdsa.PrivateKey).Public())
+		if err != nil {
+			return err
+		}
+		if err := k.SetKeyComponents(pubKeyBytes, pemBytes, "ecdsa", scheme, keyIdHashAlgorithms); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("%w: %T", ErrUnsupportedKeyType, key)
 	}
@@ -248,7 +262,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	// with the securesystemslib and the python implementation
 	// in which we are storing RSA keys in PEM format, but ed25519 keys hex encoded.
 	switch key.KeyType {
-	case "rsa":
+	case "rsa", "ecdsa":
 		keyReader := strings.NewReader(key.KeyVal.Private)
 		pemBytes, err := ioutil.ReadAll(keyReader)
 		if err != nil {
@@ -268,12 +282,30 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		hashed := sha256.Sum256(signable)
 		switch parsedKey.(type) {
 		case *rsa.PrivateKey:
+			if key.KeyType != "rsa" {
+				return signature, ErrInvalidKeyType
+			}
 			// We use rand.Reader as secure random source for rsa.SignPSS()
 			signatureBuffer, err = rsa.SignPSS(rand.Reader, parsedKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:],
 				&rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
 			if err != nil {
 				return signature, err
 			}
+		case *ecdsa.PrivateKey:
+			if key.KeyType != "ecdsa" {
+				return signature, ErrInvalidKeyType
+			}
+			// ecdsa.Sign returns a signature that consists of two components called: r and s
+			// We assume here, that r and s are of the same size nLen and that
+			// the signature is 2*nLen. Furthermore we must note  that hashes get truncated
+			// if they are too long for the curve. We use SHA256 for hashing, thus we should be
+			// ok with using the FIPS186-3 curves P256, P384 and P521.
+			r, s, err := ecdsa.Sign(rand.Reader, parsedKey.(*ecdsa.PrivateKey), hashed[:])
+			if err != nil {
+				return signature, nil
+			}
+			signatureBuffer = append(signatureBuffer, r.Bytes()...)
+			signatureBuffer = append(signatureBuffer, s.Bytes()...)
 		default:
 			return signature, fmt.Errorf("%w: %T", ErrUnsupportedKeyType, parsedKey)
 		}
@@ -309,7 +341,7 @@ it will return an error.
 */
 func VerifySignature(key Key, sig Signature, unverified []byte) error {
 	switch key.KeyType {
-	case "rsa":
+	case "rsa", "ecdsa":
 		// Create rsa.PublicKey object from DER encoded public key string as
 		// found in the public part of the keyval part of a securesystemslib key dict
 		keyReader := strings.NewReader(key.KeyVal.Public)
@@ -329,10 +361,28 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 			return err
 		}
 		hashed := sha256.Sum256(unverified)
-		sigHex, _ := hex.DecodeString(sig.Sig)
-		err = rsa.VerifyPSS(parsedKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], sigHex, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
-		if err != nil {
-			return fmt.Errorf("%w: %s", ErrInvalidSignature, err)
+		sigBytes, _ := hex.DecodeString(sig.Sig)
+		switch parsedKey.(type) {
+		case *rsa.PublicKey:
+			err = rsa.VerifyPSS(parsedKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], sigBytes, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
+			if err != nil {
+				return fmt.Errorf("%w: %s", ErrInvalidSignature, err)
+			}
+		case *ecdsa.PublicKey:
+			// We assume that r and s are of equal length.
+			rsSize := len(sigBytes) / 2
+			// We need to create two big int from scratch
+			// and set the bytes manually for each of them
+			r := new(big.Int)
+			s := new(big.Int)
+			r.SetBytes(sigBytes[:rsSize])
+			s.SetBytes(sigBytes[:rsSize])
+			// This may fail if a bigger hashing algorithm than SHA256 has been used for generating the signature
+			if err := ecdsa.Verify(parsedKey.(*ecdsa.PublicKey), hashed[:], r, s); err == false {
+				return ErrInvalidSignature
+			}
+		default:
+			return fmt.Errorf("%w: Key has type %T", ErrInvalidSignature, parsedKey)
 		}
 	case "ed25519":
 		pubHex, err := hex.DecodeString(key.KeyVal.Public)
