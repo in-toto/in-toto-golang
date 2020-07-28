@@ -263,15 +263,10 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	// in which we are storing RSA keys in PEM format, but ed25519 keys hex encoded.
 	switch key.KeyType {
 	case "rsa", "ecdsa":
-		keyReader := strings.NewReader(key.KeyVal.Private)
-		pemBytes, err := ioutil.ReadAll(keyReader)
-		if err != nil {
-			return signature, err
-		}
 		// pam.Decode returns the parsed pem block and a rest.
 		// The rest is everything, that could not be parsed as PEM block.
 		// Therefore we can drop this via using the blank identifier "_"
-		data, _ := pem.Decode(pemBytes)
+		data, _ := pem.Decode([]byte(key.KeyVal.Private))
 		if data == nil {
 			return signature, ErrNoPEMBlock
 		}
@@ -342,17 +337,10 @@ it will return an error.
 func VerifySignature(key Key, sig Signature, unverified []byte) error {
 	switch key.KeyType {
 	case "rsa", "ecdsa":
-		// Create rsa.PublicKey object from DER encoded public key string as
-		// found in the public part of the keyval part of a securesystemslib key dict
-		keyReader := strings.NewReader(key.KeyVal.Public)
-		pemBytes, err := ioutil.ReadAll(keyReader)
-		if err != nil {
-			return err
-		}
 		// pam.Decode returns the parsed pem block and a rest.
 		// The rest is everything, that could not be parsed as PEM block.
 		// Therefore we can drop this via using the blank identifier "_"
-		data, _ := pem.Decode(pemBytes)
+		data, _ := pem.Decode([]byte(key.KeyVal.Public))
 		if data == nil {
 			return ErrNoPEMBlock
 		}
