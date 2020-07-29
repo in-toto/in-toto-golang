@@ -239,6 +239,10 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		if err := k.SetKeyComponents(pubKeyBytes, pemBytes, "ecdsa", scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
+	case *ecdsa.PublicKey:
+		if err := k.SetKeyComponents(pemBytes, []byte{}, "ecdsa", scheme, keyIdHashAlgorithms); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("%w: %T", ErrUnsupportedKeyType, key)
 	}
