@@ -368,7 +368,7 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 			r := new(big.Int)
 			s := new(big.Int)
 			r.SetBytes(sigBytes[:rsSize])
-			s.SetBytes(sigBytes[:rsSize])
+			s.SetBytes(sigBytes[rsSize:])
 			// This may fail if a bigger hashing algorithm than SHA256 has been used for generating the signature
 			if err := ecdsa.Verify(parsedKey.(*ecdsa.PublicKey), hashed[:], r, s); err == false {
 				return ErrInvalidSignature
