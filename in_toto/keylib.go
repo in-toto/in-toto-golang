@@ -7,13 +7,13 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
 	"fmt"
 	"golang.org/x/crypto/ed25519"
 	"io/ioutil"
-	"math/big"
 	"os"
 	"strings"
 )
@@ -303,8 +303,12 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 			if err != nil {
 				return signature, nil
 			}
-			signatureBuffer = append(signatureBuffer, r.Bytes()...)
-			signatureBuffer = append(signatureBuffer, s.Bytes()...)
+			// Generate the ecdsa signature on the same way, as we do in the securesystemslib
+			// We construct a
+			signatureBuffer, err = asn1.Marshal(EcdsaSignature{
+				R: r,
+				S: s,
+			})
 		default:
 			return signature, fmt.Errorf("%w: %T", ErrUnsupportedKeyType, parsedKey)
 		}
@@ -361,16 +365,16 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 				return fmt.Errorf("%w: %s", ErrInvalidSignature, err)
 			}
 		case *ecdsa.PublicKey:
-			// We assume that r and s are of equal length.
-			rsSize := len(sigBytes) / 2
-			// We need to create two big int from scratch
-			// and set the bytes manually for each of them
-			r := new(big.Int)
-			s := new(big.Int)
-			r.SetBytes(sigBytes[:rsSize])
-			s.SetBytes(sigBytes[rsSize:])
+			var ecdsaSignature EcdsaSignature
+			// Unmarshal the ASN.1 DER marshalled ecdsa signature to
+			// ecdsaSignature. asn1.Unmarshal returns the rest and an error
+			// we can skip the rest here..
+			_, err := asn1.Unmarshal(sigBytes, &ecdsaSignature)
+			if err != nil {
+				return err
+			}
 			// This may fail if a bigger hashing algorithm than SHA256 has been used for generating the signature
-			if err := ecdsa.Verify(parsedKey.(*ecdsa.PublicKey), hashed[:], r, s); err == false {
+			if err := ecdsa.Verify(parsedKey.(*ecdsa.PublicKey), hashed[:], ecdsaSignature.R, ecdsaSignature.S); err == false {
 				return ErrInvalidSignature
 			}
 		default:

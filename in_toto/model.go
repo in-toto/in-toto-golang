@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"reflect"
 	"regexp"
@@ -12,15 +13,13 @@ import (
 )
 
 /*
-validateHexString is used to validate that a string passed to it contains
-only valid hexadecimal characters.
+EcdsaSignature is being used for constructing an ASN.1 marshalled ecdsa
+signature. We use *big.Int here and not big.Int, because all functions
+on big.Int are pointer receivers. `asn1:"tag2"` refers to ASN.1 INTEGER.
 */
-func validateHexString(str string) error {
-	formatCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", str)
-	if !formatCheck {
-		return fmt.Errorf("'%s' is not a valid hex string", str)
-	}
-	return nil
+type EcdsaSignature struct {
+	R *big.Int `asn1:"tag:2"`
+	S *big.Int `asn1:"tag:2"`
 }
 
 /*
@@ -45,6 +44,18 @@ type Key struct {
 	KeyType             string   `json:"keytype"`
 	KeyVal              KeyVal   `json:"keyval"`
 	Scheme              string   `json:"scheme"`
+}
+
+/*
+validateHexString is used to validate that a string passed to it contains
+only valid hexadecimal characters.
+*/
+func validateHexString(str string) error {
+	formatCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", str)
+	if !formatCheck {
+		return fmt.Errorf("'%s' is not a valid hex string", str)
+	}
+	return nil
 }
 
 /*
