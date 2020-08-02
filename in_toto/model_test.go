@@ -1186,3 +1186,24 @@ func TestMetablockSignWithRSA(t *testing.T) {
 		t.Errorf("signing with an invalid RSA key should fail")
 	}
 }
+
+func TestMetablockSignWithEd25519(t *testing.T) {
+	var mb Metablock
+	if err := mb.Load("demo.layout.template"); err != nil {
+		t.Errorf("Cannot parse template file: %s", err)
+	}
+	invalidKey := Key{
+		KeyId:               "invalid",
+		KeyIdHashAlgorithms: nil,
+		KeyType:             "ed25519",
+		KeyVal: KeyVal{
+			Private: "BAD",
+			Public:  "BAD",
+		},
+		Scheme: "ed25519",
+	}
+
+	if err := mb.Sign(invalidKey); err == nil {
+		t.Errorf("signing with an invalid ed25519 key should fail")
+	}
+}

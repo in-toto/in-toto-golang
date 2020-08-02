@@ -676,12 +676,15 @@ func (mb *Metablock) Sign(key Key) error {
 		if err != nil {
 			return err
 		}
+	case "ecdsa":
+		newSignature, err = GenerateSignature(dataCanonical, key)
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("this key type or signature (%s, %s) scheme is "+
 			"not supported yet", key.KeyType, key.Scheme)
 	}
-
 	mb.Signatures = append(mb.Signatures, newSignature)
-
 	return nil
 }
