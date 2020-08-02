@@ -2,6 +2,8 @@ package in_toto
 
 import (
 	"encoding/json"
+	"encoding/pem"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -46,6 +48,12 @@ type Key struct {
 	Scheme              string   `json:"scheme"`
 }
 
+// Thrown by validateKey and validateKeyVal
+var ErrEmptyKeyField = errors.New("empty field in key")
+
+// Thrown by validateHexString
+var ErrInvalidHexString = errors.New("invalid hex string")
+
 /*
 validateHexString is used to validate that a string passed to it contains
 only valid hexadecimal characters.
@@ -53,53 +61,68 @@ only valid hexadecimal characters.
 func validateHexString(str string) error {
 	formatCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", str)
 	if !formatCheck {
-		return fmt.Errorf("'%s' is not a valid hex string", str)
+		return fmt.Errorf("%w: %s", ErrInvalidHexString, str)
 	}
 	return nil
 }
 
-/*
-validatePubKey is a general function to validate if a key is a valid public key.
-*/
-func validatePubKey(key Key) error {
-	if err := validateHexString(key.KeyId); err != nil {
-		return fmt.Errorf("keyid: %s", err.Error())
+func validateKeyVal(key Key) error {
+	if key.KeyVal.Public == "" {
+		return fmt.Errorf("%w: keyval.public", ErrEmptyKeyField)
 	}
-	if key.KeyVal.Private != "" {
-		return fmt.Errorf("in key '%s': private key found", key.KeyId)
+	switch key.KeyType {
+	case "ed25519":
+		err := validateHexString(key.KeyVal.Public)
+		if err != nil {
+			return err
+		}
+		if key.KeyVal.Private != "" {
+			err := validateHexString(key.KeyVal.Private)
+			if err != nil {
+				return err
+			}
+		}
+	case "rsa", "ecdsa":
+		data, _ := pem.Decode([]byte(key.KeyVal.Public))
+		if data == nil {
+			return ErrNoPEMBlock
+		}
+		if key.KeyVal.Private != "" {
+			data, _ := pem.Decode([]byte(key.KeyVal.Private))
+			if data == nil {
+				return ErrNoPEMBlock
+			}
+		}
+	default:
+		return ErrUnsupportedKeyType
+	}
+	return nil
+}
+
+func validateKey(key Key) error {
+	err := validateHexString(key.KeyId)
+	if err != nil {
+		return err
+	}
+	// This probably can be done more elegant with reflection
+	// but we care about performance, do we?!
+	if key.KeyId == "" {
+		return fmt.Errorf("%w: keyid", ErrEmptyKeyField)
+	}
+	if key.KeyType == "" {
+		return fmt.Errorf("%w: keytype", ErrEmptyKeyField)
 	}
 	if key.KeyVal.Public == "" {
-		return fmt.Errorf("in key '%s': public key cannot be empty", key.KeyId)
+		return fmt.Errorf("%w: keyval.public", ErrEmptyKeyField)
 	}
-	return nil
-}
-
-/*
-validatePrivateKey is a general function to validate if a key is a valid private key.
-*/
-func validatePrivateKey(key Key) error {
-	if err := validateHexString(key.KeyId); err != nil {
-		return fmt.Errorf("keyid: %s", err.Error())
+	if key.KeyIdHashAlgorithms == nil {
+		return fmt.Errorf("%w: keyid_hash_algorithms", ErrEmptyKeyField)
 	}
-	if key.KeyVal.Private == "" {
-		return fmt.Errorf("in key '%s': private key cannot be empty", key.KeyId)
+	if key.Scheme == "" {
+		return fmt.Errorf("%w: keyid_hash_algorithms", ErrEmptyKeyField)
 	}
-	return nil
-}
-
-/*
-validateRSAPubKey checks if a passed key is a valid RSA public key.
-*/
-func validateRSAPubKey(key Key) error {
-	if key.KeyType != "rsa" {
-		return fmt.Errorf("invalid KeyType for key '%s': should be 'rsa', got"+
-			" '%s'", key.KeyId, key.KeyType)
-	}
-	if key.Scheme != "rsassa-pss-sha256" {
-		return fmt.Errorf("invalid scheme for key '%s': should be "+
-			"'rsassa-pss-sha256', got: '%s'", key.KeyId, key.Scheme)
-	}
-	if err := validatePubKey(key); err != nil {
+	err = validateKeyVal(key)
+	if err != nil {
 		return err
 	}
 	return nil
@@ -121,11 +144,10 @@ by inspecting the key ID and the signature itself.
 */
 func validateSignature(signature Signature) error {
 	if err := validateHexString(signature.KeyId); err != nil {
-		return fmt.Errorf("keyid: %s", err.Error())
+		return err
 	}
 	if err := validateHexString(signature.Sig); err != nil {
-		return fmt.Errorf("signature with keyid '%s': %s", signature.KeyId,
-			err.Error())
+		return err
 	}
 	return nil
 }
@@ -328,8 +350,7 @@ func validateStep(step Step) error {
 	}
 	for _, keyId := range step.PubKeys {
 		if err := validateHexString(keyId); err != nil {
-			return fmt.Errorf("in step '%s', keyid: %s",
-				step.SupplyChainItem.Name, err.Error())
+			return err
 		}
 	}
 	return nil
@@ -396,9 +417,6 @@ func validateLayout(layout Layout) error {
 	for keyId, key := range layout.Keys {
 		if key.KeyId != keyId {
 			return fmt.Errorf("invalid key found")
-		}
-		if err := validateRSAPubKey(key); err != nil {
-			return err
 		}
 	}
 
@@ -642,7 +660,7 @@ func validateMetablock(mb Metablock) error {
 	}
 
 	if err := validateSliceOfSignatures(mb.Signatures); err != nil {
-		return fmt.Errorf("validateSignature: %s", err)
+		return err
 	}
 
 	return nil

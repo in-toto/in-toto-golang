@@ -2,6 +2,7 @@ package in_toto
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -362,7 +363,7 @@ func TestValidateLink(t *testing.T) {
 
 	err = validateLink(testMb.Signed.(Link))
 	if err.Error() != "in materials of link 'test_material_hash': in artifact"+
-		" 'foo.py', sha256 hash value: '!@#$%' is not a valid hex string" {
+		" 'foo.py', sha256 hash value: invalid hex string: !@#$%" {
 		t.Error("validateLink error - invalid hashes not detected")
 	}
 
@@ -397,7 +398,7 @@ func TestValidateLink(t *testing.T) {
 
 	err = validateLink(testMb.Signed.(Link))
 	if err.Error() != "in products of link 'test_product_hash': in artifact "+
-		"'foo.tar.gz', sha256 hash value: '!@#$%' is not a valid hex string" {
+		"'foo.tar.gz', sha256 hash value: invalid hex string: !@#$%" {
 		t.Error("validateLink error - invalid hashes not detected")
 	}
 }
@@ -595,10 +596,10 @@ func TestValidateLayout(t *testing.T) {
 				Type:    "layout",
 				Expires: "2020-02-27T18:03:43Z",
 				Keys: map[string]Key{
-					"deadbeef": Key{KeyId: "deadbeef"},
+					"deadbeef": Key{KeyId: "deabeef"},
 				},
 			},
-			"invalid KeyType for key",
+			"invalid key found",
 		},
 	}
 
@@ -631,8 +632,7 @@ func TestValidateStep(t *testing.T) {
 		},
 	}
 	err = validateStep(testStep)
-	if err.Error() != "in step 'foo', keyid: '"+testStep.PubKeys[0]+"' is not"+
-		" a valid hex string" {
+	if !errors.Is(err, ErrInvalidHexString) {
 		t.Error("validateStep - validateHexString error - invalid key ID not " +
 			"detected")
 	}
@@ -698,19 +698,6 @@ func TestValidateHexSchema(t *testing.T) {
 	}
 }
 
-func TestValidatePrivateKey(t *testing.T) {
-	invalidKey := Key{
-		KeyId:               "invalid",
-		KeyIdHashAlgorithms: nil,
-		KeyType:             "",
-		KeyVal:              KeyVal{},
-		Scheme:              "",
-	}
-	if err := validatePrivateKey(invalidKey); err == nil {
-		t.Errorf("validating a private key with an invalid keyID should fail")
-	}
-}
-
 func TestValidatePubKey(t *testing.T) {
 	testKey := Key{
 		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
@@ -732,7 +719,8 @@ func TestValidatePubKey(t *testing.T) {
 		Scheme: "rsassa-pss-sha256",
 	}
 
-	if err := validateRSAPubKey(testKey); err != nil {
+	err := validateKey(testKey)
+	if !errors.Is(err, ErrEmptyKeyField) {
 		t.Errorf("error validating public key: %s", err)
 	}
 
@@ -756,9 +744,9 @@ func TestValidatePubKey(t *testing.T) {
 		Scheme: "rsassa-pss-sha256",
 	}
 
-	err := validateRSAPubKey(testKey)
-	if err.Error() != "keyid: '"+testKey.KeyId+"' is not a valid hex string" {
-		t.Error("validateRSAPubKey error - invalid key ID not detected")
+	err = validateKey(testKey)
+	if !errors.Is(err, ErrInvalidHexString) {
+		t.Error("validateKey error - invalid key ID not detected")
 	}
 
 	testKey = Key{
@@ -781,10 +769,9 @@ func TestValidatePubKey(t *testing.T) {
 		Scheme: "rsassa-pss-sha256",
 	}
 
-	err = validateRSAPubKey(testKey)
-	if err.Error() != "in key '776a00e29f3559e0141b3b096f696abc6cfb0c657ab40"+
-		"f441132b345b08453f5': private key found" {
-		t.Error("validateRSAPubKey error - private key not detected")
+	err = validateKey(testKey)
+	if !errors.Is(err, ErrEmptyKeyField) {
+		t.Error("validateKey error - private key not detected")
 	}
 
 	testKey = Key{
@@ -797,14 +784,13 @@ func TestValidatePubKey(t *testing.T) {
 		Scheme: "rsassa-pss-sha256",
 	}
 
-	err = validateRSAPubKey(testKey)
-	if err.Error() != "in key '776a00e29f3559e0141b3b096f696abc6cfb0c657ab40"+
-		"f441132b345b08453f5': public key cannot be empty" {
-		t.Error("validateRSAPubKey error - empty public key not detected")
+	err = validateKey(testKey)
+	if !errors.Is(err, ErrEmptyKeyField) {
+		t.Error("validateKey error - empty public key not detected")
 	}
 }
 
-func TestValidateRSAPubKey(t *testing.T) {
+func TestvalidateKey(t *testing.T) {
 	key := Key{
 		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
 		KeyType: "invalid",
@@ -824,10 +810,10 @@ func TestValidateRSAPubKey(t *testing.T) {
 		},
 		Scheme: "rsassa-pss-sha256",
 	}
-	if err := validateRSAPubKey(key); err.Error() != "invalid KeyType for key"+
+	if err := validateKey(key); err.Error() != "invalid KeyType for key"+
 		" '776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5':"+
 		" should be 'rsa', got 'invalid'" {
-		t.Error("validateRSAPubKey error - invalid type not detected")
+		t.Error("validateKey error - invalid type not detected")
 	}
 
 	key = Key{
@@ -849,10 +835,10 @@ func TestValidateRSAPubKey(t *testing.T) {
 		},
 		Scheme: "invalid",
 	}
-	if err := validateRSAPubKey(key); err.Error() != "invalid scheme for key"+
+	if err := validateKey(key); err.Error() != "invalid scheme for key"+
 		" '776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5'"+
 		": should be 'rsassa-pss-sha256', got: 'invalid'" {
-		t.Error("validateRSAPubKey error - invalid scheme not detected")
+		t.Error("validateKey error - invalid scheme not detected")
 	}
 }
 
@@ -1070,9 +1056,8 @@ func TestValidateMetablock(t *testing.T) {
 		},
 	}
 
-	if err := validateMetablock(testMetablock); err.Error() !=
-		"validateSignature: keyid: 'Z556caebdc0877eed53d419b60eddb1e57fa773e4"+
-			"e31d70698b58f3e9cc48b35' is not a valid hex string" {
+	err := validateMetablock(testMetablock)
+	if !errors.Is(err, ErrInvalidHexString) {
 		t.Error("validateMetablock Error: invalid key ID not detected")
 	}
 
@@ -1107,22 +1092,8 @@ func TestValidateMetablock(t *testing.T) {
 		},
 	}
 
-	if err := validateMetablock(testMetablock); err.Error() !=
-		"validateSignature: signature with keyid '556caebdc0877eed53d419b60ed"+
-			"db1e57fa773e4e31d70698b588f3e9cc48b35': '02813858670c66647c17802"+
-			"d84f06453589f41850013a544609e9z33ba21fa19280e8371701f8274fb0c56b"+
-			"d95ff4f34c418456b002af9836ca218b584f51eb0eaacbb1c9bb57448101b07d"+
-			"058dec04d525551d157f6ae5e3679701735b1b8f52430f9b771d5476db1a2053"+
-			"cd93e2354f20061178a01705f2fa9ac82c7aeca4dd830e2672eb227127178d52"+
-			"328747ac819e50ec8ff52c662d7a4c58f5040d8f655fe595804f3e47c4fc9843"+
-			"4c44e914445f7cb773439ebf813de8849dd1b533958f99f671d4e023d34c110d"+
-			"4b169cc02c12a3755ebe537147ff2479d244daaf719e24cf6b2fa6f47d0410d5"+
-			"2d67217bcf4d4d4c2c7c0b92cd2bcd321edc69bc1430f78a188e712b8cb1fff0"+
-			"c14550cd01c41dae377256f31211fd249c5031bfee86e638bce6aa36aca349b7"+
-			"87cef48255b0ef04bd0a21adb37b2a3da888d1530ca6ddeae5261e6fd65aa626"+
-			"d5caebbfae2986f842bd2ce94bcefe5dd0ae9c5b2028a15bd63bbea61be73220"+
-			"7f0f5b58d056f118c830981747cb2b245d1377e17' is not a valid hex"+
-			" string" {
+	err = validateMetablock(testMetablock)
+	if !errors.Is(err, ErrInvalidHexString) {
 		t.Error("validateMetablock error: invalid signature not detected")
 	}
 
