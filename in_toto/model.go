@@ -67,9 +67,6 @@ func validateHexString(str string) error {
 }
 
 func validateKeyVal(key Key) error {
-	if key.KeyVal.Public == "" {
-		return fmt.Errorf("%w: keyval.public", ErrEmptyKeyField)
-	}
 	switch key.KeyType {
 	case "ed25519":
 		err := validateHexString(key.KeyVal.Public)
@@ -106,9 +103,6 @@ func validateKey(key Key) error {
 	}
 	// This probably can be done more elegant with reflection
 	// but we care about performance, do we?!
-	if key.KeyId == "" {
-		return fmt.Errorf("%w: keyid", ErrEmptyKeyField)
-	}
 	if key.KeyType == "" {
 		return fmt.Errorf("%w: keytype", ErrEmptyKeyField)
 	}
@@ -119,7 +113,7 @@ func validateKey(key Key) error {
 		return fmt.Errorf("%w: keyid_hash_algorithms", ErrEmptyKeyField)
 	}
 	if key.Scheme == "" {
-		return fmt.Errorf("%w: keyid_hash_algorithms", ErrEmptyKeyField)
+		return fmt.Errorf("%w: scheme", ErrEmptyKeyField)
 	}
 	err = validateKeyVal(key)
 	if err != nil {

@@ -62,6 +62,10 @@ func (k *Key) GenerateKeyId() error {
 	// calculate sha256 and return string representation of keyId
 	keyHashed := sha256.Sum256(keyCanonical)
 	k.KeyId = fmt.Sprintf("%x", keyHashed)
+	err = validateKey(*k)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

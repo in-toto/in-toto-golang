@@ -1178,3 +1178,136 @@ func TestMetablockSignWithEd25519(t *testing.T) {
 		t.Errorf("signing with an invalid ed25519 key should fail")
 	}
 }
+
+func TestMetaBlockSignWithEcdsa(t *testing.T) {
+	var mb Metablock
+	if err := mb.Load("demo.layout.template"); err != nil {
+		t.Errorf("Cannot parse template file: %s", err)
+	}
+	invalidKey := Key{
+		KeyId:               "invalid",
+		KeyIdHashAlgorithms: nil,
+		KeyType:             "ecdsa",
+		KeyVal: KeyVal{
+			Private: "BAD",
+			Public:  "BAD",
+		},
+		Scheme: "ecdsa",
+	}
+	if err := mb.Sign(invalidKey); err == nil {
+		t.Errorf("signing with an invalid ecdsa key should fail")
+	}
+}
+
+func TestValidateKeyErrors(t *testing.T) {
+	invalidTables := []struct {
+		name string
+		key  Key
+		err  error
+	}{
+		{"empty key", Key{
+			KeyId:               "",
+			KeyIdHashAlgorithms: nil,
+			KeyType:             "",
+			KeyVal:              KeyVal{},
+			Scheme:              "",
+		}, ErrInvalidHexString},
+		{"keytype missing", Key{
+			KeyId:               "bad",
+			KeyIdHashAlgorithms: []string{"sha256"},
+			KeyType:             "",
+			KeyVal: KeyVal{
+				Private: "",
+				Public:  "",
+			},
+			Scheme: "rsassa-psa-sha256",
+		}, ErrEmptyKeyField},
+		{"key scheme missing", Key{
+			KeyId:               "bad",
+			KeyIdHashAlgorithms: []string{"sha256"},
+			KeyType:             "ed25519",
+			KeyVal: KeyVal{
+				Private: "bad",
+				Public:  "bad",
+			},
+			Scheme: "",
+		}, ErrEmptyKeyField},
+		{
+			name: "invalid rsa pub key",
+			key: Key{
+				KeyId:               "bad",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "rsa",
+				KeyVal: KeyVal{
+					Private: "",
+					Public:  "invalid",
+				},
+				Scheme: "rsassa-psa-sha56",
+			},
+			err: ErrNoPEMBlock,
+		},
+		{
+			name: "invalid rsa private key",
+			key: Key{
+				KeyId:               "bad",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "rsa",
+				KeyVal: KeyVal{
+					Private: "invalid",
+					Public:  "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAxPX3kFs/z645x4UOC3KF\nY3V80YQtKrp6YS3qU+Jlvx/XzK53lb4sCDRU9jqBBx3We45TmFUibroMd8tQXCUS\ne8gYCBUBqBmmz0dEHJYbW0tYF7IoapMIxhRYn76YqNdl1JoRTcmzIaOJ7QrHxQrS\nGpivvTm6kQ9WLeApG1GLYJ3C3Wl4bnsI1bKSv55Zi45/JawHzTzYUAIXX9qCd3Io\nHzDucz9IAj9Ookw0va/q9FjoPGrRB80IReVxLVnbo6pYJfu/O37jvEobHFa8ckHd\nYxUIg8wvkIOy1O3M74lBDm6CVI0ZO25xPlDB/4nHAE1PbA3aF3lw8JGuxLDsetxm\nfzgAleVt4vXLQiCrZaLf+0cM97JcT7wdHcbIvRLsij9LNP+2tWZgeZ/hIAOEdaDq\ncYANPDIAxfTvbe9I0sXrCtrLer1SS7GqUmdFCdkdun8erXdNF0ls9Rp4cbYhjdf3\nyMxdI/24LUOOQ71cHW3ITIDImm6I8KmrXFM2NewTARKfAgMBAAE=\n-----END PUBLIC KEY-----",
+				},
+				Scheme: "rsassa-psa-sha256",
+			},
+			err: ErrNoPEMBlock,
+		},
+		{
+			name: "invalid ed25519 public key",
+			key: Key{
+				KeyId:               "bad",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "ed25519",
+				KeyVal: KeyVal{
+					Private: "invalid",
+					Public:  "invalid",
+				},
+				Scheme: "ed25519",
+			},
+			err: ErrInvalidHexString,
+		},
+		{
+			name: "invalid ed25519 private key",
+			key: Key{
+				KeyId:               "bad",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "ed25519",
+				KeyVal: KeyVal{
+					Private: "invalid",
+					Public:  "393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c",
+				},
+				Scheme: "ed25519",
+			},
+			err: ErrInvalidHexString,
+		},
+		{
+			name: "invalid key type",
+			key: Key{
+				KeyId:               "bad",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "invalid",
+				KeyVal: KeyVal{
+					Private: "invalid",
+					Public:  "393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c",
+				},
+				Scheme: "ed25519",
+			},
+			err: ErrUnsupportedKeyType,
+		},
+	}
+
+	for _, table := range invalidTables {
+		err := validateKey(table.key)
+		if !errors.Is(err, table.err) {
+			t.Errorf("test '%s' failed, expected error: '%s', got '%s'", table.name, table.err, err)
+		}
+	}
+}

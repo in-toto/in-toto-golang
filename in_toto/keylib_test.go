@@ -88,6 +88,12 @@ func TestLoadKeyErrors(t *testing.T) {
 		{"not existing file", "inToToRocks", "rsassa-pss-sha256", []string{"sha256", "sha512"}, os.ErrNotExist},
 		{"existing, but invalid file", "demo.layout.template", "ecdsa", []string{"sha512"}, ErrNoPEMBlock},
 		{"EC private key file", "erin", "ecdsa", []string{"sha256", "sha512"}, ErrFailedPEMParsing},
+		{"valid ed25519 private key, but invalid scheme", "carol", "", []string{"sha256"}, ErrEmptyKeyField},
+		{"valid ed25519 public key, but invalid scheme", "carol.pub", "", []string{"sha256"}, ErrEmptyKeyField},
+		{"valid rsa private key, but invalid hashalgo", "dan", "rsassa-psa-sha256", nil, ErrEmptyKeyField},
+		{"valid rsa public key, but invalid hashalgo", "dan.pub", "rsassa-psa-sha256", nil, ErrEmptyKeyField},
+		{"valid ecdsa private key, but invalid hashalgo", "frank", "ecdsa", nil, ErrEmptyKeyField},
+		{"valid ecdsa public key, but invalid hashalgo", "frank.pub", "ecdsa", nil, ErrEmptyKeyField},
 	}
 
 	for _, table := range invalidTables {
@@ -107,14 +113,16 @@ func TestSetKeyComponents(t *testing.T) {
 		keyType             string
 		scheme              string
 		keyIdHashAlgorithms []string
+		err                 error
 	}{
-		{"test invalid key type", []byte{}, []byte{}, "yolo", "ed25519", []string{"sha512"}},
+		{"test invalid key type", []byte{}, []byte{}, "yolo", "ed25519", []string{"sha512"}, ErrUnsupportedKeyType},
+		{"invalid scheme", []byte("393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c"), []byte{}, "ed25519", "", []string{"sha256"}, ErrEmptyKeyField},
 	}
 
 	for _, table := range invalidTables {
 		var key Key
 		err := key.SetKeyComponents(table.pubkeyBytes, table.privateKeyBytes, table.keyType, table.scheme, table.keyIdHashAlgorithms)
-		if !errors.Is(err, ErrUnsupportedKeyType) {
+		if !errors.Is(err, table.err) {
 			t.Errorf("'%s' failed, should have: '%s', got: '%s'", table.name, ErrUnsupportedKeyType, err)
 		}
 	}
