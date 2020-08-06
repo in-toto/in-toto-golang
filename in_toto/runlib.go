@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"syscall"
 )
 
@@ -275,8 +276,10 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		Environment: map[string]interface{}{},
 	}
 	linkMb.Signatures = []Signature{}
-	// we expect that key has been initialized if it has a valid KeyId
-	if key.KeyId != "" {
+	// We use a new feature from Go1.13 here, to check the key struct.
+	// IsZero() will return True, if the key hasn't been initialized
+	// with other values than the default ones.
+	if !reflect.ValueOf(key).IsZero() {
 		if err := linkMb.Sign(key); err != nil {
 			return linkMb, err
 		}
