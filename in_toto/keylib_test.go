@@ -1,6 +1,8 @@
 package in_toto
 
 import (
+	"encoding/asn1"
+	"encoding/hex"
 	"errors"
 	"os"
 	"testing"
@@ -196,21 +198,6 @@ func TestGenerateSignatureErrors(t *testing.T) {
 				Scheme: "ecdas",
 			}, ErrFailedPEMParsing,
 		},
-	}
-
-	for _, table := range invalidTables {
-		_, err := GenerateSignature([]byte("test"), table.key)
-		if !errors.Is(err, table.expectedError) {
-			t.Errorf("test '%s' failed, should got error: '%s', but received: '%s'", table.name, table.expectedError, err)
-		}
-	}
-
-	// test cases that do not support errors.Is (Go 1.13 error handling)
-	legacyInvalidTables := []struct {
-		name          string
-		key           Key
-		expectedError string
-	}{
 		{"invalid ed25519 private key", Key{
 			KeyId:               "invalid",
 			KeyIdHashAlgorithms: []string{"sha512"},
@@ -220,12 +207,13 @@ func TestGenerateSignatureErrors(t *testing.T) {
 				Public:  "invalid",
 			},
 			Scheme: "ed25519"},
-			"encoding/hex: invalid byte: U+0069 'i'"},
+			hex.InvalidByteError(105),
+		},
 	}
 
-	for _, table := range legacyInvalidTables {
+	for _, table := range invalidTables {
 		_, err := GenerateSignature([]byte("test"), table.key)
-		if err.Error() != table.expectedError {
+		if !errors.Is(err, table.expectedError) {
 			t.Errorf("test '%s' failed, should got error: '%s', but received: '%s'", table.name, table.expectedError, err)
 		}
 	}
@@ -304,20 +292,6 @@ func TestVerifySignatureErrors(t *testing.T) {
 				Sig:   "BAAAAAAD",
 			}, ErrInvalidSignature,
 		},
-	}
-	for _, table := range invalidTables {
-		err := VerifySignature(table.key, table.sig, []byte("invalid"))
-		if !errors.Is(err, table.expectedError) {
-			t.Errorf("test '%s' failed, should got error: '%s', but received: '%s'", table.name, table.expectedError, err)
-		}
-	}
-
-	legacyInvalidTests := []struct {
-		name          string
-		key           Key
-		sig           Signature
-		expectedError string
-	}{
 		{"invalid asn1 structure", Key{
 			KeyId:               "invalid",
 			KeyIdHashAlgorithms: nil,
@@ -330,7 +304,7 @@ func TestVerifySignatureErrors(t *testing.T) {
 		}, Signature{
 			KeyId: "invalid",
 			Sig:   "BAAAAAAD",
-		}, "asn1: syntax error: truncated tag or length",
+		}, asn1.SyntaxError{Msg: "truncated tag or length"},
 		},
 		{
 			"ed25519 with invalid public key", Key{
@@ -342,7 +316,7 @@ func TestVerifySignatureErrors(t *testing.T) {
 					Public:  "invalid",
 				},
 				Scheme: "ed25519",
-			}, Signature{}, "encoding/hex: invalid byte: U+0069 'i'",
+			}, Signature{}, hex.InvalidByteError(105),
 		},
 		{
 			"ed25519 with invalid signature", Key{
@@ -357,12 +331,12 @@ func TestVerifySignatureErrors(t *testing.T) {
 			}, Signature{
 				KeyId: "invalid",
 				Sig:   "invalid",
-			}, "encoding/hex: invalid byte: U+0069 'i'",
+			}, hex.InvalidByteError(105),
 		},
 	}
-	for _, table := range legacyInvalidTests {
+	for _, table := range invalidTables {
 		err := VerifySignature(table.key, table.sig, []byte("invalid"))
-		if err.Error() != table.expectedError {
+		if !errors.Is(err, table.expectedError) {
 			t.Errorf("test '%s' failed, should got error: '%s', but received: '%s'", table.name, table.expectedError, err)
 		}
 	}
