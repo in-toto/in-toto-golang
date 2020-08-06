@@ -48,10 +48,10 @@ type Key struct {
 	Scheme              string   `json:"scheme"`
 }
 
-// Thrown by validateKey and validateKeyVal
+// This error will be thrown in a field in our Key struct is empty.
 var ErrEmptyKeyField = errors.New("empty field in key")
 
-// Thrown by validateHexString
+// This error will be thrown, if a string doesn't match a hex string.
 var ErrInvalidHexString = errors.New("invalid hex string")
 
 /*
@@ -66,6 +66,15 @@ func validateHexString(str string) error {
 	return nil
 }
 
+/*
+validateKeyVal validates the KeyVal struct. In case of an ed25519 key,
+it will check for a hex string for private and public key. In any other
+case, validateKeyVal will try to decode the PEM block. If this succeeds,
+we have a valid PEM block in our KeyVal struct. On success it will return nil
+on failure it will return the corresponding error. This can be either
+an ErrInvalidHexString, an ErrNoPEMBlock or an ErrUnsupportedKeyType
+if the KeyType is unknown.
+*/
 func validateKeyVal(key Key) error {
 	switch key.KeyType {
 	case "ed25519":
@@ -96,6 +105,12 @@ func validateKeyVal(key Key) error {
 	return nil
 }
 
+/*
+validateKey checks the outer key object (everything, except the KeyVal struct).
+It verifies the keyId for being a hex string and checks for empty fields.
+On success it will return nil, on error it will return the corresponding error.
+Either: ErrEmptyKeyField or ErrInvalidHexString.
+*/
 func validateKey(key Key) error {
 	err := validateHexString(key.KeyId)
 	if err != nil {
@@ -604,7 +619,7 @@ func (mb *Metablock) GetSignableRepresentation() ([]byte, error) {
 }
 
 /*
-VerifyRSASignature verifies the first signature, corresponding to the passed Key,
+VerifySignature verifies the first signature, corresponding to the passed Key,
 that it finds in the Signatures field of the Metablock on which it was called.
 It returns an error if Signatures does not contain a Signature corresponding to
 the passed Key, the object in Signed cannot be canonicalized, or the Signature
