@@ -58,7 +58,6 @@ The following curves are for example **not** supported:
 | canonical-test.link | .. |
 | carol | ed25519 key as PKCS8 |
 | carol.pub | pub key of carol |
-| carol-invalid | to be removed |
 | dan | RSA private key |
 | dan.pub | pub key of dan |
 | erin | EC private Key (secp256k1) |
