@@ -327,7 +327,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		hashed := sha256.Sum256(signable)
 		switch parsedKey.(type) {
 		case *rsa.PrivateKey:
-			if key.KeyType != "rsa" {
+			if key.KeyType != rsaKeyType {
 				return signature, ErrInvalidKeyType
 			}
 			// We use rand.Reader as secure random source for rsa.SignPSS()
