@@ -198,6 +198,30 @@ func ParseKey(data []byte) (interface{}, error) {
 }
 
 /*
+decodeAndParse receives potential PEM bytes decodes them via pem.Decode
+and pushes them to ParseKey. If any error occurs during this process,
+the function will return nil and an error (either ErrFailedPEMParsing
+or ErrNoPEMBlock). On success it will return the key object interface
+and nil as error.
+*/
+func decodeAndParse(pemBytes []byte) (interface{}, error) {
+	// pem.Decode returns the parsed pem block and a rest.
+	// The rest is everything, that could not be parsed as PEM block.
+	// Therefore we can drop this via using the blank identifier "_"
+	data, _ := pem.Decode(pemBytes)
+	if data == nil {
+		return nil, ErrNoPEMBlock
+	}
+	// Try to load private key, if this fails try to load
+	// key as public key
+	key, err := ParseKey(data.Bytes)
+	if err != nil {
+		return key, err
+	}
+	return key, nil
+}
+
+/*
 LoadKey loads the key file at specified file path into the key object.
 It automatically derives the PEM type and the key type.
 Right now the following PEM types are supported:
@@ -236,17 +260,7 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		return err
 	}
 
-	// pem.Decode returns the parsed pem block and a rest.
-	// The rest is everything, that could not be parsed as PEM block.
-	// Therefore we can drop this via using the blank identifier "_"
-	data, _ := pem.Decode(pemBytes)
-	if data == nil {
-		return ErrNoPEMBlock
-	}
-
-	// Try to load private key, if this fails try to load
-	// key as public key
-	key, err := ParseKey(data.Bytes)
+	key, err := decodeAndParse(pemBytes)
 	if err != nil {
 		return err
 	}
@@ -313,16 +327,9 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	// in which we are storing RSA keys in PEM format, but ed25519 keys hex encoded.
 	switch key.KeyType {
 	case rsaKeyType, ecdsaKeyType:
-		// pem.Decode returns the parsed pem block and a rest.
-		// The rest is everything, that could not be parsed as PEM block.
-		// Therefore we can drop this via using the blank identifier "_"
-		data, _ := pem.Decode([]byte(key.KeyVal.Private))
-		if data == nil {
-			return signature, ErrNoPEMBlock
-		}
-		parsedKey, err := ParseKey(data.Bytes)
+		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
 		if err != nil {
-			return signature, err
+			return Signature{}, err
 		}
 		hashed := sha256.Sum256(signable)
 		switch parsedKey.(type) {
@@ -395,14 +402,7 @@ it will return an error.
 func VerifySignature(key Key, sig Signature, unverified []byte) error {
 	switch key.KeyType {
 	case rsaKeyType, ecdsaKeyType:
-		// pem.Decode returns the parsed pem block and a rest.
-		// The rest is everything, that could not be parsed as PEM block.
-		// Therefore we can drop this via using the blank identifier "_"
-		data, _ := pem.Decode([]byte(key.KeyVal.Public))
-		if data == nil {
-			return ErrNoPEMBlock
-		}
-		parsedKey, err := ParseKey(data.Bytes)
+		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
 		if err != nil {
 			return err
 		}
