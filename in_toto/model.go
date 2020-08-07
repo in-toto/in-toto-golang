@@ -77,7 +77,7 @@ if the KeyType is unknown.
 */
 func validateKeyVal(key Key) error {
 	switch key.KeyType {
-	case "ed25519":
+	case ed25519KeyType:
 		err := validateHexString(key.KeyVal.Public)
 		if err != nil {
 			return err
@@ -88,7 +88,7 @@ func validateKeyVal(key Key) error {
 				return err
 			}
 		}
-	case "rsa", "ecdsa":
+	case rsaKeyType, ecdsaKeyType:
 		data, _ := pem.Decode([]byte(key.KeyVal.Public))
 		if data == nil {
 			return ErrNoPEMBlock

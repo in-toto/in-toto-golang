@@ -18,6 +18,12 @@ import (
 	"strings"
 )
 
+const (
+	rsaKeyType     string = "rsa"
+	ecdsaKeyType   string = "ecdsa"
+	ed25519KeyType string = "ed25519"
+)
+
 // ErrFailedPEMParsing gets returned when PKCS1, PKCS8 or PKIX key parsing fails
 var ErrFailedPEMParsing = errors.New("failed parsing the PEM block: unsupported PEM type")
 
@@ -94,7 +100,7 @@ implementation and the securesystemslib.
 func (k *Key) SetKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyType string, scheme string, keyIdHashAlgorithms []string) error {
 	// assume we have a privateKey if the key size is bigger than 0
 	switch keyType {
-	case "rsa", "ecdsa":
+	case rsaKeyType, ecdsaKeyType:
 		if len(privateKeyBytes) > 0 {
 			k.KeyVal = KeyVal{
 				Private: strings.TrimSpace(string(privateKeyBytes)),
@@ -105,7 +111,7 @@ func (k *Key) SetKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyTy
 				Public: strings.TrimSpace(string(pubKeyBytes)),
 			}
 		}
-	case "ed25519":
+	case ed25519KeyType:
 		if len(privateKeyBytes) > 0 {
 			k.KeyVal = KeyVal{
 				Private: strings.TrimSpace(hex.EncodeToString(privateKeyBytes)),
@@ -212,7 +218,7 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 	// Use type switch to identify the key format
 	switch key.(type) {
 	case *rsa.PublicKey:
-		if err := k.SetKeyComponents(pemBytes, []byte{}, "rsa", scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.SetKeyComponents(pemBytes, []byte{}, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case *rsa.PrivateKey:
@@ -222,16 +228,16 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		if err != nil {
 			return err
 		}
-		if err := k.SetKeyComponents(pubKeyBytes, pemBytes, "rsa", scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.SetKeyComponents(pubKeyBytes, pemBytes, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case ed25519.PublicKey:
-		if err := k.SetKeyComponents(key.(ed25519.PublicKey), []byte{}, "ed25519", scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.SetKeyComponents(key.(ed25519.PublicKey), []byte{}, ed25519KeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case ed25519.PrivateKey:
 		pubKeyBytes := key.(ed25519.PrivateKey).Public()
-		if err := k.SetKeyComponents(pubKeyBytes.(ed25519.PublicKey), key.(ed25519.PrivateKey), "ed25519", scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.SetKeyComponents(pubKeyBytes.(ed25519.PublicKey), key.(ed25519.PrivateKey), ed25519KeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case *ecdsa.PrivateKey:
@@ -239,11 +245,11 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		if err != nil {
 			return err
 		}
-		if err := k.SetKeyComponents(pubKeyBytes, pemBytes, "ecdsa", scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.SetKeyComponents(pubKeyBytes, pemBytes, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case *ecdsa.PublicKey:
-		if err := k.SetKeyComponents(pemBytes, []byte{}, "ecdsa", scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.SetKeyComponents(pemBytes, []byte{}, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	default:
@@ -270,7 +276,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	// with the securesystemslib and the python implementation
 	// in which we are storing RSA keys in PEM format, but ed25519 keys hex encoded.
 	switch key.KeyType {
-	case "rsa", "ecdsa":
+	case rsaKeyType, ecdsaKeyType:
 		// pem.Decode returns the parsed pem block and a rest.
 		// The rest is everything, that could not be parsed as PEM block.
 		// Therefore we can drop this via using the blank identifier "_"
@@ -295,7 +301,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 				return signature, err
 			}
 		case *ecdsa.PrivateKey:
-			if key.KeyType != "ecdsa" {
+			if key.KeyType != ecdsaKeyType {
 				return signature, ErrInvalidKeyType
 			}
 			// ecdsa.Sign returns a signature that consists of two components called: r and s
@@ -317,7 +323,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		default:
 			return signature, fmt.Errorf("%w: %T", ErrUnsupportedKeyType, parsedKey)
 		}
-	case "ed25519":
+	case ed25519KeyType:
 		privateHex, err := hex.DecodeString(key.KeyVal.Private)
 		if err != nil {
 			return signature, err
@@ -352,7 +358,7 @@ it will return an error.
 */
 func VerifySignature(key Key, sig Signature, unverified []byte) error {
 	switch key.KeyType {
-	case "rsa", "ecdsa":
+	case rsaKeyType, ecdsaKeyType:
 		// pem.Decode returns the parsed pem block and a rest.
 		// The rest is everything, that could not be parsed as PEM block.
 		// Therefore we can drop this via using the blank identifier "_"
@@ -388,7 +394,7 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		default:
 			return fmt.Errorf("%w: Key has type %T", ErrInvalidSignature, parsedKey)
 		}
-	case "ed25519":
+	case ed25519KeyType:
 		pubHex, err := hex.DecodeString(key.KeyVal.Public)
 		if err != nil {
 			return err
