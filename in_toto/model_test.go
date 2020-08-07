@@ -1302,12 +1302,76 @@ func TestValidateKeyErrors(t *testing.T) {
 			},
 			err: ErrUnsupportedKeyType,
 		},
+		{
+			name: "keytype scheme mismatch",
+			key: Key{
+				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "ed25519",
+				KeyVal: KeyVal{
+					Private: "29ad59693fe94c9d623afbb66554b4f6bb248c47761689ada4875ebda94840ae393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c",
+					Public:  "393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c",
+				},
+				Scheme: "rsassa-pss-sha256",
+			},
+			err: ErrSchemeKeyTypeMismatch,
+		},
+		{
+			name: "unsupported KeyIdHashAlgorithms",
+			key: Key{
+				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIdHashAlgorithms: []string{"sha128"},
+				KeyType:             "ed25519",
+				KeyVal: KeyVal{
+					Private: "29ad59693fe94c9d623afbb66554b4f6bb248c47761689ada4875ebda94840ae393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c",
+					Public:  "393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c",
+				},
+				Scheme: "ed25519",
+			},
+			err: ErrUnsupportedKeyIdHashAlgorithms,
+		},
 	}
 
 	for _, table := range invalidTables {
 		err := validateKey(table.key)
 		if !errors.Is(err, table.err) {
 			t.Errorf("test '%s' failed, expected error: '%s', got '%s'", table.name, table.err, err)
+		}
+	}
+}
+
+func TestMatchKeyTypeScheme(t *testing.T) {
+	tables := []struct {
+		name string
+		key  Key
+		err  error
+	}{
+		{name: "test for unsupported key type",
+			key: Key{
+				KeyId:               "",
+				KeyIdHashAlgorithms: nil,
+				KeyType:             "invalid",
+				KeyVal:              KeyVal{},
+				Scheme:              "",
+			},
+			err: ErrUnsupportedKeyType,
+		},
+		{
+			name: "test for scheme key type mismatch",
+			key: Key{
+				KeyId:               "",
+				KeyIdHashAlgorithms: nil,
+				KeyType:             "rsa",
+				KeyVal:              KeyVal{},
+				Scheme:              "ed25519",
+			},
+			err: ErrSchemeKeyTypeMismatch,
+		},
+	}
+	for _, table := range tables {
+		err := matchKeyTypeScheme(table.key)
+		if !errors.Is(err, table.err) {
+			t.Errorf("%s returned wrong error. We got: %s, we should have got: %s", table.name, err, table.err)
 		}
 	}
 }

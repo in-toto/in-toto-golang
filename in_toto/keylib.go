@@ -18,12 +18,6 @@ import (
 	"strings"
 )
 
-const (
-	rsaKeyType     string = "rsa"
-	ecdsaKeyType   string = "ecdsa"
-	ed25519KeyType string = "ed25519"
-)
-
 // ErrFailedPEMParsing gets returned when PKCS1, PKCS8 or PKIX key parsing fails
 var ErrFailedPEMParsing = errors.New("failed parsing the PEM block: unsupported PEM type")
 
@@ -38,6 +32,48 @@ var ErrInvalidSignature = errors.New("invalid signature")
 
 // ErrInvalidKeyType is returned when the keytype is invalid for the given key
 var ErrInvalidKeyType = errors.New("invalid key type for this key")
+
+const (
+	rsaKeyType     string = "rsa"
+	ecdsaKeyType   string = "ecdsa"
+	ed25519KeyType string = "ed25519"
+)
+
+/*
+getSupportedKeyIdHashAlgorithms returns a string slice of supported
+keyIdHashAlgorithms. We need to use this function instead of a constant,
+because Go does not support global constant slices.
+*/
+func getSupportedKeyIdHashAlgorithms() []string {
+	return []string{"sha256", "sha512"}
+}
+
+/*
+getSupportedRSASchemes returns a string slice of supported RSA Key schemes.
+We need to use this function instead of a constant because Go does not support
+global constant slices.
+*/
+func getSupportedRSASchemes() []string {
+	return []string{"rsassa-pss-sha256"}
+}
+
+/*
+getSupportedEcdsaSchemes returns a string slice of supported ecdsa Key schemes.
+We need to use this function instead of a constant because Go does not support
+global constant slices.
+*/
+func getSupportedEcdsaSchemes() []string {
+	return []string{"ecdsa"}
+}
+
+/*
+getSupportedEd25519Schemes returns a string slice of supported ed25519 Key
+schemes. We need to use this function instead of a constant because Go does
+not support global constant slices.
+*/
+func getSupportedEd25519Schemes() []string {
+	return []string{"ed25519"}
+}
 
 /*
 GenerateKeyId creates a partial key map and generates the key ID

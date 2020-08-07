@@ -92,3 +92,21 @@ func TestInterfaceKeyStrings(t *testing.T) {
 		t.Errorf("expected: %s, got: %s", expected, res)
 	}
 }
+
+func TestSubsetCheck(t *testing.T) {
+	tables := []struct {
+		subset   []string
+		superset []string
+		result   bool
+	}{
+		{[]string{"sha256"}, []string{"sha256", "sha512"}, true},
+		{[]string{"sha512"}, []string{"sha256"}, false},
+		{[]string{"sha256", "sha512"}, []string{"sha128", "sha256", "sha512"}, true},
+	}
+	for _, table := range tables {
+		result := subsetCheck(table.subset, table.superset)
+		if table.result != result {
+			t.Errorf("result mismatch for: %#v, %#v, got: %t, should have got: %t", table.subset, table.superset, result, table.result)
+		}
+	}
+}

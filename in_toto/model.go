@@ -54,6 +54,12 @@ var ErrEmptyKeyField = errors.New("empty field in key")
 // This error will be thrown, if a string doesn't match a hex string.
 var ErrInvalidHexString = errors.New("invalid hex string")
 
+// This error will be thrown, if the given scheme does not match the given key type or vice-versa.
+var ErrSchemeKeyTypeMismatch = errors.New("the scheme or key type is unsupported for its vice-versa")
+
+// This error will be thrown, if the specified KeyIdHashAlgorithms is not supported.
+var ErrUnsupportedKeyIdHashAlgorithms = errors.New("the given keyID hash algorithm is not supported")
+
 /*
 validateHexString is used to validate that a string passed to it contains
 only valid hexadecimal characters.
@@ -106,6 +112,39 @@ func validateKeyVal(key Key) error {
 }
 
 /*
+matchKeyTypeScheme checks if the specified scheme matches our specified
+keyType. If the keyType is not supported it will return an
+ErrUnsupportedKeyType. If the keyType and scheme do not match it will return
+an ErrSchemeKeyTypeMismatch. If the specified keyType and scheme are
+compatible matchKeyTypeScheme will return nil.
+*/
+func matchKeyTypeScheme(key Key) error {
+	switch key.KeyType {
+	case rsaKeyType:
+		for _, scheme := range getSupportedRSASchemes() {
+			if key.Scheme == scheme {
+				return nil
+			}
+		}
+	case ed25519KeyType:
+		for _, scheme := range getSupportedEd25519Schemes() {
+			if key.Scheme == scheme {
+				return nil
+			}
+		}
+	case ecdsaKeyType:
+		for _, scheme := range getSupportedEcdsaSchemes() {
+			if key.Scheme == scheme {
+				return nil
+			}
+		}
+	default:
+		return fmt.Errorf("%w: %s", ErrUnsupportedKeyType, key.KeyType)
+	}
+	return ErrSchemeKeyTypeMismatch
+}
+
+/*
 validateKey checks the outer key object (everything, except the KeyVal struct).
 It verifies the keyId for being a hex string and checks for empty fields.
 On success it will return nil, on error it will return the corresponding error.
@@ -133,6 +172,13 @@ func validateKey(key Key) error {
 	err = validateKeyVal(key)
 	if err != nil {
 		return err
+	}
+	err = matchKeyTypeScheme(key)
+	if err != nil {
+		return err
+	}
+	if !subsetCheck(key.KeyIdHashAlgorithms, getSupportedKeyIdHashAlgorithms()) {
+		return fmt.Errorf("%w: %#v, supported are: %#v", ErrUnsupportedKeyIdHashAlgorithms, key.KeyIdHashAlgorithms, getSupportedKeyIdHashAlgorithms())
 	}
 	return nil
 }

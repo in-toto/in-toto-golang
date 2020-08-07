@@ -129,3 +129,26 @@ func InterfaceKeyStrings(m map[string]interface{}) []string {
 	}
 	return res
 }
+
+/*
+subsetCheck checks if all strings in a slice of strings
+can be found in a superset slice of strings.
+*/
+func subsetCheck(subset []string, superset []string) bool {
+	// We use a Go label here to break out to the outer loop
+OUTER:
+	for _, sub := range subset {
+		for _, super := range superset {
+			if sub == super {
+				continue OUTER
+			}
+		}
+		// If we cannot find a substring from subset in the superset
+		// we return false. In terms of keyIdHashAlgorithms for example
+		// this would mean, that we have an unsupported hash algorithm
+		// in our keyIdHashAlgorithm slice.
+		return false
+	}
+	// return true if all substrings can be found in the superset
+	return true
+}
