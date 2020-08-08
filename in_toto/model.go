@@ -1,8 +1,9 @@
 package in_toto
 
 import (
+	"crypto/ecdsa"
+	"crypto/rsa"
 	"encoding/json"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -60,6 +61,9 @@ var ErrSchemeKeyTypeMismatch = errors.New("the scheme or key type is unsupported
 // This error will be thrown, if the specified KeyIdHashAlgorithms is not supported.
 var ErrUnsupportedKeyIdHashAlgorithms = errors.New("the given keyID hash algorithm is not supported")
 
+// This error will be thrown, if the specified keyType does not match the key
+var ErrKeyKeyTypeMismatch = errors.New("the given key does not match its key type")
+
 /*
 validateHexString is used to validate that a string passed to it contains
 only valid hexadecimal characters.
@@ -84,6 +88,10 @@ if the KeyType is unknown.
 func validateKeyVal(key Key) error {
 	switch key.KeyType {
 	case ed25519KeyType:
+		// We cannot use matchPublicKeyKeyType or matchPrivateKeyKeyType here,
+		// because we retrieve the key not from PEM. Hence we are dealing with
+		// plain ed25519 key bytes. These bytes can't be typechecked like in the
+		// matchKeyKeytype functions.
 		err := validateHexString(key.KeyVal.Public)
 		if err != nil {
 			return err
@@ -95,18 +103,77 @@ func validateKeyVal(key Key) error {
 			}
 		}
 	case rsaKeyType, ecdsaKeyType:
-		data, _ := pem.Decode([]byte(key.KeyVal.Public))
-		if data == nil {
-			return ErrNoPEMBlock
+		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
+		if err != nil {
+			return err
+		}
+		err = matchPublicKeyKeyType(parsedKey, key.KeyType)
+		if err != nil {
+			return err
 		}
 		if key.KeyVal.Private != "" {
-			data, _ := pem.Decode([]byte(key.KeyVal.Private))
-			if data == nil {
-				return ErrNoPEMBlock
+			parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
+			if err != nil {
+				return err
+			}
+			err = matchPrivateKeyKeyType(parsedKey, key.KeyType)
+			if err != nil {
+				return err
 			}
 		}
 	default:
 		return ErrUnsupportedKeyType
+	}
+	return nil
+}
+
+/*
+matchPublicKeyKeyType validates an interface if it can be asserted to a
+the RSA or ECDSA public key type. We can only check RSA and ECDSA this way,
+because we are storing them in PEM format. Ed25519 keys are stored as plain
+ed25519 keys encoded as hex strings, thus we have no metadata for them.
+This function will return nil on success. If the key type does not match
+it will return an ErrKeyKeyTypeMismatch.
+*/
+func matchPublicKeyKeyType(key interface{}, keyType string) error {
+	switch key.(type) {
+	case *rsa.PublicKey:
+		if keyType != rsaKeyType {
+			return ErrKeyKeyTypeMismatch
+		}
+	case *ecdsa.PublicKey:
+		if keyType != ecdsaKeyType {
+			return ErrKeyKeyTypeMismatch
+		}
+	default:
+		return ErrInvalidKey
+	}
+	return nil
+}
+
+/*
+matchPrivateKeyKeyType validates an interface if it can be asserted to a
+the RSA or ECDSA private key type. We can only check RSA and ECDSA this way,
+because we are storing them in PEM format. Ed25519 keys are stored as plain
+ed25519 keys encoded as hex strings, thus we have no metadata for them.
+This function will return nil on success. If the key type does not match
+it will return an ErrKeyKeyTypeMismatch.
+*/
+func matchPrivateKeyKeyType(key interface{}, keyType string) error {
+	// we can only check RSA and ECDSA this way, because we are storing them in PEM
+	// format. ed25519 keys are stored as plain ed25519 keys encoded as hex strings
+	// so we have no metadata for them.
+	switch key.(type) {
+	case *rsa.PrivateKey:
+		if keyType != rsaKeyType {
+			return ErrKeyKeyTypeMismatch
+		}
+	case *ecdsa.PrivateKey:
+		if keyType != ecdsaKeyType {
+			return ErrKeyKeyTypeMismatch
+		}
+	default:
+		return ErrInvalidKey
 	}
 	return nil
 }
