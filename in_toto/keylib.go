@@ -34,9 +34,12 @@ var ErrInvalidSignature = errors.New("invalid signature")
 var ErrInvalidKey = errors.New("invalid key")
 
 const (
-	rsaKeyType     string = "rsa"
-	ecdsaKeyType   string = "ecdsa"
-	ed25519KeyType string = "ed25519"
+	rsaKeyType            string = "rsa"
+	ecdsaKeyType          string = "ecdsa"
+	ed25519KeyType        string = "ed25519"
+	rsassapsssha256Scheme string = "rsassa-pss-sha256"
+	ecdsaScheme           string = "ecdsa"
+	ed25519Scheme         string = "ed25519"
 )
 
 /*
@@ -54,7 +57,7 @@ We need to use this function instead of a constant because Go does not support
 global constant slices.
 */
 func getSupportedRSASchemes() []string {
-	return []string{"rsassa-pss-sha256"}
+	return []string{rsassapsssha256Scheme}
 }
 
 /*
@@ -63,7 +66,7 @@ We need to use this function instead of a constant because Go does not support
 global constant slices.
 */
 func getSupportedEcdsaSchemes() []string {
-	return []string{"ecdsa"}
+	return []string{ecdsaScheme}
 }
 
 /*
@@ -72,7 +75,7 @@ schemes. We need to use this function instead of a constant because Go does
 not support global constant slices.
 */
 func getSupportedEd25519Schemes() []string {
-	return []string{"ed25519"}
+	return []string{ed25519Scheme}
 }
 
 /*
