@@ -306,7 +306,8 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 			return err
 		}
 	default:
-		return fmt.Errorf("%w: %T", ErrUnsupportedKeyType, key)
+		// We should never get here, because we implement all from Go supported Key Types
+		panic("unexpected Error in LoadKey function")
 	}
 	return nil
 }
@@ -384,7 +385,9 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		// need to use ed25519.NewKeyFromSeed().
 		signatureBuffer = ed25519.Sign(privateHex, signable)
 	default:
-		return signature, fmt.Errorf("%w: %s", ErrUnsupportedKeyType, key.KeyType)
+		// We should never get here, because we call validateKey in the first
+		// line of the function.
+		panic("unexpected Error in GenerateSignature function")
 	}
 	signature.Sig = hex.EncodeToString(signatureBuffer)
 	signature.KeyId = key.KeyId
@@ -463,7 +466,9 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 			return fmt.Errorf("%w: ed25519", ErrInvalidSignature)
 		}
 	default:
-		return fmt.Errorf("%w: Key has type %s", ErrInvalidSignature, key.KeyType)
+		// We should never get here, because we call validateKey in the first
+		// line of the function.
+		panic("unexpected Error in VerifySignature function")
 	}
 	return nil
 }
