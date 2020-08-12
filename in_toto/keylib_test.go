@@ -122,7 +122,7 @@ func TestSetKeyComponents(t *testing.T) {
 
 	for _, table := range invalidTables {
 		var key Key
-		err := key.SetKeyComponents(table.pubkeyBytes, table.privateKeyBytes, table.keyType, table.scheme, table.keyIdHashAlgorithms)
+		err := key.setKeyComponents(table.pubkeyBytes, table.privateKeyBytes, table.keyType, table.scheme, table.keyIdHashAlgorithms)
 		if !errors.Is(err, table.err) {
 			t.Errorf("'%s' failed, should have: '%s', got: '%s'", table.name, ErrUnsupportedKeyType, err)
 		}

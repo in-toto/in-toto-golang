@@ -82,13 +82,13 @@ func getSupportedEd25519Schemes() []string {
 }
 
 /*
-GenerateKeyId creates a partial key map and generates the key ID
+generateKeyID creates a partial key map and generates the key ID
 based on the created partial key map via the SHA256 method.
 The resulting keyID will be directly saved in the corresponding key object.
-On success GenerateKeyId will return nil, in case of errors while encoding
+On success generateKeyID will return nil, in case of errors while encoding
 there will be an error.
 */
-func (k *Key) GenerateKeyId() error {
+func (k *Key) generateKeyID() error {
 	// Create partial key map used to create the keyid
 	// Unfortunately, we can't use the Key object because this also carries
 	// yet unwanted fields, such as KeyId and KeyVal.Private and therefore
@@ -118,12 +118,12 @@ func (k *Key) GenerateKeyId() error {
 }
 
 /*
-GeneratePublicPemBlock creates a "PUBLIC KEY" PEM block from public key byte data.
+generatePublicPEMBlock creates a "PUBLIC KEY" PEM block from public key byte data.
 If successful it returns PEM block as []byte slice. This function should always
 succeed, if pubKeyBytes is empty the PEM block will have an empty byte block.
 Therefore only header and footer will exist.
 */
-func GeneratePublicPemBlock(pubKeyBytes []byte) []byte {
+func generatePublicPEMBlock(pubKeyBytes []byte) []byte {
 	// construct PEM block
 	publicKeyPemBlock := &pem.Block{
 		Type:    "PUBLIC KEY",
@@ -134,19 +134,19 @@ func GeneratePublicPemBlock(pubKeyBytes []byte) []byte {
 }
 
 /*
-SetKeyComponents sets all components in our key object.
+setKeyComponents sets all components in our key object.
 Furthermore it makes sure to remove any trailing and leading whitespaces or newlines.
 We treat key types differently for interoperability reasons to the in-toto python
 implementation and the securesystemslib.
 */
-func (k *Key) SetKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyType string, scheme string, keyIdHashAlgorithms []string) error {
+func (k *Key) setKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyType string, scheme string, keyIdHashAlgorithms []string) error {
 	// assume we have a privateKey if the key size is bigger than 0
 	switch keyType {
 	case rsaKeyType, ecdsaKeyType:
 		if len(privateKeyBytes) > 0 {
 			k.KeyVal = KeyVal{
 				Private: strings.TrimSpace(string(privateKeyBytes)),
-				Public:  strings.TrimSpace(string(GeneratePublicPemBlock(pubKeyBytes))),
+				Public:  strings.TrimSpace(string(generatePublicPEMBlock(pubKeyBytes))),
 			}
 		} else {
 			k.KeyVal = KeyVal{
@@ -170,14 +170,14 @@ func (k *Key) SetKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyTy
 	k.KeyType = keyType
 	k.Scheme = scheme
 	k.KeyIdHashAlgorithms = keyIdHashAlgorithms
-	if err := k.GenerateKeyId(); err != nil {
+	if err := k.generateKeyID(); err != nil {
 		return err
 	}
 	return nil
 }
 
 /*
-ParseKey tries to parse a PEM []byte slice. Using the following standards
+parseKey tries to parse a PEM []byte slice. Using the following standards
 in the given order:
 
 	* PKCS8
@@ -187,7 +187,7 @@ in the given order:
 On success it returns the parsed key and nil.
 On failure it returns nil and the error ErrFailedPEMParsing
 */
-func ParseKey(data []byte) (interface{}, error) {
+func parseKey(data []byte) (interface{}, error) {
 	key, err := x509.ParsePKCS8PrivateKey(data)
 	if err == nil {
 		return key, nil
@@ -205,7 +205,7 @@ func ParseKey(data []byte) (interface{}, error) {
 
 /*
 decodeAndParse receives potential PEM bytes decodes them via pem.Decode
-and pushes them to ParseKey. If any error occurs during this process,
+and pushes them to parseKey. If any error occurs during this process,
 the function will return nil and an error (either ErrFailedPEMParsing
 or ErrNoPEMBlock). On success it will return the key object interface
 and nil as error.
@@ -220,7 +220,7 @@ func decodeAndParse(pemBytes []byte) (interface{}, error) {
 	}
 	// Try to load private key, if this fails try to load
 	// key as public key
-	key, err := ParseKey(data.Bytes)
+	key, err := parseKey(data.Bytes)
 	if err != nil {
 		return key, err
 	}
@@ -274,7 +274,7 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 	// Use type switch to identify the key format
 	switch key.(type) {
 	case *rsa.PublicKey:
-		if err := k.SetKeyComponents(pemBytes, []byte{}, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pemBytes, []byte{}, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case *rsa.PrivateKey:
@@ -284,16 +284,16 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		if err != nil {
 			return err
 		}
-		if err := k.SetKeyComponents(pubKeyBytes, pemBytes, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, pemBytes, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case ed25519.PublicKey:
-		if err := k.SetKeyComponents(key.(ed25519.PublicKey), []byte{}, ed25519KeyType, scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(key.(ed25519.PublicKey), []byte{}, ed25519KeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case ed25519.PrivateKey:
 		pubKeyBytes := key.(ed25519.PrivateKey).Public()
-		if err := k.SetKeyComponents(pubKeyBytes.(ed25519.PublicKey), key.(ed25519.PrivateKey), ed25519KeyType, scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes.(ed25519.PublicKey), key.(ed25519.PrivateKey), ed25519KeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case *ecdsa.PrivateKey:
@@ -301,11 +301,11 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		if err != nil {
 			return err
 		}
-		if err := k.SetKeyComponents(pubKeyBytes, pemBytes, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, pemBytes, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case *ecdsa.PublicKey:
-		if err := k.SetKeyComponents(pemBytes, []byte{}, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pemBytes, []byte{}, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	default:
