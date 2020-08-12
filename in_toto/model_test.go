@@ -1233,62 +1233,6 @@ func TestValidateKeyErrors(t *testing.T) {
 			Scheme: "",
 		}, ErrEmptyKeyField},
 		{
-			name: "invalid rsa pub key",
-			key: Key{
-				KeyId:               "bad",
-				KeyIdHashAlgorithms: []string{"sha256"},
-				KeyType:             "rsa",
-				KeyVal: KeyVal{
-					Private: "",
-					Public:  "invalid",
-				},
-				Scheme: "rsassa-psa-sha56",
-			},
-			err: ErrNoPEMBlock,
-		},
-		{
-			name: "invalid rsa private key",
-			key: Key{
-				KeyId:               "bad",
-				KeyIdHashAlgorithms: []string{"sha256"},
-				KeyType:             "rsa",
-				KeyVal: KeyVal{
-					Private: "invalid",
-					Public:  "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAxPX3kFs/z645x4UOC3KF\nY3V80YQtKrp6YS3qU+Jlvx/XzK53lb4sCDRU9jqBBx3We45TmFUibroMd8tQXCUS\ne8gYCBUBqBmmz0dEHJYbW0tYF7IoapMIxhRYn76YqNdl1JoRTcmzIaOJ7QrHxQrS\nGpivvTm6kQ9WLeApG1GLYJ3C3Wl4bnsI1bKSv55Zi45/JawHzTzYUAIXX9qCd3Io\nHzDucz9IAj9Ookw0va/q9FjoPGrRB80IReVxLVnbo6pYJfu/O37jvEobHFa8ckHd\nYxUIg8wvkIOy1O3M74lBDm6CVI0ZO25xPlDB/4nHAE1PbA3aF3lw8JGuxLDsetxm\nfzgAleVt4vXLQiCrZaLf+0cM97JcT7wdHcbIvRLsij9LNP+2tWZgeZ/hIAOEdaDq\ncYANPDIAxfTvbe9I0sXrCtrLer1SS7GqUmdFCdkdun8erXdNF0ls9Rp4cbYhjdf3\nyMxdI/24LUOOQ71cHW3ITIDImm6I8KmrXFM2NewTARKfAgMBAAE=\n-----END PUBLIC KEY-----",
-				},
-				Scheme: "rsassa-psa-sha256",
-			},
-			err: ErrNoPEMBlock,
-		},
-		{
-			name: "invalid ed25519 public key",
-			key: Key{
-				KeyId:               "bad",
-				KeyIdHashAlgorithms: []string{"sha256"},
-				KeyType:             "ed25519",
-				KeyVal: KeyVal{
-					Private: "invalid",
-					Public:  "invalid",
-				},
-				Scheme: "ed25519",
-			},
-			err: ErrInvalidHexString,
-		},
-		{
-			name: "invalid ed25519 private key",
-			key: Key{
-				KeyId:               "bad",
-				KeyIdHashAlgorithms: []string{"sha256"},
-				KeyType:             "ed25519",
-				KeyVal: KeyVal{
-					Private: "invalid",
-					Public:  "393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c",
-				},
-				Scheme: "ed25519",
-			},
-			err: ErrInvalidHexString,
-		},
-		{
 			name: "invalid key type",
 			key: Key{
 				KeyId:               "bad",
@@ -1329,6 +1273,78 @@ func TestValidateKeyErrors(t *testing.T) {
 				Scheme: "ed25519",
 			},
 			err: ErrUnsupportedKeyIdHashAlgorithms,
+		},
+	}
+
+	for _, table := range invalidTables {
+		err := validateKey(table.key)
+		if !errors.Is(err, table.err) {
+			t.Errorf("test '%s' failed, expected error: '%s', got '%s'", table.name, table.err, err)
+		}
+	}
+}
+
+func TestValidateKeyVal(t *testing.T) {
+	tables := []struct {
+		name string
+		key  Key
+		err  error
+	}{
+		{
+			name: "invalid rsa private key",
+			key: Key{
+				KeyId:               "bad",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "rsa",
+				KeyVal: KeyVal{
+					Private: "invalid",
+					Public:  "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAxPX3kFs/z645x4UOC3KF\nY3V80YQtKrp6YS3qU+Jlvx/XzK53lb4sCDRU9jqBBx3We45TmFUibroMd8tQXCUS\ne8gYCBUBqBmmz0dEHJYbW0tYF7IoapMIxhRYn76YqNdl1JoRTcmzIaOJ7QrHxQrS\nGpivvTm6kQ9WLeApG1GLYJ3C3Wl4bnsI1bKSv55Zi45/JawHzTzYUAIXX9qCd3Io\nHzDucz9IAj9Ookw0va/q9FjoPGrRB80IReVxLVnbo6pYJfu/O37jvEobHFa8ckHd\nYxUIg8wvkIOy1O3M74lBDm6CVI0ZO25xPlDB/4nHAE1PbA3aF3lw8JGuxLDsetxm\nfzgAleVt4vXLQiCrZaLf+0cM97JcT7wdHcbIvRLsij9LNP+2tWZgeZ/hIAOEdaDq\ncYANPDIAxfTvbe9I0sXrCtrLer1SS7GqUmdFCdkdun8erXdNF0ls9Rp4cbYhjdf3\nyMxdI/24LUOOQ71cHW3ITIDImm6I8KmrXFM2NewTARKfAgMBAAE=\n-----END PUBLIC KEY-----",
+				},
+				Scheme: "rsassa-pss-sha256",
+			},
+			err: ErrNoPEMBlock,
+		},
+		{
+			name: "invalid rsa pub key",
+			key: Key{
+				KeyId:               "bad",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "rsa",
+				KeyVal: KeyVal{
+					Private: "",
+					Public:  "invalid",
+				},
+				Scheme: "rsassa-pss-sha256",
+			},
+			err: ErrNoPEMBlock,
+		},
+		{
+			name: "invalid ed25519 public key",
+			key: Key{
+				KeyId:               "bad",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "ed25519",
+				KeyVal: KeyVal{
+					Private: "invalid",
+					Public:  "invalid",
+				},
+				Scheme: "ed25519",
+			},
+			err: ErrInvalidHexString,
+		},
+		{
+			name: "invalid ed25519 private key",
+			key: Key{
+				KeyId:               "bad",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "ed25519",
+				KeyVal: KeyVal{
+					Private: "invalid",
+					Public:  "393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c",
+				},
+				Scheme: "ed25519",
+			},
+			err: ErrInvalidHexString,
 		},
 		{
 			name: "valid rsa public, but bad private key",
@@ -1372,10 +1388,76 @@ func TestValidateKeyErrors(t *testing.T) {
 			},
 			err: ErrInvalidKey,
 		},
+		{
+			name: "unsupported key type",
+			key: Key{
+				KeyId:               "",
+				KeyIdHashAlgorithms: nil,
+				KeyType:             "invalid",
+				KeyVal:              KeyVal{},
+				Scheme:              "",
+			},
+			err: ErrUnsupportedKeyType,
+		},
+		{
+			name: "rsa key type, but ed25519 key",
+			key: Key{
+				KeyId:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "rsa",
+				KeyVal: KeyVal{
+					Private: "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEICmtWWk/6UydYjr7tmVUtPa7JIxHdhaJraSHXr2pSECu\n-----END PRIVATE KEY-----\n",
+					Public:  "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAOT5nGyAPlkxJCD00qGf12YnsHGnfe2Z1j+RxyFkbE5w=\n-----END PUBLIC KEY-----\n",
+				},
+				Scheme: "rsassa-pss-sha256",
+			},
+			err: ErrInvalidKey,
+		},
+		{
+			name: "rsa key, but not ecdsa key type",
+			key: Key{
+				KeyId:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "ecdsa",
+				KeyVal: KeyVal{
+					Private: "",
+					Public:  "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAyCTik98953hKl6+B6n5l\n8DVIDwDnvrJfpasbJ3+Rw66YcawOZinRpMxPTqWBKs7sRop7jqsQNcslUoIZLrXP\nr3foPHF455TlrqPVfCZiFQ+O4CafxWOB4mL1NddvpFXTEjmUiwFrrL7PcvQKMbYz\neUHH4tH9MNzqKWbbJoekBsDpCDIxp1NbgivGBKwjRGa281sClKgpd0Q0ebl+RTcT\nvpfZVDbXazQ7VqZkidt7geWq2BidOXZp/cjoXyVneKx/gYiOUv8x94svQMzSEhw2\nLFMQ04A1KnGn1jxO35/fd6/OW32njyWs96RKu9UQVacYHsQfsACPWwmVqgnX/sp5\nujlvSDjyfZu7c5yUQ2asYfQPLvnjG+u7QcBukGf8hAfVgsezzX9QPiK35BKDgBU/\nVk43riJs165TJGYGVuLUhIEhHgiQtwo8pUTJS5npEe5XMDuZoighNdzoWY2nfsBf\np8348k6vJtDMB093/t6V9sTGYQcSbgKPyEQo5Pk6Wd4ZAgMBAAE=\n-----END PUBLIC KEY-----",
+				},
+				Scheme: "ecdsa",
+			},
+			err: ErrKeyKeyTypeMismatch,
+		},
+		{
+			name: "ecdsa key, but rsa key type",
+			key: Key{
+				KeyId:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "rsa",
+				KeyVal: KeyVal{
+					Private: "-----BEGIN PRIVATE KEY-----\nMIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIB6fQnV71xKx6kFgJv\nYTMq0ytvWi2mDlYu6aNm1761c1OSInbBxBNb0ligpM65KyaeeRce6JR9eQW6TB6R\n+5pNzvOhgYkDgYYABAFy0CeDAyV/2mY1NqxLLgqEXSxaqM3fM8gYn/ZWzrLnO+1h\nK2QAanID3JuPff1NdhehhL/U1prXdyyaItA5X4ChkQHMTsiS/3HkWRuLR8L22SGs\nB+7KqOeO5ELkqHO5tsy4kvsNrmersCGRQGY6A5V/0JFhP1u1JUvAVVhfRbdQXuu3\nrw==\n-----END PRIVATE KEY-----\n",
+					Public:  "-----BEGIN PUBLIC KEY-----\nMIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQBctAngwMlf9pmNTasSy4KhF0sWqjN\n3zPIGJ/2Vs6y5zvtYStkAGpyA9ybj339TXYXoYS/1Naa13csmiLQOV+AoZEBzE7I\nkv9x5Fkbi0fC9tkhrAfuyqjnjuRC5KhzubbMuJL7Da5nq7AhkUBmOgOVf9CRYT9b\ntSVLwFVYX0W3UF7rt68=\n-----END PUBLIC KEY-----\n",
+				},
+				Scheme: "rsassa-pss-sha256",
+			},
+			err: ErrKeyKeyTypeMismatch,
+		},
+		{
+			name: "ecdsa key, but rsa key type",
+			key: Key{
+				KeyId:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "ecdsa",
+				KeyVal: KeyVal{
+					Private: "-----BEGIN PRIVATE KEY-----\nMIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIB6fQnV71xKx6kFgJv\nYTMq0ytvWi2mDlYu6aNm1761c1OSInbBxBNb0ligpM65KyaeeRce6JR9eQW6TB6R\n+5pNzvOhgYkDgYYABAFy0CeDAyV/2mY1NqxLLgqEXSxaqM3fM8gYn/ZWzrLnO+1h\nK2QAanID3JuPff1NdhehhL/U1prXdyyaItA5X4ChkQHMTsiS/3HkWRuLR8L22SGs\nB+7KqOeO5ELkqHO5tsy4kvsNrmersCGRQGY6A5V/0JFhP1u1JUvAVVhfRbdQXuu3\nrw==\n-----END PRIVATE KEY-----\n",
+					Public:  "-----BEGIN PUBLIC KEY-----\nMIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQBctAngwMlf9pmNTasSy4KhF0sWqjN\n3zPIGJ/2Vs6y5zvtYStkAGpyA9ybj339TXYXoYS/1Naa13csmiLQOV+AoZEBzE7I\nkv9x5Fkbi0fC9tkhrAfuyqjnjuRC5KhzubbMuJL7Da5nq7AhkUBmOgOVf9CRYT9b\ntSVLwFVYX0W3UF7rt68=\n-----END PUBLIC KEY-----\n",
+				},
+				Scheme: "ecdsa",
+			},
+			err: nil,
+		},
 	}
-
-	for _, table := range invalidTables {
-		err := validateKey(table.key)
+	for _, table := range tables {
+		err := validateKeyVal(table.key)
 		if !errors.Is(err, table.err) {
 			t.Errorf("test '%s' failed, expected error: '%s', got '%s'", table.name, table.err, err)
 		}

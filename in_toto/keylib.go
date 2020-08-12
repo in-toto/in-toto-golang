@@ -335,6 +335,10 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		if err != nil {
 			return Signature{}, err
 		}
+		parsedKey, ok := parsedKey.(*rsa.PrivateKey)
+		if !ok {
+			return Signature{}, ErrKeyKeyTypeMismatch
+		}
 		hashed := sha256.Sum256(signable)
 		// We use rand.Reader as secure random source for rsa.SignPSS()
 		signatureBuffer, err = rsa.SignPSS(rand.Reader, parsedKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:],
@@ -346,6 +350,10 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
 		if err != nil {
 			return Signature{}, err
+		}
+		parsedKey, ok := parsedKey.(*ecdsa.PrivateKey)
+		if !ok {
+			return Signature{}, ErrKeyKeyTypeMismatch
 		}
 		hashed := sha256.Sum256(signable)
 		// ecdsa.Sign returns a signature that consists of two components called: r and s
@@ -367,7 +375,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	case ed25519KeyType:
 		privateHex, err := hex.DecodeString(key.KeyVal.Private)
 		if err != nil {
-			return signature, err
+			return signature, ErrInvalidHexString
 		}
 		// Note: We can directly use the key for signing and do not
 		// need to use ed25519.NewKeyFromSeed().
@@ -412,6 +420,10 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		if err != nil {
 			return err
 		}
+		parsedKey, ok := parsedKey.(*rsa.PublicKey)
+		if !ok {
+			return ErrKeyKeyTypeMismatch
+		}
 		hashed := sha256.Sum256(unverified)
 		err = rsa.VerifyPSS(parsedKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], sigBytes, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
 		if err != nil {
@@ -422,6 +434,10 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
 		if err != nil {
 			return err
+		}
+		parsedKey, ok := parsedKey.(*ecdsa.PublicKey)
+		if !ok {
+			return ErrKeyKeyTypeMismatch
 		}
 		hashed := sha256.Sum256(unverified)
 		// Unmarshal the ASN.1 DER marshalled ecdsa signature to
@@ -438,7 +454,7 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 	case ed25519KeyType:
 		pubHex, err := hex.DecodeString(key.KeyVal.Public)
 		if err != nil {
-			return err
+			return ErrInvalidHexString
 		}
 		if ok := ed25519.Verify(pubHex, unverified, sigBytes); !ok {
 			return fmt.Errorf("%w: ed25519", ErrInvalidSignature)

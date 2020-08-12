@@ -236,10 +236,6 @@ func validateKey(key Key) error {
 	if key.Scheme == "" {
 		return fmt.Errorf("%w: scheme", ErrEmptyKeyField)
 	}
-	err = validateKeyVal(key)
-	if err != nil {
-		return err
-	}
 	err = matchKeyTypeScheme(key)
 	if err != nil {
 		return err
