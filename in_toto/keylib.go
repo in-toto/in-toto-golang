@@ -41,7 +41,8 @@ const (
 	ecdsaKeyType          string = "ecdsa"
 	ed25519KeyType        string = "ed25519"
 	rsassapsssha256Scheme string = "rsassa-pss-sha256"
-	ecdsaScheme           string = "ecdsa"
+	ecdsaSha2nistp256     string = "ecdsa-sha2-nistp256"
+	ecdsaSha2nistp384     string = "ecdsa-sha2-nistp384"
 	ed25519Scheme         string = "ed25519"
 )
 
@@ -69,7 +70,7 @@ We need to use this function instead of a constant because Go does not support
 global constant slices.
 */
 func getSupportedEcdsaSchemes() []string {
-	return []string{ecdsaScheme}
+	return []string{ecdsaSha2nistp256, ecdsaSha2nistp384}
 }
 
 /*
@@ -368,7 +369,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 			return Signature{}, ErrKeyKeyTypeMismatch
 		}
 		switch key.Scheme {
-		case ecdsaScheme:
+		case ecdsaSha2nistp256, ecdsaSha2nistp384:
 			hashed := sha256.Sum256(signable)
 			// ecdsa.Sign returns a signature that consists of two components called: r and s
 			// We assume here, that r and s are of the same size nLen and that
@@ -466,7 +467,7 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 			return ErrKeyKeyTypeMismatch
 		}
 		switch key.Scheme {
-		case ecdsaScheme:
+		case ecdsaSha2nistp256, ecdsaSha2nistp384:
 			hashed := sha256.Sum256(unverified)
 			// Unmarshal the ASN.1 DER marshalled ecdsa signature to
 			// ecdsaSignature. asn1.Unmarshal returns the rest and an error
