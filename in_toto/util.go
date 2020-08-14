@@ -135,6 +135,8 @@ subsetCheck checks if all strings in a slice of strings
 can be found in a superset slice of strings.
 */
 func subsetCheck(subset []string, superset []string) bool {
+	// TODO: This function might be better as addition
+	// to our Set interface.
 	// We use a Go label here to break out to the outer loop
 OUTER:
 	for _, sub := range subset {
