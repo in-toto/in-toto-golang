@@ -357,7 +357,8 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 				return signature, err
 			}
 		default:
-			return Signature{}, ErrUnsupportedScheme
+			// supported key schemes will get checked in validateKey
+			panic("unexpected Error in GenerateSignature function")
 		}
 	case ecdsaKeyType:
 		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
@@ -388,7 +389,8 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 				S: s,
 			})
 		default:
-			return Signature{}, ErrUnsupportedScheme
+			// supported key schemes will get checked in validateKey
+			panic("unexpected Error in GenerateSignature function")
 		}
 	case ed25519KeyType:
 		// We do not need a scheme switch here, because ed25519Sign *only*
@@ -454,7 +456,8 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 				return fmt.Errorf("%w: %s", ErrInvalidSignature, err)
 			}
 		default:
-			return ErrUnsupportedScheme
+			// supported key schemes will get checked in validateKey
+			panic("unexpected Error in GenerateSignature function")
 		}
 	case ecdsaKeyType:
 		var ecdsaSignature EcdsaSignature
@@ -481,7 +484,8 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 				return ErrInvalidSignature
 			}
 		default:
-			return ErrUnsupportedScheme
+			// supported key schemes will get checked in validateKey
+			panic("unexpected Error in GenerateSignature function")
 		}
 	case ed25519KeyType:
 		// We do not need a scheme switch here, because ed25519Sign *only*
