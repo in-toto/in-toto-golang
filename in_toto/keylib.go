@@ -237,11 +237,18 @@ Right now the following PEM types are supported:
 	* PKCS8	for private keys
 	* PKIX for public keys
 
-The following key types are supported:
+The following key types are supported and will be automatically assigned to
+the key type field:
 
 	* ed25519
-	* RSA
+	* rsa
 	* ecdsa
+
+The following schemes are supported:
+
+	* ed25519 -> ed25519
+	* rsa -> rsassa-pss-sha256
+	* ecdsa -> ecdsa-sha256-nistp256
 
 On success it will return nil. The following errors can happen:
 
@@ -393,8 +400,8 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 			panic("unexpected Error in GenerateSignature function")
 		}
 	case ed25519KeyType:
-		// We do not need a scheme switch here, because ed25519Sign *only*
-		// supports ed25519-sha512 aka edDSA.
+		// We do not need a scheme switch here, because ed25519
+		// only consist of sha256 and curve25519.
 		privateHex, err := hex.DecodeString(key.KeyVal.Private)
 		if err != nil {
 			return signature, ErrInvalidHexString
@@ -488,8 +495,8 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 			panic("unexpected Error in GenerateSignature function")
 		}
 	case ed25519KeyType:
-		// We do not need a scheme switch here, because ed25519Sign *only*
-		// supports ed25519-sha512 aka edDSA.
+		// We do not need a scheme switch here, because ed25519
+		// only consist of sha256 and curve25519.
 		pubHex, err := hex.DecodeString(key.KeyVal.Public)
 		if err != nil {
 			return ErrInvalidHexString

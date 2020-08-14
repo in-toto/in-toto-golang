@@ -272,7 +272,7 @@ func TestMetablockVerifySignature(t *testing.T) {
 	for i := 0; i < len(mbs); i++ {
 		err := mbs[i].VerifySignature(key)
 		if err == nil || !strings.Contains(err.Error(), expectedErrors[i]) {
-			t.Errorf("Metablock.VerifyRSASignature returned '%s', expected '%s'",
+			t.Errorf("Metablock.VerifySignature returned '%s', expected '%s'",
 				err, expectedErrors[i])
 		}
 	}
@@ -284,7 +284,7 @@ func TestMetablockVerifySignature(t *testing.T) {
 	}
 	err := mb.VerifySignature(key)
 	if err != nil {
-		t.Errorf("Metablock.VerifyRSASignature returned '%s', expected nil", err)
+		t.Errorf("Metablock.VerifySignature returned '%s', expected nil", err)
 	}
 }
 

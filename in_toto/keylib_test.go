@@ -77,7 +77,7 @@ func TestValidSignatures(t *testing.T) {
 //
 //	* os.ErrNotExist (triggered, when the file does not exist)
 //	* ErrNoPEMBlock (for example if the passed file is not a PEM block)
-//  * ErrFailedPEMParsing (for example if we pass an EC key, instead a key in PKC8 format)
+//  * ErrFailedPEMParsing (for example if we pass an EC key, instead a key in PKCS8 format)
 func TestLoadKeyErrors(t *testing.T) {
 	invalidTables := []struct {
 		name           string

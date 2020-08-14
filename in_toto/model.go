@@ -49,14 +49,14 @@ type Key struct {
 	Scheme              string   `json:"scheme"`
 }
 
-// This error will be thrown in a field in our Key struct is empty.
+// This error will be thrown if a field in our Key struct is empty.
 var ErrEmptyKeyField = errors.New("empty field in key")
 
 // This error will be thrown, if a string doesn't match a hex string.
 var ErrInvalidHexString = errors.New("invalid hex string")
 
-// This error will be thrown, if the given scheme does not match the given key type or vice-versa.
-var ErrSchemeKeyTypeMismatch = errors.New("the scheme or key type is unsupported for its vice-versa")
+// This error will be thrown, if the given scheme and key type are not supported together.
+var ErrSchemeKeyTypeMismatch = errors.New("the scheme and key type are not supported together")
 
 // This error will be thrown, if the specified KeyIdHashAlgorithms is not supported.
 var ErrUnsupportedKeyIdHashAlgorithms = errors.New("the given keyID hash algorithm is not supported")
