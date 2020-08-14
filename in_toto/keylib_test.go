@@ -106,7 +106,7 @@ func TestLoadKeyErrors(t *testing.T) {
 	}
 }
 
-func TestSetKeyComponents(t *testing.T) {
+func TestSetKeyComponentsErrors(t *testing.T) {
 	invalidTables := []struct {
 		name                string
 		pubkeyBytes         []byte
