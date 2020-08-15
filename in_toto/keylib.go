@@ -377,13 +377,13 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 			return Signature{}, ErrKeyKeyTypeMismatch
 		}
 		switch key.Scheme {
-		case ecdsaSha2nistp256, ecdsaSha2nistp384:
+		// TODO: add support for more hash algorithms
+		case ecdsaSha2nistp256:
 			hashed := sha256.Sum256(signable)
 			// ecdsa.Sign returns a signature that consists of two components called: r and s
 			// We assume here, that r and s are of the same size nLen and that
 			// the signature is 2*nLen. Furthermore we must note  that hashes get truncated
-			// if they are too long for the curve. We use SHA256 for hashing, thus we should be
-			// ok with using the FIPS186-3 curves P256, P384 and P521.
+			// if they are too long for the curve.
 			r, s, err := ecdsa.Sign(rand.Reader, parsedKey.(*ecdsa.PrivateKey), hashed[:])
 			if err != nil {
 				return signature, nil
@@ -477,7 +477,8 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 			return ErrKeyKeyTypeMismatch
 		}
 		switch key.Scheme {
-		case ecdsaSha2nistp256, ecdsaSha2nistp384:
+		// TODO: add support for more hash algorithms
+		case ecdsaSha2nistp256:
 			hashed := sha256.Sum256(unverified)
 			// Unmarshal the ASN.1 DER marshalled ecdsa signature to
 			// ecdsaSignature. asn1.Unmarshal returns the rest and an error
@@ -486,7 +487,6 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 			if err != nil {
 				return err
 			}
-			// This may fail if a bigger hashing algorithm than SHA256 has been used for generating the signature
 			if err := ecdsa.Verify(parsedKey.(*ecdsa.PublicKey), hashed[:], ecdsaSignature.R, ecdsaSignature.S); err == false {
 				return ErrInvalidSignature
 			}
