@@ -64,6 +64,9 @@ var ErrUnsupportedKeyIdHashAlgorithms = errors.New("the given keyID hash algorit
 // This error will be thrown, if the specified keyType does not match the key
 var ErrKeyKeyTypeMismatch = errors.New("the given key does not match its key type")
 
+// ErrNoPublicKey gets returned, when the private key value is not empty.
+var ErrNoPublicKey = errors.New("the given key is not a public key")
+
 /*
 validateHexString is used to validate that a string passed to it contains
 only valid hexadecimal characters.
@@ -242,6 +245,22 @@ func validateKey(key Key) error {
 	}
 	if !subsetCheck(key.KeyIdHashAlgorithms, getSupportedKeyIdHashAlgorithms()) {
 		return fmt.Errorf("%w: %#v, supported are: %#v", ErrUnsupportedKeyIdHashAlgorithms, key.KeyIdHashAlgorithms, getSupportedKeyIdHashAlgorithms())
+	}
+	return nil
+}
+
+/*
+validatePublicKey is a wrapper around validateKey. It test if the private key
+value in the key is empty and then validates the key via calling validateKey.
+On success it will return nil, on error it will return an ErrNoPublicKey error.
+*/
+func validatePublicKey(key Key) error {
+	if key.KeyVal.Private != "" {
+		return ErrNoPublicKey
+	}
+	err := validateKey(key)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -535,6 +554,10 @@ func validateLayout(layout Layout) error {
 	for keyId, key := range layout.Keys {
 		if key.KeyId != keyId {
 			return fmt.Errorf("invalid key found")
+		}
+		err := validatePublicKey(key)
+		if err != nil {
+			return err
 		}
 	}
 

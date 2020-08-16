@@ -1499,3 +1499,57 @@ func TestMatchKeyTypeScheme(t *testing.T) {
 		}
 	}
 }
+
+func TestValidatePublicKey(t *testing.T) {
+	validTables := []struct {
+		name string
+		key  Key
+	}{
+		{
+			name: "test with valid key",
+			key: Key{
+				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIdHashAlgorithms: []string{"sha512"},
+				KeyType:             "ed25519",
+				KeyVal: KeyVal{
+					Private: "",
+					Public:  "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAOT5nGyAPlkxJCD00qGf12YnsHGnfe2Z1j+RxyFkbE5w=\n-----END PUBLIC KEY-----\n",
+				},
+				Scheme: "ed25519",
+			},
+		},
+	}
+	for _, table := range validTables {
+		err := validatePublicKey(table.key)
+		if err != nil {
+			t.Errorf("%s returned error %s, instead of nil", table.name, err)
+		}
+	}
+
+	invalidTables := []struct {
+		name string
+		key  Key
+		err  error
+	}{
+		{
+			name: "test with valid key",
+			key: Key{
+				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIdHashAlgorithms: []string{"sha512"},
+				KeyType:             "ed25519",
+				KeyVal: KeyVal{
+					Private: "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEICmtWWk/6UydYjr7tmVUtPa7JIxHdhaJraSHXr2pSECu\n-----END PRIVATE KEY-----\n",
+					Public:  "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAOT5nGyAPlkxJCD00qGf12YnsHGnfe2Z1j+RxyFkbE5w=\n-----END PUBLIC KEY-----\n",
+				},
+				Scheme: "ed25519",
+			},
+			err: ErrNoPublicKey,
+		},
+	}
+	for _, table := range invalidTables {
+		err := validatePublicKey(table.key)
+		if err != table.err {
+			t.Errorf("%s returned unexpected error %s, we should got: %s", table.name, err, table.err)
+		}
+	}
+}
