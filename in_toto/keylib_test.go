@@ -91,10 +91,10 @@ func TestLoadKeyErrors(t *testing.T) {
 		{"EC private key file", "erin", "ecdsa-sha2-nistp256", []string{"sha256", "sha512"}, ErrFailedPEMParsing},
 		{"valid ed25519 private key, but invalid scheme", "carol", "", []string{"sha256"}, ErrEmptyKeyField},
 		{"valid ed25519 public key, but invalid scheme", "carol.pub", "", []string{"sha256"}, ErrEmptyKeyField},
-		{"valid rsa private key, but invalid hashalgo", "dan", "rsassa-psa-sha256", nil, ErrEmptyKeyField},
-		{"valid rsa public key, but invalid hashalgo", "dan.pub", "rsassa-psa-sha256", nil, ErrEmptyKeyField},
-		{"valid ecdsa private key, but invalid hashalgo", "frank", "ecdsa-sha2-nistp256", nil, ErrEmptyKeyField},
-		{"valid ecdsa public key, but invalid hashalgo", "frank.pub", "ecdsa-sha2-nistp256", nil, ErrEmptyKeyField},
+		{"valid rsa private key, but invalid scheme", "dan", "rsassa-psa-sha256", nil, ErrSchemeKeyTypeMismatch},
+		{"valid rsa public key, but invalid scheme", "dan.pub", "rsassa-psa-sha256", nil, ErrSchemeKeyTypeMismatch},
+		{"valid ecdsa private key, but invalid scheme", "frank", "ecdsa-sha-nistp256", nil, ErrSchemeKeyTypeMismatch},
+		{"valid ecdsa public key, but invalid scheme", "frank.pub", "ecdsa-sha-nistp256", nil, ErrSchemeKeyTypeMismatch},
 	}
 
 	for _, table := range invalidTables {

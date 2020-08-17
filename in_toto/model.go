@@ -233,9 +233,6 @@ func validateKey(key Key) error {
 	if key.KeyVal.Public == "" {
 		return fmt.Errorf("%w: keyval.public", ErrEmptyKeyField)
 	}
-	if key.KeyIdHashAlgorithms == nil {
-		return fmt.Errorf("%w: keyid_hash_algorithms", ErrEmptyKeyField)
-	}
 	if key.Scheme == "" {
 		return fmt.Errorf("%w: scheme", ErrEmptyKeyField)
 	}
@@ -243,8 +240,11 @@ func validateKey(key Key) error {
 	if err != nil {
 		return err
 	}
-	if !subsetCheck(key.KeyIdHashAlgorithms, getSupportedKeyIdHashAlgorithms()) {
-		return fmt.Errorf("%w: %#v, supported are: %#v", ErrUnsupportedKeyIdHashAlgorithms, key.KeyIdHashAlgorithms, getSupportedKeyIdHashAlgorithms())
+	// only check for supported keyIdHashAlgorithms, if the variable has been set
+	if key.KeyIdHashAlgorithms != nil {
+		if !subsetCheck(key.KeyIdHashAlgorithms, getSupportedKeyIdHashAlgorithms()) {
+			return fmt.Errorf("%w: %#v, supported are: %#v", ErrUnsupportedKeyIdHashAlgorithms, key.KeyIdHashAlgorithms, getSupportedKeyIdHashAlgorithms())
+		}
 	}
 	return nil
 }
