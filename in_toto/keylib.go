@@ -250,6 +250,10 @@ The following schemes are supported:
 	* rsa -> rsassa-pss-sha256
 	* ecdsa -> ecdsa-sha256-nistp256
 
+Note that, this behavior is consistent with the securesystemslib, except for
+ecdsa. We do not use the scheme string as key type in in-toto-golang.
+Instead we are going with a ecdsa/ecdsa-sha2-nistp256 pair.
+
 On success it will return nil. The following errors can happen:
 
 	* path not found or not readable
@@ -333,6 +337,10 @@ return a not initialized signature and an error. Possible errors are:
 	* ErrUnsupportedKeyType
 
 Currently supported is only one scheme per key.
+
+Note that in-toto-golang has different requirements to an ecdsa key.
+In in-toto-golang we use the string 'ecdsa' as string for the key type.
+In the key scheme we use: ecdsa-sha2-nistp256.
 */
 func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	err := validateKey(key)
@@ -423,9 +431,9 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 VerifySignature will verify unverified byte data via a passed key and signature.
 Supported key types are:
 
-	* RSA
-	* ED25519
-	* ECDSA
+	* rsa
+	* ed25519
+	* ecdsa
 
 When encountering an RSA key, VerifySignature will decode the PEM block in the key
 and will call rsa.VerifyPSS() for verifying the RSA signature.
@@ -435,6 +443,10 @@ When the given key is an ecdsa key, VerifySignature will unmarshall the ASN1 obj
 and will use the retrieved ecdsa components 'r' and 's' for verifying the signature.
 On success it will return nil. In case of an unsupported key type or any other error
 it will return an error.
+
+Note that in-toto-golang has different requirements to an ecdsa key.
+In in-toto-golang we use the string 'ecdsa' as string for the key type.
+In the key scheme we use: ecdsa-sha2-nistp256.
 */
 func VerifySignature(key Key, sig Signature, unverified []byte) error {
 	err := validateKey(key)
