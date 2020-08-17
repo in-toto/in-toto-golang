@@ -596,10 +596,10 @@ func TestValidateLayout(t *testing.T) {
 				Type:    "layout",
 				Expires: "2020-02-27T18:03:43Z",
 				Keys: map[string]Key{
-					"deadbeef": Key{KeyId: "deabeef"},
+					"deadbeef": Key{KeyId: "deadbeef"},
 				},
 			},
-			"invalid key found",
+			"empty field in key: keytype",
 		},
 	}
 
