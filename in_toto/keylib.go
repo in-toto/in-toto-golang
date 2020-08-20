@@ -51,8 +51,8 @@ getSupportedKeyIdHashAlgorithms returns a string slice of supported
 keyIdHashAlgorithms. We need to use this function instead of a constant,
 because Go does not support global constant slices.
 */
-func getSupportedKeyIdHashAlgorithms() []string {
-	return []string{"sha256", "sha512"}
+func getSupportedKeyIdHashAlgorithms() Set {
+	return NewSet("sha256", "sha512")
 }
 
 /*

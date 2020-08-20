@@ -242,7 +242,8 @@ func validateKey(key Key) error {
 	}
 	// only check for supported keyIdHashAlgorithms, if the variable has been set
 	if key.KeyIdHashAlgorithms != nil {
-		if !subsetCheck(key.KeyIdHashAlgorithms, getSupportedKeyIdHashAlgorithms()) {
+		supportedKeyIdHashAlgorithms := getSupportedKeyIdHashAlgorithms()
+		if !supportedKeyIdHashAlgorithms.IsSubSet(NewSet(key.KeyIdHashAlgorithms...)) {
 			return fmt.Errorf("%w: %#v, supported are: %#v", ErrUnsupportedKeyIdHashAlgorithms, key.KeyIdHashAlgorithms, getSupportedKeyIdHashAlgorithms())
 		}
 	}
