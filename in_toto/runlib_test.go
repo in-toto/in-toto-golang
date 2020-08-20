@@ -260,10 +260,10 @@ func TestRunCommand(t *testing.T) {
 		{"sh", "-c", "printf err >&2"},
 	}
 	expected := []map[string]interface{}{
-		{"return-value": 0, "stdout": []byte(""), "stderr": []byte("")},
-		{"return-value": 1, "stdout": []byte(""), "stderr": []byte("")},
-		{"return-value": 0, "stdout": []byte("out"), "stderr": []byte("")},
-		{"return-value": 0, "stdout": []byte(""), "stderr": []byte("err")},
+		{"return-value": float64(0), "stdout": "", "stderr": ""},
+		{"return-value": float64(1), "stdout": "", "stderr": ""},
+		{"return-value": float64(0), "stdout": "out", "stderr": ""},
+		{"return-value": float64(0), "stdout": "", "stderr": "err"},
 	}
 	for i := 0; i < len(parameters); i++ {
 		result, err := RunCommand(parameters[i])
@@ -284,16 +284,20 @@ func TestRunCommand(t *testing.T) {
 func TestInTotoRun(t *testing.T) {
 	// Successfully run InTotoRun
 	linkName := "Name"
-	parameters := []map[string][]string{
-		{
-			"materialPaths": {"demo.layout.template"},
-			"productPaths":  {"foo.tar.gz"},
-			"cmdArgs":       {"sh", "-c", "printf out; printf err >&2"},
-		},
+
+	var validKey Key
+	if err := validKey.LoadKey("carol", "ed25519", []string{"sha256", "sha512"}); err != nil {
+		t.Error(err)
 	}
-	expected := []Metablock{
-		{
-			Signatures: []Signature{},
+
+	tablesCorrect := []struct {
+		materialPaths []string
+		productPaths  []string
+		cmdArgs       []string
+		key           Key
+		result        Metablock
+	}{
+		{[]string{"demo.layout.template"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, validKey, Metablock{
 			Signed: Link{
 				Name: linkName,
 				Type: "link",
@@ -308,50 +312,67 @@ func TestInTotoRun(t *testing.T) {
 					},
 				},
 				ByProducts: map[string]interface{}{
-					"return-value": 0, "stdout": []byte("out"), "stderr": []byte("err"),
+					"return-value": float64(0), "stdout": "out", "stderr": "err",
 				},
 				Command:     []string{"sh", "-c", "printf out; printf err >&2"},
 				Environment: map[string]interface{}{},
 			},
+			Signatures: []Signature{{
+				KeyId: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				Sig:   "08a6c42b8433502f2869bb3dc73f8348f6b6f89e42bbc63f91a33e7171d762e138ed5d695fb83cebec958203e17b2285f95b198d758bc62cf30e1f7408d6c10c",
+			}},
+		},
 		},
 	}
-	for i := 0; i < len(parameters); i++ {
-		result, err := InTotoRun(linkName, parameters[i]["materialPaths"],
-			parameters[i]["productPaths"], parameters[i]["cmdArgs"])
-		if !reflect.DeepEqual(result, expected[i]) {
-			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'",
-				result, err, expected[i])
+
+	for _, table := range tablesCorrect {
+		result, err := InTotoRun(linkName, table.materialPaths, table.productPaths, table.cmdArgs, table.key)
+		if !reflect.DeepEqual(result, table.result) {
+			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result)
+		} else {
+			// we do not need to check if result == nil here, because our reflect.DeepEqual was successful
+			if err := result.Dump(linkName + ".link"); err != nil {
+				t.Errorf("Error while dumping link metablock to file")
+			}
+			var loadedResult Metablock
+			if err := loadedResult.Load(linkName + ".link"); err != nil {
+				t.Errorf("Error while loading link metablock from file")
+			}
+			if !reflect.DeepEqual(loadedResult, result) {
+				t.Errorf("Dump and loading of signed Link failed. Loaded result: '%s', dumped result '%s'", loadedResult, result)
+			} else {
+				if err := os.Remove(linkName + ".link"); err != nil {
+					t.Errorf("Removing created link file failed")
+				}
+			}
 		}
 	}
 
-	// Test in-toto run errors:
-	// - error due to nonexistent material path
-	// - error due to nonexistent product path
-	// - error due to nonexistent run command
-	parameters = []map[string][]string{
-		{
-			"materialPaths": {"material-does-not-exist"},
-			"productPaths":  {""},
-			"cmdArgs":       {"sh", "-c", "printf test"},
-		},
-		{
-			"materialPaths": {},
-			"productPaths":  {"product-does-not-exist"},
-			"cmdArgs":       {"sh", "-c", "printf test"},
-		},
-		{
-			"materialPaths": {},
-			"productPaths":  {},
-			"cmdArgs":       {"command-does-not-exist"},
-		},
+	// Run InToToRun with errors
+	tablesInvalid := []struct {
+		materialPaths []string
+		productPaths  []string
+		cmdArgs       []string
+		key           Key
+	}{
+		{[]string{"material-does-not-exist"}, []string{""}, []string{"sh", "-c", "printf test"}, Key{}},
+		{[]string{"demo.layout.template"}, []string{"product-does-not-exist"}, []string{"sh", "-c", "printf test"}, Key{}},
+		{[]string{""}, []string{"/invalid-path/"}, []string{"sh", "-c", "printf test"}, Key{}},
+		{[]string{}, []string{}, []string{"command-does-not-exist"}, Key{}},
+		{[]string{"demo.layout.template"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, Key{
+			KeyId:               "this-is-invalid",
+			KeyIdHashAlgorithms: nil,
+			KeyType:             "",
+			KeyVal:              KeyVal{},
+			Scheme:              "",
+		}},
 	}
 
-	for i := 0; i < len(parameters); i++ {
-		result, err := InTotoRun(linkName, parameters[i]["materialPaths"],
-			parameters[i]["productPaths"], parameters[i]["cmdArgs"])
+	for _, table := range tablesInvalid {
+		result, err := InTotoRun(linkName, table.materialPaths, table.productPaths, table.cmdArgs, table.key)
 		if err == nil {
-			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, <error>)'",
-				result, err, expected[i])
+			t.Errorf("InTotoRun returned '(%s, %s)', expected error",
+				result, err)
 		}
 	}
 }

@@ -27,13 +27,7 @@ production use.
 If any of these features are necessary for your use case please let us know and
 we will try to provide them as soon as possible!
 
-* [Signature schemes, other than `rsassa-pss-sha256` and `ed25519`](https://github.com/in-toto/in-toto-golang/issues/27)
 * [GPG keys](https://github.com/in-toto/in-toto-golang/issues/26)
 * [Layout parameter substitution](https://github.com/in-toto/in-toto-golang/issues/29)
-* [in-toto-run functionality](https://github.com/in-toto/in-toto-golang/issues/30)
-  *Note: A basic `runlib` does exist, however it is only used to execute the
-  inspection commands in a layout and create the corresponding metadata. It
-  cannot be used to create signed evidence (link metadata) for steps in a
-  layout.*
 * [Hashing algorithms, other than `sha256` (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/31)
 * [Exclude patterns (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/33)

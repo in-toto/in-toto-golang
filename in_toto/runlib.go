@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"syscall"
 )
 
@@ -233,9 +234,9 @@ func RunCommand(cmdArgs []string) (map[string]interface{}, error) {
 	retVal := WaitErrToExitCode(cmd.Wait())
 
 	return map[string]interface{}{
-		"return-value": retVal,
-		"stdout":       stdout,
-		"stderr":       stderr,
+		"return-value": float64(retVal),
+		"stdout":       string(stdout),
+		"stderr":       string(stderr),
 	}, nil
 }
 
@@ -246,10 +247,9 @@ metadata.  Link metadata contains recorded products at the passed productPaths
 and materials at the passed materialPaths.  The returned link is wrapped in a
 Metablock object.  If command execution or artifact recording fails the first
 return value is an empty Metablock and the second return value is the error.
-NOTE: Currently InTotoRun cannot be used to sign Link metadata.
 */
 func InTotoRun(name string, materialPaths []string, productPaths []string,
-	cmdArgs []string) (Metablock, error) {
+	cmdArgs []string, key Key) (Metablock, error) {
 	var linkMb Metablock
 	materials, err := RecordArtifacts(materialPaths)
 	if err != nil {
@@ -266,7 +266,6 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		return linkMb, err
 	}
 
-	linkMb.Signatures = []Signature{}
 	linkMb.Signed = Link{
 		Type:        "link",
 		Name:        name,
@@ -276,6 +275,14 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		Command:     cmdArgs,
 		Environment: map[string]interface{}{},
 	}
-
+	linkMb.Signatures = []Signature{}
+	// We use a new feature from Go1.13 here, to check the key struct.
+	// IsZero() will return True, if the key hasn't been initialized
+	// with other values than the default ones.
+	if !reflect.ValueOf(key).IsZero() {
+		if err := linkMb.Sign(key); err != nil {
+			return linkMb, err
+		}
+	}
 	return linkMb, nil
 }

@@ -39,13 +39,13 @@ func RunInspections(layout Layout) (map[string]Metablock, error) {
 	for _, inspection := range layout.Inspect {
 
 		linkMb, err := InTotoRun(inspection.Name, []string{"."}, []string{"."},
-			inspection.Run)
+			inspection.Run, Key{})
 		if err != nil {
 			return nil, err
 		}
 
 		retVal := linkMb.Signed.(Link).ByProducts["return-value"]
-		if retVal != 0 {
+		if retVal != float64(0) {
 			return nil, fmt.Errorf("Inspection command '%s' of inspection '%s'"+
 				" returned a non-zero value: %d", inspection.Run, inspection.Name,
 				retVal)

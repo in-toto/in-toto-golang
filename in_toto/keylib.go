@@ -2,220 +2,524 @@ package in_toto
 
 import (
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/hex"
-	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"golang.org/x/crypto/ed25519"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"strings"
 )
 
+// ErrFailedPEMParsing gets returned when PKCS1, PKCS8 or PKIX key parsing fails
+var ErrFailedPEMParsing = errors.New("failed parsing the PEM block: unsupported PEM type")
+
+// ErrNoPEMBlock gets triggered when there is no PEM block in the provided file
+var ErrNoPEMBlock = errors.New("failed to decode the data as PEM block (are you sure this is a pem file?)")
+
+// ErrUnsupportedKeyType is returned when we are dealing with a key type different to ed25519 or RSA
+var ErrUnsupportedKeyType = errors.New("unsupported key type")
+
+// ErrInvalidSignature is returned when the signature is invalid
+var ErrInvalidSignature = errors.New("invalid signature")
+
+// ErrInvalidKey is returned when a given key is none of RSA, ECDSA or ED25519
+var ErrInvalidKey = errors.New("invalid key")
+
+// ErrUnsupportedScheme is returned when the specified Scheme is not supported
+var ErrUnsupportedScheme = errors.New("unsupported key scheme")
+
+const (
+	rsaKeyType            string = "rsa"
+	ecdsaKeyType          string = "ecdsa"
+	ed25519KeyType        string = "ed25519"
+	rsassapsssha256Scheme string = "rsassa-pss-sha256"
+	ecdsaSha2nistp256     string = "ecdsa-sha2-nistp256"
+	ecdsaSha2nistp384     string = "ecdsa-sha2-nistp384"
+	ed25519Scheme         string = "ed25519"
+)
+
 /*
-ParseRSAPublicKeyFromPEM parses the passed pemBytes as e.g. read from a PEM
-formatted file, and instantiates and returns the corresponding RSA public key.
-If the no RSA public key can be parsed, the first return value is nil and the
-second return value is the error.
+getSupportedKeyIdHashAlgorithms returns a string slice of supported
+keyIdHashAlgorithms. We need to use this function instead of a constant,
+because Go does not support global constant slices.
 */
-func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
-	// TODO: There could be more key data in _, which we silently ignore here.
-	// Should we handle it / fail / say something about it?
-	data, _ := pem.Decode(pemBytes)
-	if data == nil {
-		return nil, fmt.Errorf("Could not find a public key PEM block")
-	}
-
-	pub, err := x509.ParsePKIXPublicKey(data.Bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	//ParsePKIXPublicKey might return an rsa, dsa, or ecdsa public key
-	rsaPub, isRsa := pub.(*rsa.PublicKey)
-	if !isRsa {
-		return nil, fmt.Errorf("We currently only support rsa keys: got '%s'",
-			reflect.TypeOf(pub))
-	}
-
-	return rsaPub, nil
+func getSupportedKeyIdHashAlgorithms() []string {
+	return []string{"sha256", "sha512"}
 }
 
 /*
-LoadPublicKey parses an RSA public key from a PEM formatted file at the passed
-path into the Key object on which it was called.  It returns an error if the
-file at path does not exist or is not a PEM formatted RSA public key.
+getSupportedRSASchemes returns a string slice of supported RSA Key schemes.
+We need to use this function instead of a constant because Go does not support
+global constant slices.
 */
-func (k *Key) LoadPublicKey(path string) (err error) {
-	keyFile, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if closeErr := keyFile.Close(); closeErr != nil {
-			err = closeErr
-		}
-	}()
+func getSupportedRSASchemes() []string {
+	return []string{rsassapsssha256Scheme}
+}
 
-	// Read key bytes and decode PEM
-	keyBytes, err := ioutil.ReadAll(keyFile)
-	if err != nil {
-		return err
-	}
+/*
+getSupportedEcdsaSchemes returns a string slice of supported ecdsa Key schemes.
+We need to use this function instead of a constant because Go does not support
+global constant slices.
+*/
+func getSupportedEcdsaSchemes() []string {
+	return []string{ecdsaSha2nistp256, ecdsaSha2nistp384}
+}
 
-	// We only parse to see if this is indeed a pem formatted rsa public key,
-	// but don't use the returned *rsa.PublicKey. Instead, we continue with
-	// the original keyBytes from above.
-	_, err = ParseRSAPublicKeyFromPEM(keyBytes)
-	if err != nil {
-		return err
-	}
+/*
+getSupportedEd25519Schemes returns a string slice of supported ed25519 Key
+schemes. We need to use this function instead of a constant because Go does
+not support global constant slices.
+*/
+func getSupportedEd25519Schemes() []string {
+	return []string{ed25519Scheme}
+}
 
-	// Strip leading and trailing data from PEM file like securesystemslib does
-	// TODO: Should we instead use the parsed public key to reconstruct the PEM?
-	keyHeader := "-----BEGIN PUBLIC KEY-----"
-	keyFooter := "-----END PUBLIC KEY-----"
-	keyStart := strings.Index(string(keyBytes), keyHeader)
-	keyEnd := strings.Index(string(keyBytes), keyFooter) + len(keyFooter)
-	// Successful call to ParseRSAPublicKeyFromPEM already guarantees that
-	// header and footer are present, i.e. `!(keyStart == -1 || keyEnd == -1)`
-	keyBytesStripped := keyBytes[keyStart:keyEnd]
-
-	// Declare values for key
-	// TODO: Do not hardcode here, but define defaults elsewhere and add support
-	// for parametrization
-	keyType := "rsa"
-	scheme := "rsassa-pss-sha256"
-	keyIdHashAlgorithms := []string{"sha256", "sha512"}
-
+/*
+generateKeyID creates a partial key map and generates the key ID
+based on the created partial key map via the SHA256 method.
+The resulting keyID will be directly saved in the corresponding key object.
+On success generateKeyID will return nil, in case of errors while encoding
+there will be an error.
+*/
+func (k *Key) generateKeyID() error {
 	// Create partial key map used to create the keyid
 	// Unfortunately, we can't use the Key object because this also carries
 	// yet unwanted fields, such as KeyId and KeyVal.Private and therefore
-	// produces a different hash
+	// produces a different hash. We generate the keyId exactly as we do in
+	// the securesystemslib  to keep interoperability between other in-toto
+	// implementations.
 	var keyToBeHashed = map[string]interface{}{
-		"keytype":               keyType,
-		"scheme":                scheme,
-		"keyid_hash_algorithms": keyIdHashAlgorithms,
+		"keytype":               k.KeyType,
+		"scheme":                k.Scheme,
+		"keyid_hash_algorithms": k.KeyIdHashAlgorithms,
 		"keyval": map[string]string{
-			"public": string(keyBytesStripped),
+			"public": k.KeyVal.Public,
 		},
 	}
-
-	// Canonicalize key and get hex representation of hash
 	keyCanonical, err := EncodeCanonical(keyToBeHashed)
 	if err != nil {
 		return err
 	}
+	// calculate sha256 and return string representation of keyId
 	keyHashed := sha256.Sum256(keyCanonical)
-
-	// Unmarshalling the canonicalized key into the Key object would seem natural
-	// Unfortunately, our mandated canonicalization function produces a byte
-	// slice that cannot be unmarshalled by Golang's json decoder, hence we have
-	// to manually assign the values
-	k.KeyType = keyType
-	k.KeyVal = KeyVal{
-		Public: string(keyBytesStripped),
+	k.KeyId = fmt.Sprintf("%x", keyHashed)
+	err = validateKey(*k)
+	if err != nil {
+		return err
 	}
+	return nil
+}
+
+/*
+generatePublicPEMBlock creates a "PUBLIC KEY" PEM block from public key byte data.
+If successful it returns PEM block as []byte slice. This function should always
+succeed, if pubKeyBytes is empty the PEM block will have an empty byte block.
+Therefore only header and footer will exist.
+*/
+func generatePublicPEMBlock(pubKeyBytes []byte) []byte {
+	// construct PEM block
+	publicKeyPemBlock := &pem.Block{
+		Type:    "PUBLIC KEY",
+		Headers: nil,
+		Bytes:   pubKeyBytes,
+	}
+	return pem.EncodeToMemory(publicKeyPemBlock)
+}
+
+/*
+setKeyComponents sets all components in our key object.
+Furthermore it makes sure to remove any trailing and leading whitespaces or newlines.
+We treat key types differently for interoperability reasons to the in-toto python
+implementation and the securesystemslib.
+*/
+func (k *Key) setKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyType string, scheme string, keyIdHashAlgorithms []string) error {
+	// assume we have a privateKey if the key size is bigger than 0
+	switch keyType {
+	case rsaKeyType, ecdsaKeyType:
+		if len(privateKeyBytes) > 0 {
+			k.KeyVal = KeyVal{
+				Private: strings.TrimSpace(string(privateKeyBytes)),
+				Public:  strings.TrimSpace(string(generatePublicPEMBlock(pubKeyBytes))),
+			}
+		} else {
+			k.KeyVal = KeyVal{
+				Public: strings.TrimSpace(string(pubKeyBytes)),
+			}
+		}
+	case ed25519KeyType:
+		if len(privateKeyBytes) > 0 {
+			k.KeyVal = KeyVal{
+				Private: strings.TrimSpace(hex.EncodeToString(privateKeyBytes)),
+				Public:  strings.TrimSpace(hex.EncodeToString(pubKeyBytes)),
+			}
+		} else {
+			k.KeyVal = KeyVal{
+				Public: strings.TrimSpace(hex.EncodeToString(pubKeyBytes)),
+			}
+		}
+	default:
+		return fmt.Errorf("%w: %s", ErrUnsupportedKeyType, keyType)
+	}
+	k.KeyType = keyType
 	k.Scheme = scheme
 	k.KeyIdHashAlgorithms = keyIdHashAlgorithms
-	k.KeyId = fmt.Sprintf("%x", keyHashed)
-
+	if err := k.generateKeyID(); err != nil {
+		return err
+	}
 	return nil
 }
 
 /*
-VerifySignature uses the passed Key to verify the passed Signature over the
-passed data.  It returns an error if the key is not a valid RSA public key or
-if the signature is not valid for the data.
+parseKey tries to parse a PEM []byte slice. Using the following standards
+in the given order:
+
+	* PKCS8
+	* PKCS1
+	* PKIX
+
+On success it returns the parsed key and nil.
+On failure it returns nil and the error ErrFailedPEMParsing
 */
-func VerifySignature(key Key, sig Signature, data []byte) error {
-	// Create rsa.PublicKey object from DER encoded public key string as
-	// found in the public part of the keyval part of a securesystemslib key dict
-	keyReader := strings.NewReader(key.KeyVal.Public)
-	pemBytes, err := ioutil.ReadAll(keyReader)
-	if err != nil {
-		return err
+func parseKey(data []byte) (interface{}, error) {
+	key, err := x509.ParsePKCS8PrivateKey(data)
+	if err == nil {
+		return key, nil
 	}
-	rsaPub, err := ParseRSAPublicKeyFromPEM(pemBytes)
-	if err != nil {
-		return err
+	key, err = x509.ParsePKCS1PrivateKey(data)
+	if err == nil {
+		return key, nil
 	}
-
-	hashed := sha256.Sum256(data)
-
-	// Create hex bytes from the signature hex string
-	sigHex, _ := hex.DecodeString(sig.Sig)
-
-	// SecSysLib uses a SaltLength of `hashes.SHA256().digest_size`, i.e. 32
-	if err := rsa.VerifyPSS(rsaPub, crypto.SHA256, hashed[:], sigHex,
-		&rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256}); err != nil {
-		return err
+	key, err = x509.ParsePKIXPublicKey(data)
+	if err == nil {
+		return key, nil
 	}
-
-	return nil
+	return nil, ErrFailedPEMParsing
 }
 
 /*
-ParseEd25519FromPrivateJSON parses an ed25519 private key from the json string.
-These ed25519 keys have the format as generated using in-toto-keygen:
+decodeAndParse receives potential PEM bytes decodes them via pem.Decode
+and pushes them to parseKey. If any error occurs during this process,
+the function will return nil and an error (either ErrFailedPEMParsing
+or ErrNoPEMBlock). On success it will return the key object interface
+and nil as error.
+*/
+func decodeAndParse(pemBytes []byte) (interface{}, error) {
+	// pem.Decode returns the parsed pem block and a rest.
+	// The rest is everything, that could not be parsed as PEM block.
+	// Therefore we can drop this via using the blank identifier "_"
+	data, _ := pem.Decode(pemBytes)
+	if data == nil {
+		return nil, ErrNoPEMBlock
+	}
+	// Try to load private key, if this fails try to load
+	// key as public key
+	key, err := parseKey(data.Bytes)
+	if err != nil {
+		return key, err
+	}
+	return key, nil
+}
 
-	{
-		"keytype: "ed25519",
-		"scheme": "ed25519",
-		"keyid": ...
-		"keyid_hash_algorithms": [...]
-		"keyval": {
-			"public": "..." # 32 bytes
-			"private": "..." # 32 bytes
+/*
+LoadKey loads the key file at specified file path into the key object.
+It automatically derives the PEM type and the key type.
+Right now the following PEM types are supported:
+
+	* PKCS1 for private keys
+	* PKCS8	for private keys
+	* PKIX for public keys
+
+The following key types are supported and will be automatically assigned to
+the key type field:
+
+	* ed25519
+	* rsa
+	* ecdsa
+
+The following schemes are supported:
+
+	* ed25519 -> ed25519
+	* rsa -> rsassa-pss-sha256
+	* ecdsa -> ecdsa-sha256-nistp256
+
+Note that, this behavior is consistent with the securesystemslib, except for
+ecdsa. We do not use the scheme string as key type in in-toto-golang.
+Instead we are going with a ecdsa/ecdsa-sha2-nistp256 pair.
+
+On success it will return nil. The following errors can happen:
+
+	* path not found or not readable
+	* no PEM block in the loaded file
+	* no valid PKCS8/PKCS1 private key or PKIX public key
+	* errors while marshalling
+	* unsupported key types
+*/
+func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) error {
+	pemFile, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := pemFile.Close(); closeErr != nil {
+			err = closeErr
 		}
-	}
-*/
-func ParseEd25519FromPrivateJSON(JSONString string) (Key, error) {
-
-	var keyObj Key
-	err := json.Unmarshal([]uint8(JSONString), &keyObj)
+	}()
+	// Read key bytes
+	pemBytes, err := ioutil.ReadAll(pemFile)
 	if err != nil {
-		return keyObj, fmt.Errorf("this is not a valid JSON key object")
+		return err
 	}
 
-	if keyObj.KeyType != "ed25519" || keyObj.Scheme != "ed25519" {
-		return keyObj, fmt.Errorf("this doesn't appear to be an ed25519 key")
+	key, err := decodeAndParse(pemBytes)
+	if err != nil {
+		return err
 	}
 
-	if keyObj.KeyVal.Private == "" {
-		return keyObj, fmt.Errorf("this key is not a private key")
+	// Use type switch to identify the key format
+	switch key.(type) {
+	case *rsa.PublicKey:
+		if err := k.setKeyComponents(pemBytes, []byte{}, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+			return err
+		}
+	case *rsa.PrivateKey:
+		// Note: RSA Public Keys will get stored as X.509 SubjectPublicKeyInfo (RFC5280)
+		// This behavior is consistent to the securesystemslib
+		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*rsa.PrivateKey).Public())
+		if err != nil {
+			return err
+		}
+		if err := k.setKeyComponents(pubKeyBytes, pemBytes, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+			return err
+		}
+	case ed25519.PublicKey:
+		if err := k.setKeyComponents(key.(ed25519.PublicKey), []byte{}, ed25519KeyType, scheme, keyIdHashAlgorithms); err != nil {
+			return err
+		}
+	case ed25519.PrivateKey:
+		pubKeyBytes := key.(ed25519.PrivateKey).Public()
+		if err := k.setKeyComponents(pubKeyBytes.(ed25519.PublicKey), key.(ed25519.PrivateKey), ed25519KeyType, scheme, keyIdHashAlgorithms); err != nil {
+			return err
+		}
+	case *ecdsa.PrivateKey:
+		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*ecdsa.PrivateKey).Public())
+		if err != nil {
+			return err
+		}
+		if err := k.setKeyComponents(pubKeyBytes, pemBytes, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+			return err
+		}
+	case *ecdsa.PublicKey:
+		if err := k.setKeyComponents(pemBytes, []byte{}, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+			return err
+		}
+	default:
+		// We should never get here, because we implement all from Go supported Key Types
+		panic("unexpected Error in LoadKey function")
 	}
-
-	// 64 hexadecimal digits => 32 bytes for the private portion of the key
-	if len(keyObj.KeyVal.Private) != 64 {
-		return keyObj, fmt.Errorf("the private field on this key is malformed")
-	}
-
-	return keyObj, nil
+	return nil
 }
 
 /*
-GenerateEd25519Signature creates an ed25519 signature using the key and the
-signable buffer provided. It returns an error if the underlying signing library
-fails.
+GenerateSignature will automatically detect the key type and sign the signable data
+with the provided key. If everything goes right GenerateSignature will return
+a for the key valid signature and err=nil. If something goes wrong it will
+return a not initialized signature and an error. Possible errors are:
+
+	* ErrNoPEMBlock
+	* ErrUnsupportedKeyType
+
+Currently supported is only one scheme per key.
+
+Note that in-toto-golang has different requirements to an ecdsa key.
+In in-toto-golang we use the string 'ecdsa' as string for the key type.
+In the key scheme we use: ecdsa-sha2-nistp256.
 */
-func GenerateEd25519Signature(signable []byte, key Key) (Signature, error) {
-
-	var signature Signature
-
-	seed, err := hex.DecodeString(key.KeyVal.Private)
+func GenerateSignature(signable []byte, key Key) (Signature, error) {
+	err := validateKey(key)
 	if err != nil {
-		return signature, err
+		return Signature{}, err
 	}
-	privkey := ed25519.NewKeyFromSeed(seed)
-	signatureBuffer := ed25519.Sign(privkey, signable)
-
+	var signature Signature
+	var signatureBuffer []byte
+	// The following switch block is needed for keeping interoperability
+	// with the securesystemslib and the python implementation
+	// in which we are storing RSA keys in PEM format, but ed25519 keys hex encoded.
+	switch key.KeyType {
+	case rsaKeyType:
+		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
+		if err != nil {
+			return Signature{}, err
+		}
+		parsedKey, ok := parsedKey.(*rsa.PrivateKey)
+		if !ok {
+			return Signature{}, ErrKeyKeyTypeMismatch
+		}
+		switch key.Scheme {
+		case rsassapsssha256Scheme:
+			hashed := sha256.Sum256(signable)
+			// We use rand.Reader as secure random source for rsa.SignPSS()
+			signatureBuffer, err = rsa.SignPSS(rand.Reader, parsedKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:],
+				&rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
+			if err != nil {
+				return signature, err
+			}
+		default:
+			// supported key schemes will get checked in validateKey
+			panic("unexpected Error in GenerateSignature function")
+		}
+	case ecdsaKeyType:
+		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
+		if err != nil {
+			return Signature{}, err
+		}
+		parsedKey, ok := parsedKey.(*ecdsa.PrivateKey)
+		if !ok {
+			return Signature{}, ErrKeyKeyTypeMismatch
+		}
+		switch key.Scheme {
+		// TODO: add support for more hash algorithms
+		case ecdsaSha2nistp256:
+			hashed := sha256.Sum256(signable)
+			// ecdsa.Sign returns a signature that consists of two components called: r and s
+			// We assume here, that r and s are of the same size nLen and that
+			// the signature is 2*nLen. Furthermore we must note  that hashes get truncated
+			// if they are too long for the curve.
+			r, s, err := ecdsa.Sign(rand.Reader, parsedKey.(*ecdsa.PrivateKey), hashed[:])
+			if err != nil {
+				return signature, nil
+			}
+			// Generate the ecdsa signature on the same way, as we do in the securesystemslib
+			// We are marshalling the ecdsaSignature struct as ASN.1 INTEGER SEQUENCES
+			// into an ASN.1 Object.
+			signatureBuffer, err = asn1.Marshal(EcdsaSignature{
+				R: r,
+				S: s,
+			})
+		default:
+			// supported key schemes will get checked in validateKey
+			panic("unexpected Error in GenerateSignature function")
+		}
+	case ed25519KeyType:
+		// We do not need a scheme switch here, because ed25519
+		// only consist of sha256 and curve25519.
+		privateHex, err := hex.DecodeString(key.KeyVal.Private)
+		if err != nil {
+			return signature, ErrInvalidHexString
+		}
+		// Note: We can directly use the key for signing and do not
+		// need to use ed25519.NewKeyFromSeed().
+		signatureBuffer = ed25519.Sign(privateHex, signable)
+	default:
+		// We should never get here, because we call validateKey in the first
+		// line of the function.
+		panic("unexpected Error in GenerateSignature function")
+	}
 	signature.Sig = hex.EncodeToString(signatureBuffer)
 	signature.KeyId = key.KeyId
-
 	return signature, nil
+}
+
+/*
+VerifySignature will verify unverified byte data via a passed key and signature.
+Supported key types are:
+
+	* rsa
+	* ed25519
+	* ecdsa
+
+When encountering an RSA key, VerifySignature will decode the PEM block in the key
+and will call rsa.VerifyPSS() for verifying the RSA signature.
+When encountering an ed25519 key, VerifySignature will decode the hex string encoded
+public key and will use ed25519.Verify() for verifying the ed25519 signature.
+When the given key is an ecdsa key, VerifySignature will unmarshall the ASN1 object
+and will use the retrieved ecdsa components 'r' and 's' for verifying the signature.
+On success it will return nil. In case of an unsupported key type or any other error
+it will return an error.
+
+Note that in-toto-golang has different requirements to an ecdsa key.
+In in-toto-golang we use the string 'ecdsa' as string for the key type.
+In the key scheme we use: ecdsa-sha2-nistp256.
+*/
+func VerifySignature(key Key, sig Signature, unverified []byte) error {
+	err := validateKey(key)
+	if err != nil {
+		return err
+	}
+	sigBytes, err := hex.DecodeString(sig.Sig)
+	if err != nil {
+		return err
+	}
+	switch key.KeyType {
+	case rsaKeyType:
+		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
+		if err != nil {
+			return err
+		}
+		parsedKey, ok := parsedKey.(*rsa.PublicKey)
+		if !ok {
+			return ErrKeyKeyTypeMismatch
+		}
+		switch key.Scheme {
+		case rsassapsssha256Scheme:
+			hashed := sha256.Sum256(unverified)
+			err = rsa.VerifyPSS(parsedKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], sigBytes, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
+			if err != nil {
+				return fmt.Errorf("%w: %s", ErrInvalidSignature, err)
+			}
+		default:
+			// supported key schemes will get checked in validateKey
+			panic("unexpected Error in GenerateSignature function")
+		}
+	case ecdsaKeyType:
+		var ecdsaSignature EcdsaSignature
+		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
+		if err != nil {
+			return err
+		}
+		parsedKey, ok := parsedKey.(*ecdsa.PublicKey)
+		if !ok {
+			return ErrKeyKeyTypeMismatch
+		}
+		switch key.Scheme {
+		// TODO: add support for more hash algorithms
+		case ecdsaSha2nistp256:
+			hashed := sha256.Sum256(unverified)
+			// Unmarshal the ASN.1 DER marshalled ecdsa signature to
+			// ecdsaSignature. asn1.Unmarshal returns the rest and an error
+			// we can skip the rest here..
+			_, err = asn1.Unmarshal(sigBytes, &ecdsaSignature)
+			if err != nil {
+				return err
+			}
+			if err := ecdsa.Verify(parsedKey.(*ecdsa.PublicKey), hashed[:], ecdsaSignature.R, ecdsaSignature.S); err == false {
+				return ErrInvalidSignature
+			}
+		default:
+			// supported key schemes will get checked in validateKey
+			panic("unexpected Error in GenerateSignature function")
+		}
+	case ed25519KeyType:
+		// We do not need a scheme switch here, because ed25519
+		// only consist of sha256 and curve25519.
+		pubHex, err := hex.DecodeString(key.KeyVal.Public)
+		if err != nil {
+			return ErrInvalidHexString
+		}
+		if ok := ed25519.Verify(pubHex, unverified, sigBytes); !ok {
+			return fmt.Errorf("%w: ed25519", ErrInvalidSignature)
+		}
+	default:
+		// We should never get here, because we call validateKey in the first
+		// line of the function.
+		panic("unexpected Error in VerifySignature function")
+	}
+	return nil
 }
