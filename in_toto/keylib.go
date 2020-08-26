@@ -44,6 +44,9 @@ const (
 	ecdsaSha2nistp256     string = "ecdsa-sha2-nistp256"
 	ecdsaSha2nistp384     string = "ecdsa-sha2-nistp384"
 	ed25519Scheme         string = "ed25519"
+	pemPublicKey          string = "PUBLIC KEY"
+	pemPrivateKey         string = "PRIVATE KEY"
+	pemRSAPrivateKey      string = "PRIVATE RSA KEY"
 )
 
 /*
@@ -146,23 +149,23 @@ func (k *Key) setKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyTy
 	case rsaKeyType:
 		if len(privateKeyBytes) > 0 {
 			k.KeyVal = KeyVal{
-				Private: strings.TrimSpace(string(generatePEMBlock(privateKeyBytes, "PRIVATE RSA KEY"))),
-				Public:  strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, "PUBLIC KEY"))),
+				Private: strings.TrimSpace(string(generatePEMBlock(privateKeyBytes, pemRSAPrivateKey))),
+				Public:  strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, pemPublicKey))),
 			}
 		} else {
 			k.KeyVal = KeyVal{
-				Public: strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, "PUBLIC KEY"))),
+				Public: strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, pemPublicKey))),
 			}
 		}
 	case ecdsaKeyType:
 		if len(privateKeyBytes) > 0 {
 			k.KeyVal = KeyVal{
-				Private: strings.TrimSpace(string(generatePEMBlock(privateKeyBytes, "PRIVATE KEY"))),
-				Public:  strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, "PUBLIC KEY"))),
+				Private: strings.TrimSpace(string(generatePEMBlock(privateKeyBytes, pemPrivateKey))),
+				Public:  strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, pemPublicKey))),
 			}
 		} else {
 			k.KeyVal = KeyVal{
-				Public: strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, "PUBLIC KEY"))),
+				Public: strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, pemPublicKey))),
 			}
 		}
 	case ed25519KeyType:
