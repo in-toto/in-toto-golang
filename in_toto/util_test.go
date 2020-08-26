@@ -96,15 +96,15 @@ func TestInterfaceKeyStrings(t *testing.T) {
 func TestSubsetCheck(t *testing.T) {
 	tables := []struct {
 		subset   []string
-		superset []string
+		superset Set
 		result   bool
 	}{
-		{[]string{"sha256"}, []string{"sha256", "sha512"}, true},
-		{[]string{"sha512"}, []string{"sha256"}, false},
-		{[]string{"sha256", "sha512"}, []string{"sha128", "sha256", "sha512"}, true},
+		{[]string{"sha256"}, NewSet("sha256", "sha512"), true},
+		{[]string{"sha512"}, NewSet("sha256"), false},
+		{[]string{"sha256", "sha512"}, NewSet("sha128", "sha256", "sha512"), true},
 	}
 	for _, table := range tables {
-		result := subsetCheck(table.subset, table.superset)
+		result := table.superset.IsSubSet(NewSet(table.subset...))
 		if table.result != result {
 			t.Errorf("result mismatch for: %#v, %#v, got: %t, should have got: %t", table.subset, table.superset, result, table.result)
 		}

@@ -131,26 +131,19 @@ func InterfaceKeyStrings(m map[string]interface{}) []string {
 }
 
 /*
-subsetCheck checks if all strings in a slice of strings
-can be found in a superset slice of strings.
+IsSubSet checks if the parameter subset is a
+subset of the superset s.
 */
-func subsetCheck(subset []string, superset []string) bool {
-	// TODO: This function might be better as addition
-	// to our Set interface.
-	// We use a Go label here to break out to the outer loop
-OUTER:
-	for _, sub := range subset {
-		for _, super := range superset {
-			if sub == super {
-				continue OUTER
-			}
-		}
-		// If we cannot find a substring from subset in the superset
-		// we return false. In terms of keyIdHashAlgorithms for example
-		// this would mean, that we have an unsupported hash algorithm
-		// in our keyIdHashAlgorithm slice.
+func (s Set) IsSubSet(subset Set) bool {
+	if len(subset) > len(s) {
 		return false
 	}
-	// return true if all substrings can be found in the superset
+	for key, _ := range subset {
+		if s.Has(key) {
+			continue
+		} else {
+			return false
+		}
+	}
 	return true
 }
