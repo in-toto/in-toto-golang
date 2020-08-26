@@ -44,6 +44,9 @@ const (
 	ecdsaSha2nistp256     string = "ecdsa-sha2-nistp256"
 	ecdsaSha2nistp384     string = "ecdsa-sha2-nistp384"
 	ed25519Scheme         string = "ed25519"
+	pemPublicKey          string = "PUBLIC KEY"
+	pemPrivateKey         string = "PRIVATE KEY"
+	pemRSAPrivateKey      string = "PRIVATE RSA KEY"
 )
 
 /*
@@ -119,19 +122,19 @@ func (k *Key) generateKeyID() error {
 }
 
 /*
-generatePublicPEMBlock creates a "PUBLIC KEY" PEM block from public key byte data.
-If successful it returns PEM block as []byte slice. This function should always
-succeed, if pubKeyBytes is empty the PEM block will have an empty byte block.
+generatePEMBlock creates a PEM block from scratch via the keyBytes and the pemType.
+If successful it returns a PEM block as []byte slice. This function should always
+succeed, if keyBytes is empty the PEM block will have an empty byte block.
 Therefore only header and footer will exist.
 */
-func generatePublicPEMBlock(pubKeyBytes []byte) []byte {
+func generatePEMBlock(keyBytes []byte, pemType string) []byte {
 	// construct PEM block
-	publicKeyPemBlock := &pem.Block{
-		Type:    "PUBLIC KEY",
+	pemBlock := &pem.Block{
+		Type:    pemType,
 		Headers: nil,
-		Bytes:   pubKeyBytes,
+		Bytes:   keyBytes,
 	}
-	return pem.EncodeToMemory(publicKeyPemBlock)
+	return pem.EncodeToMemory(pemBlock)
 }
 
 /*
@@ -143,15 +146,26 @@ implementation and the securesystemslib.
 func (k *Key) setKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyType string, scheme string, keyIdHashAlgorithms []string) error {
 	// assume we have a privateKey if the key size is bigger than 0
 	switch keyType {
-	case rsaKeyType, ecdsaKeyType:
+	case rsaKeyType:
 		if len(privateKeyBytes) > 0 {
 			k.KeyVal = KeyVal{
-				Private: strings.TrimSpace(string(privateKeyBytes)),
-				Public:  strings.TrimSpace(string(generatePublicPEMBlock(pubKeyBytes))),
+				Private: strings.TrimSpace(string(generatePEMBlock(privateKeyBytes, pemRSAPrivateKey))),
+				Public:  strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, pemPublicKey))),
 			}
 		} else {
 			k.KeyVal = KeyVal{
-				Public: strings.TrimSpace(string(pubKeyBytes)),
+				Public: strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, pemPublicKey))),
+			}
+		}
+	case ecdsaKeyType:
+		if len(privateKeyBytes) > 0 {
+			k.KeyVal = KeyVal{
+				Private: strings.TrimSpace(string(generatePEMBlock(privateKeyBytes, pemPrivateKey))),
+				Public:  strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, pemPublicKey))),
+			}
+		} else {
+			k.KeyVal = KeyVal{
+				Public: strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, pemPublicKey))),
 			}
 		}
 	case ed25519KeyType:
@@ -208,24 +222,26 @@ func parseKey(data []byte) (interface{}, error) {
 decodeAndParse receives potential PEM bytes decodes them via pem.Decode
 and pushes them to parseKey. If any error occurs during this process,
 the function will return nil and an error (either ErrFailedPEMParsing
-or ErrNoPEMBlock). On success it will return the key object interface
-and nil as error.
+or ErrNoPEMBlock). On success it will return the decoded pemData, the
+key object interface and nil as error. We need the decoded pemData,
+because LoadKey relies on decoded pemData for operating system
+interoperability.
 */
-func decodeAndParse(pemBytes []byte) (interface{}, error) {
+func decodeAndParse(pemBytes []byte) (*pem.Block, interface{}, error) {
 	// pem.Decode returns the parsed pem block and a rest.
 	// The rest is everything, that could not be parsed as PEM block.
 	// Therefore we can drop this via using the blank identifier "_"
 	data, _ := pem.Decode(pemBytes)
 	if data == nil {
-		return nil, ErrNoPEMBlock
+		return nil, nil, ErrNoPEMBlock
 	}
 	// Try to load private key, if this fails try to load
 	// key as public key
 	key, err := parseKey(data.Bytes)
 	if err != nil {
-		return key, err
+		return nil, nil, err
 	}
-	return key, nil
+	return data, key, nil
 }
 
 /*
@@ -277,8 +293,9 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 	if err != nil {
 		return err
 	}
-
-	key, err := decodeAndParse(pemBytes)
+	// decodeAndParse returns the pemData for later use
+	// and a parsed key object (for operations on that key, like extracting the public Key)
+	pemData, key, err := decodeAndParse(pemBytes)
 	if err != nil {
 		return err
 	}
@@ -286,7 +303,11 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 	// Use type switch to identify the key format
 	switch key.(type) {
 	case *rsa.PublicKey:
-		if err := k.setKeyComponents(pemBytes, []byte{}, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*rsa.PublicKey))
+		if err != nil {
+			return err
+		}
+		if err := k.setKeyComponents(pubKeyBytes, []byte{}, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case *rsa.PrivateKey:
@@ -296,7 +317,7 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		if err != nil {
 			return err
 		}
-		if err := k.setKeyComponents(pubKeyBytes, pemBytes, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, pemData.Bytes, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case ed25519.PublicKey:
@@ -313,11 +334,15 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		if err != nil {
 			return err
 		}
-		if err := k.setKeyComponents(pubKeyBytes, pemBytes, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, pemData.Bytes, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case *ecdsa.PublicKey:
-		if err := k.setKeyComponents(pemBytes, []byte{}, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*ecdsa.PublicKey))
+		if err != nil {
+			return err
+		}
+		if err := k.setKeyComponents(pubKeyBytes, []byte{}, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	default:
@@ -354,7 +379,8 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	// in which we are storing RSA keys in PEM format, but ed25519 keys hex encoded.
 	switch key.KeyType {
 	case rsaKeyType:
-		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
+		// We do not need the pemData here, so we can throw it away via '_'
+		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
 		if err != nil {
 			return Signature{}, err
 		}
@@ -376,7 +402,8 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 			panic("unexpected Error in GenerateSignature function")
 		}
 	case ecdsaKeyType:
-		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
+		// We do not need the pemData here, so we can throw it away via '_'
+		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
 		if err != nil {
 			return Signature{}, err
 		}
@@ -459,7 +486,8 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 	}
 	switch key.KeyType {
 	case rsaKeyType:
-		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
+		// We do not need the pemData here, so we can throw it away via '_'
+		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
 		if err != nil {
 			return err
 		}
@@ -480,7 +508,8 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		}
 	case ecdsaKeyType:
 		var ecdsaSignature EcdsaSignature
-		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
+		// We do not need the pemData here, so we can throw it away via '_'
+		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
 		if err != nil {
 			return err
 		}
