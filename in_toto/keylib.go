@@ -119,19 +119,19 @@ func (k *Key) generateKeyID() error {
 }
 
 /*
-generatePublicPEMBlock creates a "PUBLIC KEY" PEM block from public key byte data.
-If successful it returns PEM block as []byte slice. This function should always
-succeed, if pubKeyBytes is empty the PEM block will have an empty byte block.
+generatePEMBlock creates a PEM block from scratch via the keyBytes and the pemType.
+If successful it returns a PEM block as []byte slice. This function should always
+succeed, if keyBytes is empty the PEM block will have an empty byte block.
 Therefore only header and footer will exist.
 */
-func generatePublicPEMBlock(pubKeyBytes []byte) []byte {
+func generatePEMBlock(keyBytes []byte, pemType string) []byte {
 	// construct PEM block
-	publicKeyPemBlock := &pem.Block{
-		Type:    "PUBLIC KEY",
+	pemBlock := &pem.Block{
+		Type:    pemType,
 		Headers: nil,
-		Bytes:   pubKeyBytes,
+		Bytes:   keyBytes,
 	}
-	return pem.EncodeToMemory(publicKeyPemBlock)
+	return pem.EncodeToMemory(pemBlock)
 }
 
 /*
@@ -143,15 +143,26 @@ implementation and the securesystemslib.
 func (k *Key) setKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyType string, scheme string, keyIdHashAlgorithms []string) error {
 	// assume we have a privateKey if the key size is bigger than 0
 	switch keyType {
-	case rsaKeyType, ecdsaKeyType:
+	case rsaKeyType:
 		if len(privateKeyBytes) > 0 {
 			k.KeyVal = KeyVal{
-				Private: strings.TrimSpace(string(privateKeyBytes)),
-				Public:  strings.TrimSpace(string(generatePublicPEMBlock(pubKeyBytes))),
+				Private: strings.TrimSpace(string(generatePEMBlock(privateKeyBytes, "PRIVATE RSA KEY"))),
+				Public:  strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, "PUBLIC KEY"))),
 			}
 		} else {
 			k.KeyVal = KeyVal{
-				Public: strings.TrimSpace(string(pubKeyBytes)),
+				Public: strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, "PUBLIC KEY"))),
+			}
+		}
+	case ecdsaKeyType:
+		if len(privateKeyBytes) > 0 {
+			k.KeyVal = KeyVal{
+				Private: strings.TrimSpace(string(generatePEMBlock(privateKeyBytes, "PRIVATE KEY"))),
+				Public:  strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, "PUBLIC KEY"))),
+			}
+		} else {
+			k.KeyVal = KeyVal{
+				Public: strings.TrimSpace(string(generatePEMBlock(pubKeyBytes, "PUBLIC KEY"))),
 			}
 		}
 	case ed25519KeyType:
@@ -286,7 +297,11 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 	// Use type switch to identify the key format
 	switch key.(type) {
 	case *rsa.PublicKey:
-		if err := k.setKeyComponents(pemBytes, []byte{}, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*rsa.PublicKey))
+		if err != nil {
+			return err
+		}
+		if err := k.setKeyComponents(pubKeyBytes, []byte{}, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case *rsa.PrivateKey:
@@ -296,7 +311,8 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		if err != nil {
 			return err
 		}
-		if err := k.setKeyComponents(pubKeyBytes, pemBytes, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		privKeyBytes, _ := pem.Decode(pemBytes)
+		if err := k.setKeyComponents(pubKeyBytes, privKeyBytes.Bytes, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case ed25519.PublicKey:
@@ -313,11 +329,16 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		if err != nil {
 			return err
 		}
-		if err := k.setKeyComponents(pubKeyBytes, pemBytes, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		privKeyBytes, _ := pem.Decode(pemBytes)
+		if err := k.setKeyComponents(pubKeyBytes, privKeyBytes.Bytes, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case *ecdsa.PublicKey:
-		if err := k.setKeyComponents(pemBytes, []byte{}, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*ecdsa.PublicKey))
+		if err != nil {
+			return err
+		}
+		if err := k.setKeyComponents(pubKeyBytes, []byte{}, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	default:
