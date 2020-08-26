@@ -106,7 +106,8 @@ func validateKeyVal(key Key) error {
 			}
 		}
 	case rsaKeyType, ecdsaKeyType:
-		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
+		// We do not need the pemData here, so we can throw it away via '_'
+		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
 		if err != nil {
 			return err
 		}
@@ -115,7 +116,8 @@ func validateKeyVal(key Key) error {
 			return err
 		}
 		if key.KeyVal.Private != "" {
-			parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
+			// We do not need the pemData here, so we can throw it away via '_'
+			_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
 			if err != nil {
 				return err
 			}

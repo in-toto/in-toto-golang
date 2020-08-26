@@ -219,24 +219,26 @@ func parseKey(data []byte) (interface{}, error) {
 decodeAndParse receives potential PEM bytes decodes them via pem.Decode
 and pushes them to parseKey. If any error occurs during this process,
 the function will return nil and an error (either ErrFailedPEMParsing
-or ErrNoPEMBlock). On success it will return the key object interface
-and nil as error.
+or ErrNoPEMBlock). On success it will return the decoded pemData, the
+key object interface and nil as error. We need the decoded pemData,
+because LoadKey relies on decoded pemData for operating system
+interoperability.
 */
-func decodeAndParse(pemBytes []byte) (interface{}, error) {
+func decodeAndParse(pemBytes []byte) (*pem.Block, interface{}, error) {
 	// pem.Decode returns the parsed pem block and a rest.
 	// The rest is everything, that could not be parsed as PEM block.
 	// Therefore we can drop this via using the blank identifier "_"
 	data, _ := pem.Decode(pemBytes)
 	if data == nil {
-		return nil, ErrNoPEMBlock
+		return nil, nil, ErrNoPEMBlock
 	}
 	// Try to load private key, if this fails try to load
 	// key as public key
 	key, err := parseKey(data.Bytes)
 	if err != nil {
-		return key, err
+		return nil, nil, err
 	}
-	return key, nil
+	return data, key, nil
 }
 
 /*
@@ -288,8 +290,9 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 	if err != nil {
 		return err
 	}
-
-	key, err := decodeAndParse(pemBytes)
+	// decodeAndParse returns the pemData for later use
+	// and a parsed key object (for operations on that key, like extracting the public Key)
+	pemData, key, err := decodeAndParse(pemBytes)
 	if err != nil {
 		return err
 	}
@@ -311,8 +314,7 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		if err != nil {
 			return err
 		}
-		privKeyBytes, _ := pem.Decode(pemBytes)
-		if err := k.setKeyComponents(pubKeyBytes, privKeyBytes.Bytes, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, pemData.Bytes, rsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case ed25519.PublicKey:
@@ -329,8 +331,7 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 		if err != nil {
 			return err
 		}
-		privKeyBytes, _ := pem.Decode(pemBytes)
-		if err := k.setKeyComponents(pubKeyBytes, privKeyBytes.Bytes, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, pemData.Bytes, ecdsaKeyType, scheme, keyIdHashAlgorithms); err != nil {
 			return err
 		}
 	case *ecdsa.PublicKey:
@@ -375,7 +376,8 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	// in which we are storing RSA keys in PEM format, but ed25519 keys hex encoded.
 	switch key.KeyType {
 	case rsaKeyType:
-		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
+		// We do not need the pemData here, so we can throw it away via '_'
+		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
 		if err != nil {
 			return Signature{}, err
 		}
@@ -397,7 +399,8 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 			panic("unexpected Error in GenerateSignature function")
 		}
 	case ecdsaKeyType:
-		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
+		// We do not need the pemData here, so we can throw it away via '_'
+		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
 		if err != nil {
 			return Signature{}, err
 		}
@@ -480,7 +483,8 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 	}
 	switch key.KeyType {
 	case rsaKeyType:
-		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
+		// We do not need the pemData here, so we can throw it away via '_'
+		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
 		if err != nil {
 			return err
 		}
@@ -501,7 +505,8 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		}
 	case ecdsaKeyType:
 		var ecdsaSignature EcdsaSignature
-		parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
+		// We do not need the pemData here, so we can throw it away via '_'
+		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
 		if err != nil {
 			return err
 		}
