@@ -1,8 +1,8 @@
-# Go in-toto verification
+# In-toto Go implementation
 [![Build Status](https://travis-ci.com/in-toto/in-toto-golang.svg?branch=master)](https://travis-ci.com/in-toto/in-toto-golang) [![Coverage Status](https://coveralls.io/repos/github/in-toto/in-toto-golang/badge.svg)](https://coveralls.io/github/in-toto/in-toto-golang) [![Build status](https://ci.appveyor.com/api/projects/status/n45pmpso0t5b40vk?svg=true)](https://ci.appveyor.com/project/in-toto/in-toto-golang)
 
 
-Basic Go implementation of in-toto supply chain verification, based on the
+Go implementation of the 
 [in-toto Python reference implementation](https://github.com/in-toto/in-toto).
 
 ## Docs
@@ -28,6 +28,5 @@ If any of these features are necessary for your use case please let us know and
 we will try to provide them as soon as possible!
 
 * [GPG keys](https://github.com/in-toto/in-toto-golang/issues/26)
-* [Layout parameter substitution](https://github.com/in-toto/in-toto-golang/issues/29)
 * [Hashing algorithms, other than `sha256` (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/31)
 * [Exclude patterns (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/33)
