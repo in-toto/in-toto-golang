@@ -3,6 +3,7 @@ package in_toto
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -13,6 +14,9 @@ import (
 
 // ErrSymCycle signals a detected symlink cycle in our RecordArtifacts() function.
 var ErrSymCycle = errors.New("symlink cycle detected")
+
+// ErrUnsupportedHashAlgorithm signals a missing hash mapping in getHashMapping
+var ErrUnsupportedHashAlgorithm = errors.New("unsupported hash algorithm detected")
 
 // visitedSymlinks is a hashset that contains all paths that we have visited.
 var visitedSymlinks Set
@@ -33,14 +37,10 @@ NOTE: For cross-platform consistency Windows-style line separators (CRLF) are
 normalized to Unix-style line separators (LF) before hashing file contents.
 */
 func RecordArtifact(path string) (map[string]interface{}, error) {
-
-	hashObjectMap := createMap()
-
+	supportedHashMappings := getHashMapping()
 	// Read file from passed path
 	contents, err := ioutil.ReadFile(path)
-
 	hashedContentsMap := make(map[string]interface{})
-
 	if err != nil {
 		return nil, err
 	}
@@ -51,9 +51,11 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 	// Create a map of all the hashes present in the hash_func list
 	hashFunc := []string{"sha256"}
 	for _, element := range hashFunc {
-
-		result := hashObjectMap[element].Compute(contents)
-
+		if _, ok := supportedHashMappings[element]; !ok {
+			return nil, fmt.Errorf("%w: %s", ErrUnsupportedHashAlgorithm, element)
+		}
+		h := supportedHashMappings[element]
+		result := hashToHex(h(), contents)
 		hashedContentsMap[element] = result
 	}
 
