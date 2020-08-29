@@ -36,7 +36,7 @@ value is the error.
 NOTE: For cross-platform consistency Windows-style line separators (CRLF) are
 normalized to Unix-style line separators (LF) before hashing file contents.
 */
-func RecordArtifact(path string) (map[string]interface{}, error) {
+func RecordArtifact(path string, hashAlgorithms []string) (map[string]interface{}, error) {
 	supportedHashMappings := getHashMapping()
 	// Read file from passed path
 	contents, err := ioutil.ReadFile(path)
@@ -49,8 +49,7 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 	contents = bytes.ReplaceAll(contents, []byte("\r\n"), []byte("\n"))
 
 	// Create a map of all the hashes present in the hash_func list
-	hashFunc := []string{"sha256"}
-	for _, element := range hashFunc {
+	for _, element := range hashAlgorithms {
 		if _, ok := supportedHashMappings[element]; !ok {
 			return nil, fmt.Errorf("%w: %s", ErrUnsupportedHashAlgorithm, element)
 		}
@@ -84,10 +83,10 @@ the following format:
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
-func RecordArtifacts(paths []string) (evalArtifacts map[string]interface{}, err error) {
+func RecordArtifacts(paths []string, hashAlgorithms []string) (evalArtifacts map[string]interface{}, err error) {
 	// Make sure to initialize a fresh hashset for every RecordArtifacts call
 	visitedSymlinks = NewSet()
-	evalArtifacts, err = recordArtifacts(paths)
+	evalArtifacts, err = recordArtifacts(paths, hashAlgorithms)
 	// pass result and error through
 	return evalArtifacts, err
 }
@@ -110,7 +109,7 @@ the following format:
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
-func recordArtifacts(paths []string) (map[string]interface{}, error) {
+func recordArtifacts(paths []string, hashAlgorithms []string) (map[string]interface{}, error) {
 	artifacts := make(map[string]interface{})
 	// NOTE: Walk cannot follow symlinks
 	for _, path := range paths {
@@ -149,7 +148,7 @@ func recordArtifacts(paths []string) (map[string]interface{}, error) {
 					visitedSymlinks.Add(path)
 					// We recursively call RecordArtifacts() to follow
 					// the new path.
-					evalArtifacts, evalErr := recordArtifacts([]string{evalSym})
+					evalArtifacts, evalErr := recordArtifacts([]string{evalSym}, hashAlgorithms)
 					if evalErr != nil {
 						return evalErr
 					}
@@ -158,7 +157,7 @@ func recordArtifacts(paths []string) (map[string]interface{}, error) {
 					}
 					return nil
 				}
-				artifact, err := RecordArtifact(path)
+				artifact, err := RecordArtifact(path, hashAlgorithms)
 				// Abort if artifact can't be recorded, e.g.
 				// due to file permissions
 				if err != nil {
@@ -257,9 +256,9 @@ Metablock object.  If command execution or artifact recording fails the first
 return value is an empty Metablock and the second return value is the error.
 */
 func InTotoRun(name string, materialPaths []string, productPaths []string,
-	cmdArgs []string, key Key) (Metablock, error) {
+	cmdArgs []string, key Key, hashAlgorithms []string) (Metablock, error) {
 	var linkMb Metablock
-	materials, err := RecordArtifacts(materialPaths)
+	materials, err := RecordArtifacts(materialPaths, hashAlgorithms)
 	if err != nil {
 		return linkMb, err
 	}
@@ -269,7 +268,7 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		return linkMb, err
 	}
 
-	products, err := RecordArtifacts(productPaths)
+	products, err := RecordArtifacts(productPaths, hashAlgorithms)
 	if err != nil {
 		return linkMb, err
 	}
