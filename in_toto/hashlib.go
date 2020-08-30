@@ -3,7 +3,6 @@ package in_toto
 import (
 	"crypto/sha256"
 	"crypto/sha512"
-	"fmt"
 	"hash"
 )
 
@@ -22,10 +21,10 @@ func getHashMapping() map[string]func() hash.Hash {
 /*
 hashToHex calculates the hash over data based on hash algorithm h.
 */
-func hashToHex(h hash.Hash, data []byte) string {
+func hashToHex(h hash.Hash, data []byte) []byte {
 	h.Write(data)
 	// We ned to use h.Sum(nil) here, because otherwise hash.Sum() appends
 	// the hash to the passed data. So instead of having only the hash
 	// we would get: "dataHASH"
-	return fmt.Sprintf("%x", h.Sum(nil))
+	return h.Sum(nil)
 }

@@ -374,6 +374,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	}
 	var signature Signature
 	var signatureBuffer []byte
+	hashMapping := getHashMapping()
 	// The following switch block is needed for keeping interoperability
 	// with the securesystemslib and the python implementation
 	// in which we are storing RSA keys in PEM format, but ed25519 keys hex encoded.
@@ -390,9 +391,12 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		}
 		switch key.Scheme {
 		case rsassapsssha256Scheme:
-			hashed := sha256.Sum256(signable)
+			if _, ok := hashMapping["sha256"]; !ok {
+				return Signature{}, ErrUnsupportedHashAlgorithm
+			}
+			hashed := hashToHex(hashMapping["sha256"](), signable)
 			// We use rand.Reader as secure random source for rsa.SignPSS()
-			signatureBuffer, err = rsa.SignPSS(rand.Reader, parsedKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:],
+			signatureBuffer, err = rsa.SignPSS(rand.Reader, parsedKey.(*rsa.PrivateKey), crypto.SHA256, hashed,
 				&rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
 			if err != nil {
 				return signature, err
@@ -411,29 +415,38 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		if !ok {
 			return Signature{}, ErrKeyKeyTypeMismatch
 		}
+		var hashed []byte
 		switch key.Scheme {
 		// TODO: add support for more hash algorithms
 		case ecdsaSha2nistp256:
-			hashed := sha256.Sum256(signable)
-			// ecdsa.Sign returns a signature that consists of two components called: r and s
-			// We assume here, that r and s are of the same size nLen and that
-			// the signature is 2*nLen. Furthermore we must note  that hashes get truncated
-			// if they are too long for the curve.
-			r, s, err := ecdsa.Sign(rand.Reader, parsedKey.(*ecdsa.PrivateKey), hashed[:])
-			if err != nil {
-				return signature, nil
+			if _, ok := hashMapping["sha256"]; !ok {
+				return Signature{}, ErrUnsupportedHashAlgorithm
 			}
-			// Generate the ecdsa signature on the same way, as we do in the securesystemslib
-			// We are marshalling the ecdsaSignature struct as ASN.1 INTEGER SEQUENCES
-			// into an ASN.1 Object.
-			signatureBuffer, err = asn1.Marshal(EcdsaSignature{
-				R: r,
-				S: s,
-			})
+			hashed = hashToHex(hashMapping["sha256"](), signable)
+		case ecdsaSha2nistp384:
+			if _, ok := hashMapping["sha384"]; !ok {
+				return Signature{}, ErrUnsupportedHashAlgorithm
+			}
+			hashed = hashToHex(hashMapping["sha384"](), signable)
 		default:
 			// supported key schemes will get checked in validateKey
 			panic("unexpected Error in GenerateSignature function")
 		}
+		// ecdsa.Sign returns a signature that consists of two components called: r and s
+		// We assume here, that r and s are of the same size nLen and that
+		// the signature is 2*nLen. Furthermore we must note  that hashes get truncated
+		// if they are too long for the curve.
+		r, s, err := ecdsa.Sign(rand.Reader, parsedKey.(*ecdsa.PrivateKey), hashed)
+		if err != nil {
+			return signature, nil
+		}
+		// Generate the ecdsa signature on the same way, as we do in the securesystemslib
+		// We are marshalling the ecdsaSignature struct as ASN.1 INTEGER SEQUENCES
+		// into an ASN.1 Object.
+		signatureBuffer, err = asn1.Marshal(EcdsaSignature{
+			R: r,
+			S: s,
+		})
 	case ed25519KeyType:
 		// We do not need a scheme switch here, because ed25519
 		// only consist of sha256 and curve25519.
@@ -484,6 +497,7 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 	if err != nil {
 		return err
 	}
+	hashMapping := getHashMapping()
 	switch key.KeyType {
 	case rsaKeyType:
 		// We do not need the pemData here, so we can throw it away via '_'
@@ -497,7 +511,10 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		}
 		switch key.Scheme {
 		case rsassapsssha256Scheme:
-			hashed := sha256.Sum256(unverified)
+			if _, ok := hashMapping["sha256"]; !ok {
+				return ErrUnsupportedHashAlgorithm
+			}
+			hashed := hashToHex(hashMapping["sha256"](), unverified)
 			err = rsa.VerifyPSS(parsedKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], sigBytes, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
 			if err != nil {
 				return fmt.Errorf("%w: %s", ErrInvalidSignature, err)
@@ -517,23 +534,32 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		if !ok {
 			return ErrKeyKeyTypeMismatch
 		}
+		var hashed []byte
 		switch key.Scheme {
 		// TODO: add support for more hash algorithms
 		case ecdsaSha2nistp256:
-			hashed := sha256.Sum256(unverified)
-			// Unmarshal the ASN.1 DER marshalled ecdsa signature to
-			// ecdsaSignature. asn1.Unmarshal returns the rest and an error
-			// we can skip the rest here..
-			_, err = asn1.Unmarshal(sigBytes, &ecdsaSignature)
-			if err != nil {
-				return err
+			if _, ok := hashMapping["sha256"]; !ok {
+				return ErrUnsupportedHashAlgorithm
 			}
-			if err := ecdsa.Verify(parsedKey.(*ecdsa.PublicKey), hashed[:], ecdsaSignature.R, ecdsaSignature.S); err == false {
-				return ErrInvalidSignature
+			hashed = hashToHex(hashMapping["sha256"](), unverified)
+		case ecdsaSha2nistp384:
+			if _, ok := hashMapping["sha384"]; !ok {
+				return ErrUnsupportedHashAlgorithm
 			}
+			hashed = hashToHex(hashMapping["sha384"](), unverified)
 		default:
 			// supported key schemes will get checked in validateKey
 			panic("unexpected Error in GenerateSignature function")
+		}
+		// Unmarshal the ASN.1 DER marshalled ecdsa signature to
+		// ecdsaSignature. asn1.Unmarshal returns the rest and an error
+		// we can skip the rest here..
+		_, err = asn1.Unmarshal(sigBytes, &ecdsaSignature)
+		if err != nil {
+			return err
+		}
+		if err := ecdsa.Verify(parsedKey.(*ecdsa.PublicKey), hashed[:], ecdsaSignature.R, ecdsaSignature.S); err == false {
+			return ErrInvalidSignature
 		}
 	case ed25519KeyType:
 		// We do not need a scheme switch here, because ed25519

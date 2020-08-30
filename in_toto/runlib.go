@@ -54,7 +54,7 @@ func RecordArtifact(path string, hashAlgorithms []string) (map[string]interface{
 			return nil, fmt.Errorf("%w: %s", ErrUnsupportedHashAlgorithm, element)
 		}
 		h := supportedHashMappings[element]
-		result := hashToHex(h(), contents)
+		result := fmt.Sprintf("%x", hashToHex(h(), contents))
 		hashedContentsMap[element] = result
 	}
 
