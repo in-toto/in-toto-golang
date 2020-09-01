@@ -423,16 +423,25 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		// method based on the curveSize
 		switch {
 		case curveSize <= 256:
+			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
+				return Signature{}, ErrCurveSizeSchemeMismatch
+			}
 			if _, ok := hashMapping["sha256"]; !ok {
 				return Signature{}, ErrUnsupportedHashAlgorithm
 			}
 			hashed = hashToHex(hashMapping["sha256"](), signable)
 		case 256 < curveSize && curveSize <= 384:
+			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
+				return Signature{}, ErrCurveSizeSchemeMismatch
+			}
 			if _, ok := hashMapping["sha384"]; !ok {
 				return Signature{}, ErrUnsupportedHashAlgorithm
 			}
 			hashed = hashToHex(hashMapping["sha384"](), signable)
 		case curveSize > 384:
+			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
+				return Signature{}, ErrCurveSizeSchemeMismatch
+			}
 			if _, ok := hashMapping["sha512"]; !ok {
 				return Signature{}, ErrUnsupportedHashAlgorithm
 			}
@@ -549,16 +558,25 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		// method based on the curveSize
 		switch {
 		case curveSize <= 256:
+			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
+				return ErrCurveSizeSchemeMismatch
+			}
 			if _, ok := hashMapping["sha256"]; !ok {
 				return ErrUnsupportedHashAlgorithm
 			}
 			hashed = hashToHex(hashMapping["sha256"](), unverified)
 		case 256 < curveSize && curveSize <= 384:
+			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
+				return ErrCurveSizeSchemeMismatch
+			}
 			if _, ok := hashMapping["sha384"]; !ok {
 				return ErrUnsupportedHashAlgorithm
 			}
 			hashed = hashToHex(hashMapping["sha384"](), unverified)
 		case curveSize > 384:
+			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
+				return ErrCurveSizeSchemeMismatch
+			}
 			if _, ok := hashMapping["sha512"]; !ok {
 				return ErrUnsupportedHashAlgorithm
 			}

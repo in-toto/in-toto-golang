@@ -11,6 +11,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -66,6 +67,22 @@ var ErrKeyKeyTypeMismatch = errors.New("the given key does not match its key typ
 
 // ErrNoPublicKey gets returned, when the private key value is not empty.
 var ErrNoPublicKey = errors.New("the given key is not a public key")
+
+// ErrCurveSizeSchemeMismatch gets returned, when the scheme and curve size are incompatible
+// for example: curve size = "521" and scheme = "ecdsa-sha2-nistp224"
+var ErrCurveSizeSchemeMismatch = errors.New("the scheme does not match the curve size")
+
+/*
+matchEcdsaScheme checks if the scheme suffix, matches the ecdsa key
+curve Size. We do not need a full regex match here, because
+our validateKey functions are already checking for a valid scheme string.
+*/
+func matchEcdsaScheme(curveSize int, scheme string) error {
+	if !strings.HasSuffix(scheme, strconv.Itoa(curveSize)) {
+		return ErrCurveSizeSchemeMismatch
+	}
+	return nil
+}
 
 /*
 validateHexString is used to validate that a string passed to it contains
