@@ -33,9 +33,6 @@ var ErrInvalidSignature = errors.New("invalid signature")
 // ErrInvalidKey is returned when a given key is none of RSA, ECDSA or ED25519
 var ErrInvalidKey = errors.New("invalid key")
 
-// ErrUnsupportedScheme is returned when the specified Scheme is not supported
-var ErrUnsupportedScheme = errors.New("unsupported key scheme")
-
 const (
 	rsaKeyType            string = "rsa"
 	ecdsaKeyType          string = "ecdsa"
