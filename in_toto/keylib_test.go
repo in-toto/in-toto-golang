@@ -22,8 +22,12 @@ func TestLoadKey(t *testing.T) {
 		{"rsa public key", "dan.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}, "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401"},
 		{"ed25519 private key", "carol", "ed25519", []string{"sha256", "sha512"}, "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6"},
 		{"ed25519 public key", "carol.pub", "ed25519", []string{"sha256", "sha512"}, "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6"},
-		{"ecdsa private key", "frank", "ecdsa-sha2-nistp521", []string{"sha256", "sha512"}, "434cf7c5b168f6ea4c7e6e67afa74a02625310530f1664f761637bdc7ad8f8df"},
-		{"ecdsa public key", "frank.pub", "ecdsa-sha2-nistp521", []string{"sha256", "sha512"}, "434cf7c5b168f6ea4c7e6e67afa74a02625310530f1664f761637bdc7ad8f8df"},
+		{"ecdsa private key (P521)", "frank", "ecdsa-sha2-nistp521", []string{"sha256", "sha512"}, "434cf7c5b168f6ea4c7e6e67afa74a02625310530f1664f761637bdc7ad8f8df"},
+		{"ecdsa public key (P521)", "frank.pub", "ecdsa-sha2-nistp521", []string{"sha256", "sha512"}, "434cf7c5b168f6ea4c7e6e67afa74a02625310530f1664f761637bdc7ad8f8df"},
+		{"ecdsa public key (P384)", "grace", "ecdsa-sha2-nistp384", []string{"sha256", "sha512"}, "a5522ebccd492f64e6ec0bbcb5eb782708f6e26709a3712e64fff108b98e5142"},
+		{"ecdsa public key (P384)", "grace.pub", "ecdsa-sha2-nistp384", []string{"sha256", "sha512"}, "a5522ebccd492f64e6ec0bbcb5eb782708f6e26709a3712e64fff108b98e5142"},
+		{"ecdsa public key (P224)", "heidi", "ecdsa-sha2-nistp224", []string{"sha256", "sha512"}, "fae849ef9247cc7d19ebd33ab63b5d18a31357508fd82d8ad2aad6fdcc584bd7"},
+		{"ecdsa public key (P224)", "heidi.pub", "ecdsa-sha2-nistp224", []string{"sha256", "sha512"}, "fae849ef9247cc7d19ebd33ab63b5d18a31357508fd82d8ad2aad6fdcc584bd7"},
 	}
 	for _, table := range validTables {
 		var key Key
@@ -51,7 +55,9 @@ func TestValidSignatures(t *testing.T) {
 	}{
 		{"rsa private key", "dan", "rsassa-pss-sha256", []string{"sha256", "sha512"}, `{"_type":"link","byproducts":{},"command":[],"environment":{},"materials":{},"name":"foo","products":{}}`},
 		{"ed25519 private key", "carol", "ed25519", []string{"sha256", "sha512"}, `{"_type":"link","byproducts":{},"command":[],"environment":{},"materials":{},"name":"foo","products":{}}`},
-		{"ecdsa private key", "frank", "ecdsa-sha2-nistp521", []string{"sha256", "sha512"}, `{"_type":"link","byproducts":{},"command":[],"environment":{},"materials":{},"name":"foo","products":{}}`},
+		{"ecdsa private key (P521)", "frank", "ecdsa-sha2-nistp521", []string{"sha256", "sha512"}, `{"_type":"link","byproducts":{},"command":[],"environment":{},"materials":{},"name":"foo","products":{}}`},
+		{"ecdsa private key (P384)", "grace", "ecdsa-sha2-nistp384", []string{"sha256", "sha512"}, `{"_type":"link","byproducts":{},"command":[],"environment":{},"materials":{},"name":"foo","products":{}}`},
+		{"ecdsa private key (P224)", "heidi", "ecdsa-sha2-nistp224", []string{"sha256", "sha512"}, `{"_type":"link","byproducts":{},"command":[],"environment":{},"materials":{},"name":"foo","products":{}}`},
 	}
 
 	for _, table := range validTables {

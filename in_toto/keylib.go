@@ -41,7 +41,7 @@ const (
 	ecdsaKeyType          string = "ecdsa"
 	ed25519KeyType        string = "ed25519"
 	rsassapsssha256Scheme string = "rsassa-pss-sha256"
-	ecdsaSha2nistp256     string = "ecdsa-sha2-nistp256"
+	ecdsaSha2nistp224     string = "ecdsa-sha2-nistp224"
 	ecdsaSha2nistp384     string = "ecdsa-sha2-nistp384"
 	ecdsaSha2nistp521     string = "ecdsa-sha2-nistp521"
 	ed25519Scheme         string = "ed25519"
@@ -74,7 +74,7 @@ We need to use this function instead of a constant because Go does not support
 global constant slices.
 */
 func getSupportedEcdsaSchemes() []string {
-	return []string{ecdsaSha2nistp256, ecdsaSha2nistp384, ecdsaSha2nistp521}
+	return []string{ecdsaSha2nistp224, ecdsaSha2nistp384, ecdsaSha2nistp521}
 }
 
 /*
