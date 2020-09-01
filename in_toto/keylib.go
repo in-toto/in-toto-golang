@@ -43,6 +43,7 @@ const (
 	rsassapsssha256Scheme string = "rsassa-pss-sha256"
 	ecdsaSha2nistp256     string = "ecdsa-sha2-nistp256"
 	ecdsaSha2nistp384     string = "ecdsa-sha2-nistp384"
+	ecdsaSha2nistp521     string = "ecdsa-sha2-nistp521"
 	ed25519Scheme         string = "ed25519"
 	pemPublicKey          string = "PUBLIC KEY"
 	pemPrivateKey         string = "PRIVATE KEY"
@@ -73,7 +74,7 @@ We need to use this function instead of a constant because Go does not support
 global constant slices.
 */
 func getSupportedEcdsaSchemes() []string {
-	return []string{ecdsaSha2nistp256, ecdsaSha2nistp384}
+	return []string{ecdsaSha2nistp256, ecdsaSha2nistp384, ecdsaSha2nistp521}
 }
 
 /*
@@ -415,21 +416,28 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		if !ok {
 			return Signature{}, ErrKeyKeyTypeMismatch
 		}
+		curveSize := parsedKey.(*ecdsa.PrivateKey).Curve.Params().BitSize
 		var hashed []byte
-		switch key.Scheme {
-		// TODO: add support for more hash algorithms
-		case ecdsaSha2nistp256:
+		// implement https://tools.ietf.org/html/rfc5656#section-6.2.1
+		// We determine the curve size and choose the correct hashing
+		// method based on the curveSize
+		switch {
+		case curveSize <= 256:
 			if _, ok := hashMapping["sha256"]; !ok {
 				return Signature{}, ErrUnsupportedHashAlgorithm
 			}
 			hashed = hashToHex(hashMapping["sha256"](), signable)
-		case ecdsaSha2nistp384:
+		case 256 < curveSize && curveSize <= 384:
 			if _, ok := hashMapping["sha384"]; !ok {
 				return Signature{}, ErrUnsupportedHashAlgorithm
 			}
 			hashed = hashToHex(hashMapping["sha384"](), signable)
+		case curveSize > 384:
+			if _, ok := hashMapping["sha512"]; !ok {
+				return Signature{}, ErrUnsupportedHashAlgorithm
+			}
+			hashed = hashToHex(hashMapping["sha512"](), signable)
 		default:
-			// supported key schemes will get checked in validateKey
 			panic("unexpected Error in GenerateSignature function")
 		}
 		// ecdsa.Sign returns a signature that consists of two components called: r and s
@@ -521,7 +529,7 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 			}
 		default:
 			// supported key schemes will get checked in validateKey
-			panic("unexpected Error in GenerateSignature function")
+			panic("unexpected Error in VerifySignature function")
 		}
 	case ecdsaKeyType:
 		var ecdsaSignature EcdsaSignature
@@ -534,22 +542,29 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		if !ok {
 			return ErrKeyKeyTypeMismatch
 		}
+		curveSize := parsedKey.(*ecdsa.PublicKey).Curve.Params().BitSize
 		var hashed []byte
-		switch key.Scheme {
-		// TODO: add support for more hash algorithms
-		case ecdsaSha2nistp256:
+		// implement https://tools.ietf.org/html/rfc5656#section-6.2.1
+		// We determine the curve size and choose the correct hashing
+		// method based on the curveSize
+		switch {
+		case curveSize <= 256:
 			if _, ok := hashMapping["sha256"]; !ok {
 				return ErrUnsupportedHashAlgorithm
 			}
 			hashed = hashToHex(hashMapping["sha256"](), unverified)
-		case ecdsaSha2nistp384:
+		case 256 < curveSize && curveSize <= 384:
 			if _, ok := hashMapping["sha384"]; !ok {
 				return ErrUnsupportedHashAlgorithm
 			}
 			hashed = hashToHex(hashMapping["sha384"](), unverified)
+		case curveSize > 384:
+			if _, ok := hashMapping["sha512"]; !ok {
+				return ErrUnsupportedHashAlgorithm
+			}
+			hashed = hashToHex(hashMapping["sha512"](), unverified)
 		default:
-			// supported key schemes will get checked in validateKey
-			panic("unexpected Error in GenerateSignature function")
+			panic("unexpected Error in VerifySignature function")
 		}
 		// Unmarshal the ASN.1 DER marshalled ecdsa signature to
 		// ecdsaSignature. asn1.Unmarshal returns the rest and an error
