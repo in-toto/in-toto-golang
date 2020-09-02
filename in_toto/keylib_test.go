@@ -242,6 +242,48 @@ func TestGenerateSignatureErrors(t *testing.T) {
 			},
 			expectedError: ErrKeyKeyTypeMismatch,
 		},
+		{
+			name: "p224 ecdsa key, but wrong scheme",
+			key: Key{
+				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "ecdsa",
+				KeyVal: KeyVal{
+					Private: "-----BEGIN PRIVATE KEY-----\nMHgCAQAwEAYHKoZIzj0CAQYFK4EEACEEYTBfAgEBBBwmUI9xaiYTFQU6OYl/jTnr\n+q2TfUh5LU8U4BrzoTwDOgAEu8hZFOOIyjE5FY71KsUbMOp6OB6e2T4dnFbo0Wrx\nrQFHFtW5Y3kiv6GEVF2mNDllRwJAoFpoF4M=\n-----END PRIVATE KEY-----",
+					Public:  "-----BEGIN PUBLIC KEY-----\nME4wEAYHKoZIzj0CAQYFK4EEACEDOgAEu8hZFOOIyjE5FY71KsUbMOp6OB6e2T4d\nnFbo0WrxrQFHFtW5Y3kiv6GEVF2mNDllRwJAoFpoF4M=\n-----END PUBLIC KEY-----\n",
+				},
+				Scheme: "ecdsa-sha2-nistp521",
+			},
+			expectedError: ErrCurveSizeSchemeMismatch,
+		},
+		{
+			name: "p384 ecdsa key, but wrong scheme",
+			key: Key{
+				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "ecdsa",
+				KeyVal: KeyVal{
+					Private: "-----BEGIN PRIVATE KEY-----\nMIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDCgpTsIXQ7HswVRgS8Z\nPdSCaGrA87YwUctguSPjvCxy9+sP1791Qx5IYy3RkAzlx8+hZANiAAQ/wpAeooDd\nCGIZBLqOV+hNcmUZMZxfF3Yi2aapT/Ly6vJQ2xedXSdaWgKw5srRcAyswPWJa8dg\nxINXXg8/S9rAs36N9XuWtzkgnDLVoWE+V6shKDB7c6Csol0WSfwsa7Y=\n-----END PRIVATE KEY-----\n",
+					Public:  "-----BEGIN PUBLIC KEY-----\nMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEP8KQHqKA3QhiGQS6jlfoTXJlGTGcXxd2\nItmmqU/y8uryUNsXnV0nWloCsObK0XAMrMD1iWvHYMSDV14PP0vawLN+jfV7lrc5\nIJwy1aFhPlerISgwe3OgrKJdFkn8LGu2\n-----END PUBLIC KEY-----\n",
+				},
+				Scheme: "ecdsa-sha2-nistp521",
+			},
+			expectedError: ErrCurveSizeSchemeMismatch,
+		},
+		{
+			name: "p521 ecdsa key, but wrong scheme",
+			key: Key{
+				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "ecdsa",
+				KeyVal: KeyVal{
+					Private: "-----BEGIN PRIVATE KEY-----\nMIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIB6fQnV71xKx6kFgJv\nYTMq0ytvWi2mDlYu6aNm1761c1OSInbBxBNb0ligpM65KyaeeRce6JR9eQW6TB6R\n+5pNzvOhgYkDgYYABAFy0CeDAyV/2mY1NqxLLgqEXSxaqM3fM8gYn/ZWzrLnO+1h\nK2QAanID3JuPff1NdhehhL/U1prXdyyaItA5X4ChkQHMTsiS/3HkWRuLR8L22SGs\nB+7KqOeO5ELkqHO5tsy4kvsNrmersCGRQGY6A5V/0JFhP1u1JUvAVVhfRbdQXuu3\nrw==\n-----END PRIVATE KEY-----\n",
+					Public:  "-----BEGIN PUBLIC KEY-----\nMIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQBctAngwMlf9pmNTasSy4KhF0sWqjN\n3zPIGJ/2Vs6y5zvtYStkAGpyA9ybj339TXYXoYS/1Naa13csmiLQOV+AoZEBzE7I\nkv9x5Fkbi0fC9tkhrAfuyqjnjuRC5KhzubbMuJL7Da5nq7AhkUBmOgOVf9CRYT9b\ntSVLwFVYX0W3UF7rt68=\n-----END PUBLIC KEY-----\n",
+				},
+				Scheme: "ecdsa-sha2-nistp384",
+			},
+			expectedError: ErrCurveSizeSchemeMismatch,
+		},
 	}
 
 	for _, table := range invalidTables {
@@ -437,6 +479,48 @@ func TestVerifySignatureErrors(t *testing.T) {
 				Sig:   "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
 			},
 			expectedError: ErrInvalidHexString,
+		},
+		{
+			name: "p224 ecdsa key, but wrong scheme",
+			key: Key{
+				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "ecdsa",
+				KeyVal: KeyVal{
+					Private: "-----BEGIN PRIVATE KEY-----\nMHgCAQAwEAYHKoZIzj0CAQYFK4EEACEEYTBfAgEBBBwmUI9xaiYTFQU6OYl/jTnr\n+q2TfUh5LU8U4BrzoTwDOgAEu8hZFOOIyjE5FY71KsUbMOp6OB6e2T4dnFbo0Wrx\nrQFHFtW5Y3kiv6GEVF2mNDllRwJAoFpoF4M=\n-----END PRIVATE KEY-----",
+					Public:  "-----BEGIN PUBLIC KEY-----\nME4wEAYHKoZIzj0CAQYFK4EEACEDOgAEu8hZFOOIyjE5FY71KsUbMOp6OB6e2T4d\nnFbo0WrxrQFHFtW5Y3kiv6GEVF2mNDllRwJAoFpoF4M=\n-----END PUBLIC KEY-----\n",
+				},
+				Scheme: "ecdsa-sha2-nistp521",
+			},
+			expectedError: ErrCurveSizeSchemeMismatch,
+		},
+		{
+			name: "p384 ecdsa key, but wrong scheme",
+			key: Key{
+				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "ecdsa",
+				KeyVal: KeyVal{
+					Private: "-----BEGIN PRIVATE KEY-----\nMIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDCgpTsIXQ7HswVRgS8Z\nPdSCaGrA87YwUctguSPjvCxy9+sP1791Qx5IYy3RkAzlx8+hZANiAAQ/wpAeooDd\nCGIZBLqOV+hNcmUZMZxfF3Yi2aapT/Ly6vJQ2xedXSdaWgKw5srRcAyswPWJa8dg\nxINXXg8/S9rAs36N9XuWtzkgnDLVoWE+V6shKDB7c6Csol0WSfwsa7Y=\n-----END PRIVATE KEY-----\n",
+					Public:  "-----BEGIN PUBLIC KEY-----\nMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEP8KQHqKA3QhiGQS6jlfoTXJlGTGcXxd2\nItmmqU/y8uryUNsXnV0nWloCsObK0XAMrMD1iWvHYMSDV14PP0vawLN+jfV7lrc5\nIJwy1aFhPlerISgwe3OgrKJdFkn8LGu2\n-----END PUBLIC KEY-----\n",
+				},
+				Scheme: "ecdsa-sha2-nistp521",
+			},
+			expectedError: ErrCurveSizeSchemeMismatch,
+		},
+		{
+			name: "p521 ecdsa key, but wrong scheme",
+			key: Key{
+				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyType:             "ecdsa",
+				KeyVal: KeyVal{
+					Private: "-----BEGIN PRIVATE KEY-----\nMIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIB6fQnV71xKx6kFgJv\nYTMq0ytvWi2mDlYu6aNm1761c1OSInbBxBNb0ligpM65KyaeeRce6JR9eQW6TB6R\n+5pNzvOhgYkDgYYABAFy0CeDAyV/2mY1NqxLLgqEXSxaqM3fM8gYn/ZWzrLnO+1h\nK2QAanID3JuPff1NdhehhL/U1prXdyyaItA5X4ChkQHMTsiS/3HkWRuLR8L22SGs\nB+7KqOeO5ELkqHO5tsy4kvsNrmersCGRQGY6A5V/0JFhP1u1JUvAVVhfRbdQXuu3\nrw==\n-----END PRIVATE KEY-----\n",
+					Public:  "-----BEGIN PUBLIC KEY-----\nMIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQBctAngwMlf9pmNTasSy4KhF0sWqjN\n3zPIGJ/2Vs6y5zvtYStkAGpyA9ybj339TXYXoYS/1Naa13csmiLQOV+AoZEBzE7I\nkv9x5Fkbi0fC9tkhrAfuyqjnjuRC5KhzubbMuJL7Da5nq7AhkUBmOgOVf9CRYT9b\ntSVLwFVYX0W3UF7rt68=\n-----END PUBLIC KEY-----\n",
+				},
+				Scheme: "ecdsa-sha2-nistp384",
+			},
+			expectedError: ErrCurveSizeSchemeMismatch,
 		},
 	}
 	for _, table := range invalidTables {

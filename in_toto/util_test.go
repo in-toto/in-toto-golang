@@ -102,6 +102,7 @@ func TestSubsetCheck(t *testing.T) {
 		{[]string{"sha256"}, NewSet("sha256", "sha512"), true},
 		{[]string{"sha512"}, NewSet("sha256"), false},
 		{[]string{"sha256", "sha512"}, NewSet("sha128", "sha256", "sha512"), true},
+		{[]string{"sha256", "sha512", "sha384"}, NewSet("sha128"), false},
 	}
 	for _, table := range tables {
 		result := table.superset.IsSubSet(NewSet(table.subset...))

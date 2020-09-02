@@ -26,6 +26,11 @@ func TestRecordArtifact(t *testing.T) {
 		t.Errorf("RecordArtifact returned '(%s, %s)', expected '(nil, %s)'",
 			result, err, os.ErrNotExist)
 	}
+
+	result, err = RecordArtifact("foo.tar.gz", []string{"invalid"})
+	if !errors.Is(err, ErrUnsupportedHashAlgorithm) {
+		t.Errorf("RecordArtifact returned '(%s, %s)', expected '(nil, %s)'", result, err, ErrUnsupportedHashAlgorithm)
+	}
 }
 
 // TestSymlinkToFile checks if we can follow symlinks to a file
