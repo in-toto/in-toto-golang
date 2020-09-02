@@ -1,5 +1,5 @@
 # In-toto Go implementation
-[![Build Status](https://travis-ci.com/in-toto/in-toto-golang.svg?branch=master)](https://travis-ci.com/in-toto/in-toto-golang) [![Coverage Status](https://coveralls.io/repos/github/in-toto/in-toto-golang/badge.svg)](https://coveralls.io/github/in-toto/in-toto-golang) [![Build status](https://ci.appveyor.com/api/projects/status/n45pmpso0t5b40vk?svg=true)](https://ci.appveyor.com/project/in-toto/in-toto-golang)
+[![build](https://github.com/in-toto/in-toto-golang/workflows/build/badge.svg)](https://github.com/in-toto/in-toto-golang/actions?query=workflow%3Abuild) [![Coverage Status](https://coveralls.io/repos/github/in-toto/in-toto-golang/badge.svg)](https://coveralls.io/github/in-toto/in-toto-golang)
 
 
 Go implementation of the 
