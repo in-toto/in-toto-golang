@@ -1,6 +1,7 @@
 package in_toto
 
 import (
+	"bytes"
 	"errors"
 	"io/ioutil"
 	"os"
@@ -28,6 +29,8 @@ using sha256 and returns a map in the following format:
 
 If reading the file fails, the first return value is nil and the second return
 value is the error.
+NOTE: For cross-platform consistency Windows-style line separators (CRLF) are
+normalized to Unix-style line separators (LF) before hashing file contents.
 */
 func RecordArtifact(path string) (map[string]interface{}, error) {
 
@@ -41,6 +44,9 @@ func RecordArtifact(path string) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	// "Normalize" file contents. We convert all line separators to '\n'
+	// for keeping operating system independence
+	contents = bytes.ReplaceAll(contents, []byte("\r\n"), []byte("\n"))
 
 	// Create a map of all the hashes present in the hash_func list
 	hashFunc := []string{"sha256"}
