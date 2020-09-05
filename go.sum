@@ -1,3 +1,5 @@
+github.com/shibumi/go-pathspec v1.1.0 h1:a2RXm1j8o8O0QQcfd0e9bFLvM9CiY8bi9qF/l9fJkW8=
+github.com/shibumi/go-pathspec v1.1.0/go.mod h1:bDxCftD0fST3qXIlHoQ/fChsU4mWMVklXp1yPErQaaY=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191029031824-8986dd9e96cf h1:fnPsqIDRbCSgumaMCRpoIoF2s4qxv0xSSS0BVZUE/ss=
 golang.org/x/crypto v0.0.0-20191029031824-8986dd9e96cf/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=

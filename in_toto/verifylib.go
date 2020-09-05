@@ -39,7 +39,7 @@ func RunInspections(layout Layout) (map[string]Metablock, error) {
 	for _, inspection := range layout.Inspect {
 
 		linkMb, err := InTotoRun(inspection.Name, []string{"."}, []string{"."},
-			inspection.Run, Key{}, []string{"sha256"})
+			inspection.Run, Key{}, []string{"sha256"}, nil)
 		if err != nil {
 			return nil, err
 		}
