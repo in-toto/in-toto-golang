@@ -12,10 +12,12 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/ed25519"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"golang.org/x/crypto/ed25519"
 )
 
 // ErrFailedPEMParsing gets returned when PKCS1, PKCS8 or PKIX key parsing fails
@@ -288,8 +290,16 @@ func (k *Key) LoadKey(path string, scheme string, keyIdHashAlgorithms []string) 
 			err = closeErr
 		}
 	}()
+	return k.LoadKeyReader(pemFile, scheme, keyIdHashAlgorithms)
+}
+
+// LoadKeyReader loads the key from a supplied reader. The logic matches LoadKey otherwise.
+func (k *Key) LoadKeyReader(r io.Reader, scheme string, keyIdHashAlgorithms []string) error {
+	if r == nil {
+		return ErrNoPEMBlock
+	}
 	// Read key bytes
-	pemBytes, err := ioutil.ReadAll(pemFile)
+	pemBytes, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err
 	}

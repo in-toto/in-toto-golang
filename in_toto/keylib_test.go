@@ -37,6 +37,15 @@ func TestLoadKey(t *testing.T) {
 	}
 }
 
+// TestLoadKeyReader makes sure, that our LoadKeyReader function loads keys correctly
+// and that the key IDs of private and public key match.
+func TestLoadKeyReader(t *testing.T) {
+	var key Key
+	if err := key.LoadKeyReader(nil, "ed25519", []string{"sha256", "sha512"}); err != ErrNoPEMBlock {
+		t.Errorf("unexpected error loading key: %s", err)
+	}
+}
+
 // TestValidSignatures utilizes our TestLoadKey function, but does not check the expected keyID.
 // Instead the test function generates a signature via GenerateSignature() over valid data and verifies the data
 // via ValidateSignature() with the from the private key extracted public key. We know that our extracted public key
