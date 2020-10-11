@@ -8,7 +8,7 @@ import (
 
 /*
 getHashMapping returns a mapping from hash algorithm to supported hash
-algorithm.
+interface.
 */
 func getHashMapping() map[string]func() hash.Hash {
 	return map[string]func() hash.Hash{
@@ -23,7 +23,7 @@ hashToHex calculates the hash over data based on hash algorithm h.
 */
 func hashToHex(h hash.Hash, data []byte) []byte {
 	h.Write(data)
-	// We ned to use h.Sum(nil) here, because otherwise hash.Sum() appends
+	// We need to use h.Sum(nil) here, because otherwise hash.Sum() appends
 	// the hash to the passed data. So instead of having only the hash
 	// we would get: "dataHASH"
 	return h.Sum(nil)

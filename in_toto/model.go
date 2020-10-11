@@ -74,7 +74,7 @@ var ErrCurveSizeSchemeMismatch = errors.New("the scheme does not match the curve
 
 /*
 matchEcdsaScheme checks if the scheme suffix, matches the ecdsa key
-curve Size. We do not need a full regex match here, because
+curve size. We do not need a full regex match here, because
 our validateKey functions are already checking for a valid scheme string.
 */
 func matchEcdsaScheme(curveSize int, scheme string) error {

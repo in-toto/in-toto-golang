@@ -24,9 +24,9 @@ func TestLoadKey(t *testing.T) {
 		{"ed25519 public key", "carol.pub", "ed25519", []string{"sha256", "sha512"}, "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6"},
 		{"ecdsa private key (P521)", "frank", "ecdsa-sha2-nistp521", []string{"sha256", "sha512"}, "434cf7c5b168f6ea4c7e6e67afa74a02625310530f1664f761637bdc7ad8f8df"},
 		{"ecdsa public key (P521)", "frank.pub", "ecdsa-sha2-nistp521", []string{"sha256", "sha512"}, "434cf7c5b168f6ea4c7e6e67afa74a02625310530f1664f761637bdc7ad8f8df"},
-		{"ecdsa public key (P384)", "grace", "ecdsa-sha2-nistp384", []string{"sha256", "sha512"}, "a5522ebccd492f64e6ec0bbcb5eb782708f6e26709a3712e64fff108b98e5142"},
+		{"ecdsa private key (P384)", "grace", "ecdsa-sha2-nistp384", []string{"sha256", "sha512"}, "a5522ebccd492f64e6ec0bbcb5eb782708f6e26709a3712e64fff108b98e5142"},
 		{"ecdsa public key (P384)", "grace.pub", "ecdsa-sha2-nistp384", []string{"sha256", "sha512"}, "a5522ebccd492f64e6ec0bbcb5eb782708f6e26709a3712e64fff108b98e5142"},
-		{"ecdsa public key (P224)", "heidi", "ecdsa-sha2-nistp224", []string{"sha256", "sha512"}, "fae849ef9247cc7d19ebd33ab63b5d18a31357508fd82d8ad2aad6fdcc584bd7"},
+		{"ecdsa private key (P224)", "heidi", "ecdsa-sha2-nistp224", []string{"sha256", "sha512"}, "fae849ef9247cc7d19ebd33ab63b5d18a31357508fd82d8ad2aad6fdcc584bd7"},
 		{"ecdsa public key (P224)", "heidi.pub", "ecdsa-sha2-nistp224", []string{"sha256", "sha512"}, "fae849ef9247cc7d19ebd33ab63b5d18a31357508fd82d8ad2aad6fdcc584bd7"},
 	}
 	for _, table := range validTables {
