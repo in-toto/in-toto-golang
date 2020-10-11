@@ -389,9 +389,6 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		}
 		switch key.Scheme {
 		case rsassapsssha256Scheme:
-			if _, ok := hashMapping["sha256"]; !ok {
-				return Signature{}, ErrUnsupportedHashAlgorithm
-			}
 			hashed := hashToHex(hashMapping["sha256"](), signable)
 			// We use rand.Reader as secure random source for rsa.SignPSS()
 			signatureBuffer, err = rsa.SignPSS(rand.Reader, parsedKey.(*rsa.PrivateKey), crypto.SHA256, hashed,
@@ -423,24 +420,15 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
 				return Signature{}, ErrCurveSizeSchemeMismatch
 			}
-			if _, ok := hashMapping["sha256"]; !ok {
-				return Signature{}, ErrUnsupportedHashAlgorithm
-			}
 			hashed = hashToHex(hashMapping["sha256"](), signable)
 		case 256 < curveSize && curveSize <= 384:
 			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
 				return Signature{}, ErrCurveSizeSchemeMismatch
 			}
-			if _, ok := hashMapping["sha384"]; !ok {
-				return Signature{}, ErrUnsupportedHashAlgorithm
-			}
 			hashed = hashToHex(hashMapping["sha384"](), signable)
 		case curveSize > 384:
 			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
 				return Signature{}, ErrCurveSizeSchemeMismatch
-			}
-			if _, ok := hashMapping["sha512"]; !ok {
-				return Signature{}, ErrUnsupportedHashAlgorithm
 			}
 			hashed = hashToHex(hashMapping["sha512"](), signable)
 		default:
@@ -525,9 +513,6 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		}
 		switch key.Scheme {
 		case rsassapsssha256Scheme:
-			if _, ok := hashMapping["sha256"]; !ok {
-				return ErrUnsupportedHashAlgorithm
-			}
 			hashed := hashToHex(hashMapping["sha256"](), unverified)
 			err = rsa.VerifyPSS(parsedKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], sigBytes, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
 			if err != nil {
@@ -558,24 +543,15 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
 				return ErrCurveSizeSchemeMismatch
 			}
-			if _, ok := hashMapping["sha256"]; !ok {
-				return ErrUnsupportedHashAlgorithm
-			}
 			hashed = hashToHex(hashMapping["sha256"](), unverified)
 		case 256 < curveSize && curveSize <= 384:
 			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
 				return ErrCurveSizeSchemeMismatch
 			}
-			if _, ok := hashMapping["sha384"]; !ok {
-				return ErrUnsupportedHashAlgorithm
-			}
 			hashed = hashToHex(hashMapping["sha384"](), unverified)
 		case curveSize > 384:
 			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
 				return ErrCurveSizeSchemeMismatch
-			}
-			if _, ok := hashMapping["sha512"]; !ok {
-				return ErrUnsupportedHashAlgorithm
 			}
 			hashed = hashToHex(hashMapping["sha512"](), unverified)
 		default:
