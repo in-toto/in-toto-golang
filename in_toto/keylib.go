@@ -412,24 +412,18 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		}
 		curveSize := parsedKey.(*ecdsa.PrivateKey).Curve.Params().BitSize
 		var hashed []byte
+		if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
+			return Signature{}, ErrCurveSizeSchemeMismatch
+		}
 		// implement https://tools.ietf.org/html/rfc5656#section-6.2.1
 		// We determine the curve size and choose the correct hashing
 		// method based on the curveSize
 		switch {
 		case curveSize <= 256:
-			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
-				return Signature{}, ErrCurveSizeSchemeMismatch
-			}
 			hashed = hashToHex(hashMapping["sha256"](), signable)
 		case 256 < curveSize && curveSize <= 384:
-			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
-				return Signature{}, ErrCurveSizeSchemeMismatch
-			}
 			hashed = hashToHex(hashMapping["sha384"](), signable)
 		case curveSize > 384:
-			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
-				return Signature{}, ErrCurveSizeSchemeMismatch
-			}
 			hashed = hashToHex(hashMapping["sha512"](), signable)
 		default:
 			panic("unexpected Error in GenerateSignature function")
@@ -535,24 +529,18 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		}
 		curveSize := parsedKey.(*ecdsa.PublicKey).Curve.Params().BitSize
 		var hashed []byte
+		if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
+			return ErrCurveSizeSchemeMismatch
+		}
 		// implement https://tools.ietf.org/html/rfc5656#section-6.2.1
 		// We determine the curve size and choose the correct hashing
 		// method based on the curveSize
 		switch {
 		case curveSize <= 256:
-			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
-				return ErrCurveSizeSchemeMismatch
-			}
 			hashed = hashToHex(hashMapping["sha256"](), unverified)
 		case 256 < curveSize && curveSize <= 384:
-			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
-				return ErrCurveSizeSchemeMismatch
-			}
 			hashed = hashToHex(hashMapping["sha384"](), unverified)
 		case curveSize > 384:
-			if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
-				return ErrCurveSizeSchemeMismatch
-			}
 			hashed = hashToHex(hashMapping["sha512"](), unverified)
 		default:
 			panic("unexpected Error in VerifySignature function")
