@@ -508,7 +508,7 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		switch key.Scheme {
 		case rsassapsssha256Scheme:
 			hashed := hashToHex(hashMapping["sha256"](), unverified)
-			err = rsa.VerifyPSS(parsedKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], sigBytes, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
+			err = rsa.VerifyPSS(parsedKey.(*rsa.PublicKey), crypto.SHA256, hashed, sigBytes, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
 			if err != nil {
 				return fmt.Errorf("%w: %s", ErrInvalidSignature, err)
 			}
@@ -552,7 +552,7 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		if err != nil {
 			return err
 		}
-		if err := ecdsa.Verify(parsedKey.(*ecdsa.PublicKey), hashed[:], ecdsaSignature.R, ecdsaSignature.S); err == false {
+		if err := ecdsa.Verify(parsedKey.(*ecdsa.PublicKey), hashed, ecdsaSignature.R, ecdsaSignature.S); err == false {
 			return ErrInvalidSignature
 		}
 	case ed25519KeyType:
