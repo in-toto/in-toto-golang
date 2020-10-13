@@ -11,6 +11,14 @@ import (
 	"testing"
 )
 
+func TestMatchEcdsaScheme(t *testing.T) {
+	curveSize := 224
+	scheme := "ecdsa-sha2-nistp512"
+	if err := matchEcdsaScheme(curveSize, scheme); err == nil {
+		t.Errorf("matchEcdsaScheme should have failed with curveSize: %d and scheme: %s", curveSize, scheme)
+	}
+}
+
 func TestMetablockLoad(t *testing.T) {
 	// Create a bunch of tmp json files with invalid format and test load errors:
 	// - invalid json

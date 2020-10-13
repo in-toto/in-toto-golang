@@ -11,7 +11,7 @@ import (
 
 func TestRecordArtifact(t *testing.T) {
 	// Test successfully record one artifact
-	result, err := RecordArtifact("foo.tar.gz")
+	result, err := RecordArtifact("foo.tar.gz", []string{"sha256"})
 	expected := map[string]interface{}{
 		"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 	}
@@ -21,10 +21,15 @@ func TestRecordArtifact(t *testing.T) {
 	}
 
 	// Test error by recording nonexistent artifact
-	result, err = RecordArtifact("file-does-not-exist")
+	result, err = RecordArtifact("file-does-not-exist", []string{"sha256"})
 	if !os.IsNotExist(err) {
 		t.Errorf("RecordArtifact returned '(%s, %s)', expected '(nil, %s)'",
 			result, err, os.ErrNotExist)
+	}
+
+	result, err = RecordArtifact("foo.tar.gz", []string{"invalid"})
+	if !errors.Is(err, ErrUnsupportedHashAlgorithm) {
+		t.Errorf("RecordArtifact returned '(%s, %s)', expected '(nil, %s)'", result, err, ErrUnsupportedHashAlgorithm)
 	}
 }
 
@@ -43,7 +48,7 @@ func TestSymlinkToFile(t *testing.T) {
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 		},
 	}
-	result, err := RecordArtifacts([]string{"foo.tar.gz.sym"})
+	result, err := RecordArtifacts([]string{"foo.tar.gz.sym"}, []string{"sha256"})
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
@@ -82,7 +87,7 @@ func TestIndirectSymlinkCycles(t *testing.T) {
 	}
 
 	// provoke "symlink cycle detected" error
-	_, err = RecordArtifacts([]string{"symTestA/linkToB.sym", "symTestB/linkToA.sym", "foo.tar.gz"})
+	_, err = RecordArtifacts([]string{"symTestA/linkToB.sym", "symTestB/linkToA.sym", "foo.tar.gz"}, []string{"sha256"})
 	if !errors.Is(err, ErrSymCycle) {
 		t.Errorf("We expected: %s, we got: %s", ErrSymCycle, err)
 	}
@@ -125,7 +130,7 @@ func TestSymlinkToFolder(t *testing.T) {
 		t.Errorf("Could not write symTmpfile: %s", err)
 	}
 
-	result, err := RecordArtifacts([]string{"symTmpfile.sym"})
+	result, err := RecordArtifacts([]string{"symTmpfile.sym"}, []string{"sha256"})
 	if err != nil {
 		t.Error(err)
 	}
@@ -177,7 +182,7 @@ func TestSymlinkCycle(t *testing.T) {
 	}
 
 	// provoke "symlink cycle detected" error
-	_, err = RecordArtifacts([]string{"symlinkCycle/symCycle.sym", "foo.tar.gz"})
+	_, err = RecordArtifacts([]string{"symlinkCycle/symCycle.sym", "foo.tar.gz"}, []string{"sha256"})
 	if !errors.Is(err, ErrSymCycle) {
 		t.Errorf("We expected: %s, we got: %s", ErrSymCycle, err)
 	}
@@ -200,7 +205,7 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("Could not write tmpfile: %s", err)
 	}
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template", "tmpdir/tmpfile"})
+		"demo.layout.template", "tmpdir/tmpfile"}, []string{"sha256"})
 	expected := map[string]interface{}{
 		"foo.tar.gz": map[string]interface{}{
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
@@ -221,7 +226,7 @@ func TestRecordArtifacts(t *testing.T) {
 	}
 
 	// Test error by recording nonexistent artifact
-	result, err = RecordArtifacts([]string{"file-does-not-exist"})
+	result, err = RecordArtifacts([]string{"file-does-not-exist"}, []string{"sha256"})
 	if !os.IsNotExist(err) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
 			result, err, os.ErrNotExist)
@@ -291,13 +296,14 @@ func TestInTotoRun(t *testing.T) {
 	}
 
 	tablesCorrect := []struct {
-		materialPaths []string
-		productPaths  []string
-		cmdArgs       []string
-		key           Key
-		result        Metablock
+		materialPaths  []string
+		productPaths   []string
+		cmdArgs        []string
+		key            Key
+		hashAlgorithms []string
+		result         Metablock
 	}{
-		{[]string{"demo.layout.template"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, validKey, Metablock{
+		{[]string{"demo.layout.template"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, validKey, []string{"sha256"}, Metablock{
 			Signed: Link{
 				Name: linkName,
 				Type: "link",
@@ -326,7 +332,7 @@ func TestInTotoRun(t *testing.T) {
 	}
 
 	for _, table := range tablesCorrect {
-		result, err := InTotoRun(linkName, table.materialPaths, table.productPaths, table.cmdArgs, table.key)
+		result, err := InTotoRun(linkName, table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms)
 		if !reflect.DeepEqual(result, table.result) {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result)
 		} else {
@@ -350,26 +356,27 @@ func TestInTotoRun(t *testing.T) {
 
 	// Run InToToRun with errors
 	tablesInvalid := []struct {
-		materialPaths []string
-		productPaths  []string
-		cmdArgs       []string
-		key           Key
+		materialPaths  []string
+		productPaths   []string
+		cmdArgs        []string
+		key            Key
+		hashAlgorithms []string
 	}{
-		{[]string{"material-does-not-exist"}, []string{""}, []string{"sh", "-c", "printf test"}, Key{}},
-		{[]string{"demo.layout.template"}, []string{"product-does-not-exist"}, []string{"sh", "-c", "printf test"}, Key{}},
-		{[]string{""}, []string{"/invalid-path/"}, []string{"sh", "-c", "printf test"}, Key{}},
-		{[]string{}, []string{}, []string{"command-does-not-exist"}, Key{}},
+		{[]string{"material-does-not-exist"}, []string{""}, []string{"sh", "-c", "printf test"}, Key{}, []string{"sha256"}},
+		{[]string{"demo.layout.template"}, []string{"product-does-not-exist"}, []string{"sh", "-c", "printf test"}, Key{}, []string{"sha256"}},
+		{[]string{""}, []string{"/invalid-path/"}, []string{"sh", "-c", "printf test"}, Key{}, []string{"sha256"}},
+		{[]string{}, []string{}, []string{"command-does-not-exist"}, Key{}, []string{"sha256"}},
 		{[]string{"demo.layout.template"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, Key{
 			KeyId:               "this-is-invalid",
 			KeyIdHashAlgorithms: nil,
 			KeyType:             "",
 			KeyVal:              KeyVal{},
 			Scheme:              "",
-		}},
+		}, []string{"sha256"}},
 	}
 
 	for _, table := range tablesInvalid {
-		result, err := InTotoRun(linkName, table.materialPaths, table.productPaths, table.cmdArgs, table.key)
+		result, err := InTotoRun(linkName, table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms)
 		if err == nil {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected error",
 				result, err)

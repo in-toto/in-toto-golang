@@ -61,9 +61,13 @@ The following curves are for example **not** supported:
 | dan | RSA private key |
 | dan.pub | pub key of dan |
 | erin | EC private Key (secp256k1) |
-| erin.pub | EC public key of erin (secp256k1) |
+| erin.pub | EC public key of erin|
 | frank | EC private key PKCS8 (secp521r1) |
 | frank.pub | EC public key of frank |
+| grace | EC private key (secp384r1) |
+| grace.pub | EC public key of grace |
+| heidi | EC private key (secp224r1) |
+| heidi.pub | EC public key of heidi |
 | foo.2f89b927.link | .. |
 | foo.776a00e2.link | .. |
 | foo.tar.gz | .. |
