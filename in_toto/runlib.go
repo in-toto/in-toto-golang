@@ -93,23 +93,6 @@ func RecordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns 
 }
 
 /*
-applyGitIgnorePatterns includes or excludes file via gitignore-style pathspec pattern matching.
-*/
-func applyGitIgnorePatterns(paths []string, excludePatterns []string) ([]string, error) {
-	var newPaths []string
-	for _, path := range paths {
-		ignore, err := pathspec.GitIgnore(excludePatterns, path)
-		if err != nil {
-			return []string{}, err
-		}
-		if !ignore {
-			newPaths = append(newPaths, path)
-		}
-	}
-	return newPaths, nil
-}
-
-/*
 recordArtifacts walks through the passed slice of paths, traversing
 subdirectories, and calls RecordArtifact for each file. It returns a map in
 the following format:
@@ -129,12 +112,6 @@ return value is the error.
 */
 func recordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns []string) (map[string]interface{}, error) {
 	artifacts := make(map[string]interface{})
-	// This should match paths evaluated via symlinks too, because recordArtifacts works
-	// recursively.
-	paths, err := applyGitIgnorePatterns(paths, gitignorePatterns)
-	if err != nil {
-		return artifacts, err
-	}
 	for _, path := range paths {
 		err := filepath.Walk(path,
 			func(path string, info os.FileInfo, err error) error {
@@ -142,6 +119,16 @@ func recordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns 
 				// e.g. path does not exist
 				if err != nil {
 					return err
+				}
+				// We need to call pathspec.GitIgnore inside of our filepath.Walk, because otherwise
+				// we will not catch all paths. Just imagine a path like "." and a pattern like "*.pub".
+				// If we would call pathspec outside of the filepath.Walk this would not match.
+				ignore, err := pathspec.GitIgnore(gitignorePatterns, path)
+				if err != nil {
+					return err
+				}
+				if ignore {
+					return nil
 				}
 				// Don't hash directories
 				if info.IsDir() {

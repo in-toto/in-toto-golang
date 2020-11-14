@@ -2,6 +2,8 @@ package in_toto
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -30,6 +32,79 @@ func TestRecordArtifact(t *testing.T) {
 	result, err = RecordArtifact("foo.tar.gz", []string{"invalid"})
 	if !errors.Is(err, ErrUnsupportedHashAlgorithm) {
 		t.Errorf("RecordArtifact returned '(%s, %s)', expected '(nil, %s)'", result, err, ErrUnsupportedHashAlgorithm)
+	}
+}
+
+// copy helper function for building more complex test cases
+// for our TestGitPathSpec
+func copy(src, dst string) (int64, error) {
+	sourceFileStat, err := os.Stat(src)
+	if err != nil {
+		return 0, err
+	}
+
+	if !sourceFileStat.Mode().IsRegular() {
+		return 0, fmt.Errorf("%s is not a regular file", src)
+	}
+
+	source, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer destination.Close()
+	nBytes, err := io.Copy(destination, source)
+	return nBytes, err
+}
+
+func TestGitPathSpec(t *testing.T) {
+	// Create a more complex test scenario via building subdirectories
+	// and copying existing files.
+	directoriesToBeCreated := []string{
+		"pathSpecTest",
+		"pathSpecTest/alpha",
+		"pathSpecTest/beta",
+		"pathSpecTest/alpha/charlie",
+	}
+	for _, v := range directoriesToBeCreated {
+		if err := os.Mkdir(v, 0700); err != nil {
+			t.Errorf("Could not create tmpdir: %s", err)
+		}
+	}
+	filesToBeCreated := map[string]string{
+		"heidi.pub":  "pathSpecTest/heidi.pub",
+		"foo.tar.gz": "pathSpecTest/beta/foo.tar.gz",
+		"dan":        "pathSpecTest/alpha/charlie/dan",
+		"dan.pub":    "pathSpecTest/beta/dan.pub",
+	}
+	for k, v := range filesToBeCreated {
+		_, err := copy(k, v)
+		if err != nil {
+			t.Errorf("Could not copy file: %s", err)
+		}
+	}
+
+	expected := map[string]interface{}{}
+	// Let's start our test in the test/data directory
+	result, err := RecordArtifacts([]string{"pathSpecTest"}, []string{"sha256"}, []string{
+		"*.pub",           // Match all .pub files (even the ones in subdirectories)
+		"beta/foo.tar.gz", // Match full path
+		"alpha/**",        // Match all directories and files beneath alpha
+	})
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
+			result, err, expected)
+	}
+
+	// clean up
+	err = os.RemoveAll("pathSpecTest")
+	if err != nil {
+		t.Errorf("could not clean up pathSpecTest directory: %s", err)
 	}
 }
 
