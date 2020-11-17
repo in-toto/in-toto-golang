@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/shibumi/go-pathspec"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -83,10 +84,10 @@ the following format:
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
-func RecordArtifacts(paths []string, hashAlgorithms []string) (evalArtifacts map[string]interface{}, err error) {
+func RecordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns []string) (evalArtifacts map[string]interface{}, err error) {
 	// Make sure to initialize a fresh hashset for every RecordArtifacts call
 	visitedSymlinks = NewSet()
-	evalArtifacts, err = recordArtifacts(paths, hashAlgorithms)
+	evalArtifacts, err = recordArtifacts(paths, hashAlgorithms, gitignorePatterns)
 	// pass result and error through
 	return evalArtifacts, err
 }
@@ -109,9 +110,8 @@ the following format:
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
-func recordArtifacts(paths []string, hashAlgorithms []string) (map[string]interface{}, error) {
+func recordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns []string) (map[string]interface{}, error) {
 	artifacts := make(map[string]interface{})
-	// NOTE: Walk cannot follow symlinks
 	for _, path := range paths {
 		err := filepath.Walk(path,
 			func(path string, info os.FileInfo, err error) error {
@@ -119,6 +119,16 @@ func recordArtifacts(paths []string, hashAlgorithms []string) (map[string]interf
 				// e.g. path does not exist
 				if err != nil {
 					return err
+				}
+				// We need to call pathspec.GitIgnore inside of our filepath.Walk, because otherwise
+				// we will not catch all paths. Just imagine a path like "." and a pattern like "*.pub".
+				// If we would call pathspec outside of the filepath.Walk this would not match.
+				ignore, err := pathspec.GitIgnore(gitignorePatterns, path)
+				if err != nil {
+					return err
+				}
+				if ignore {
+					return nil
 				}
 				// Don't hash directories
 				if info.IsDir() {
@@ -148,7 +158,7 @@ func recordArtifacts(paths []string, hashAlgorithms []string) (map[string]interf
 					visitedSymlinks.Add(path)
 					// We recursively call RecordArtifacts() to follow
 					// the new path.
-					evalArtifacts, evalErr := recordArtifacts([]string{evalSym}, hashAlgorithms)
+					evalArtifacts, evalErr := recordArtifacts([]string{evalSym}, hashAlgorithms, gitignorePatterns)
 					if evalErr != nil {
 						return evalErr
 					}
@@ -256,9 +266,9 @@ Metablock object.  If command execution or artifact recording fails the first
 return value is an empty Metablock and the second return value is the error.
 */
 func InTotoRun(name string, materialPaths []string, productPaths []string,
-	cmdArgs []string, key Key, hashAlgorithms []string) (Metablock, error) {
+	cmdArgs []string, key Key, hashAlgorithms []string, gitignorePatterns []string) (Metablock, error) {
 	var linkMb Metablock
-	materials, err := RecordArtifacts(materialPaths, hashAlgorithms)
+	materials, err := RecordArtifacts(materialPaths, hashAlgorithms, gitignorePatterns)
 	if err != nil {
 		return linkMb, err
 	}
@@ -268,7 +278,7 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		return linkMb, err
 	}
 
-	products, err := RecordArtifacts(productPaths, hashAlgorithms)
+	products, err := RecordArtifacts(productPaths, hashAlgorithms, gitignorePatterns)
 	if err != nil {
 		return linkMb, err
 	}
