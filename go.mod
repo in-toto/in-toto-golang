@@ -1,6 +1,6 @@
-module github.com/shibumi/in-toto-golang
+module github.com/in-toto/in-toto-golang
 
-go 1.15
+go 1.14
 
 require (
 	github.com/shibumi/go-pathspec v1.2.0
