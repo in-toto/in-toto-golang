@@ -7,14 +7,14 @@ import (
 
 /*
 NOTE: The example code requires the following files to be in the current
-working directory: `demo.layout.template` (root layout), `alice.pub` (layout
+working directory: `demo.layout` (root layout), `alice.pub` (layout
 signature verification key), `write-code.776a00e2.link` and
 `package.2f89b927.link` (link metadata files), and `foo.tar.gz` (target file of
 final product). You can copy these files from
 https://github.com/in-toto/in-toto-golang/tree/master/test/data.
 */
 
-const LayoutPath = "demo.layout.template"
+const LayoutPath = "demo.layout"
 const LayoutKeyPath = "alice.pub"
 const LinkDirectory = "."
 

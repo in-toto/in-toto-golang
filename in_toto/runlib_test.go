@@ -435,10 +435,10 @@ func TestInTotoRun(t *testing.T) {
 		hashAlgorithms []string
 	}{
 		{[]string{"material-does-not-exist"}, []string{""}, []string{"sh", "-c", "printf test"}, Key{}, []string{"sha256"}},
-		{[]string{"demo.layout.template"}, []string{"product-does-not-exist"}, []string{"sh", "-c", "printf test"}, Key{}, []string{"sha256"}},
+		{[]string{"demo.layout"}, []string{"product-does-not-exist"}, []string{"sh", "-c", "printf test"}, Key{}, []string{"sha256"}},
 		{[]string{""}, []string{"/invalid-path/"}, []string{"sh", "-c", "printf test"}, Key{}, []string{"sha256"}},
 		{[]string{}, []string{}, []string{"command-does-not-exist"}, Key{}, []string{"sha256"}},
-		{[]string{"demo.layout.template"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, Key{
+		{[]string{"demo.layout"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, Key{
 			KeyId:               "this-is-invalid",
 			KeyIdHashAlgorithms: nil,
 			KeyType:             "",

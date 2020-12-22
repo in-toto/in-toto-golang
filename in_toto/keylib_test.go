@@ -102,7 +102,7 @@ func TestLoadKeyErrors(t *testing.T) {
 		err            error
 	}{
 		{"not existing file", "inToToRocks", "rsassa-pss-sha256", []string{"sha256", "sha512"}, os.ErrNotExist},
-		{"existing, but invalid file", "demo.layout.template", "ecdsa-sha2-nistp521", []string{"sha512"}, ErrNoPEMBlock},
+		{"existing, but invalid file", "demo.layout", "ecdsa-sha2-nistp521", []string{"sha512"}, ErrNoPEMBlock},
 		{"EC private key file", "erin", "ecdsa-sha2-nistp521", []string{"sha256", "sha512"}, ErrFailedPEMParsing},
 		{"valid ed25519 private key, but invalid scheme", "carol", "", []string{"sha256"}, ErrEmptyKeyField},
 		{"valid ed25519 public key, but invalid scheme", "carol.pub", "", []string{"sha256"}, ErrEmptyKeyField},
