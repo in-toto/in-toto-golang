@@ -280,13 +280,10 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("Could not write tmpfile: %s", err)
 	}
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
-		"demo.layout.template", "tmpdir/tmpfile"}, []string{"sha256"}, nil)
+		"tmpdir/tmpfile"}, []string{"sha256"}, nil)
 	expected := map[string]interface{}{
 		"foo.tar.gz": map[string]interface{}{
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
-		},
-		"demo.layout.template": map[string]interface{}{
-			"sha256": "019e121a1e0a34aecde0aebb642162b11db4248c781cb8119f81f592723a0424",
 		},
 		"tmpdir/tmpfile": map[string]interface{}{
 			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
@@ -378,13 +375,13 @@ func TestInTotoRun(t *testing.T) {
 		hashAlgorithms []string
 		result         Metablock
 	}{
-		{[]string{"demo.layout.template"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, validKey, []string{"sha256"}, Metablock{
+		{[]string{"alice.pub"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, validKey, []string{"sha256"}, Metablock{
 			Signed: Link{
 				Name: linkName,
 				Type: "link",
 				Materials: map[string]interface{}{
-					"demo.layout.template": map[string]interface{}{
-						"sha256": "019e121a1e0a34aecde0aebb642162b11db4248c781cb8119f81f592723a0424",
+					"alice.pub": map[string]interface{}{
+						"sha256": "54d66a3cda423bb31027f388ffb6753a37e7bd5d9d883140fb818dac73456695",
 					},
 				},
 				Products: map[string]interface{}{
@@ -400,7 +397,7 @@ func TestInTotoRun(t *testing.T) {
 			},
 			Signatures: []Signature{{
 				KeyId: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
-				Sig:   "08a6c42b8433502f2869bb3dc73f8348f6b6f89e42bbc63f91a33e7171d762e138ed5d695fb83cebec958203e17b2285f95b198d758bc62cf30e1f7408d6c10c",
+				Sig:   "aef29094ba7378811897e5914842e65353a834d4f73cac0dcb2148b88a436e3ddc7a6644a6695d3a20693726130f0d8ace916f6482b4a74e29cc77fd7571d401",
 			}},
 		},
 		},
