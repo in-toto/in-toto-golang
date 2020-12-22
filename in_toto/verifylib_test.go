@@ -12,8 +12,6 @@ import (
 )
 
 func TestInTotoVerifyPass(t *testing.T) {
-	// TODO: The test layout has a hardcoded expiration date. We need to
-	// implement signing and create the date and sign the layout on the fly.
 	layoutPath := "demo.layout.template"
 	pubKeyPath := "alice.pub"
 	linkDir := "."
