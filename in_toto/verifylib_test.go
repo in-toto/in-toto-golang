@@ -12,9 +12,7 @@ import (
 )
 
 func TestInTotoVerifyPass(t *testing.T) {
-	// TODO: The test layout has a hardcoded expiration date. We need to
-	// implement signing and create the date and sign the layout on the fly.
-	layoutPath := "demo.layout.template"
+	layoutPath := "demo.layout"
 	pubKeyPath := "alice.pub"
 	linkDir := "."
 
@@ -41,7 +39,7 @@ func TestInTotoVerifyPass(t *testing.T) {
 
 func TestGetSummaryLink(t *testing.T) {
 	var demoLayout Metablock
-	if err := demoLayout.Load("demo.layout.template"); err != nil {
+	if err := demoLayout.Load("demo.layout"); err != nil {
 		t.Error(err)
 	}
 	var codeLink Metablock
@@ -158,7 +156,7 @@ func TestVerifySublayouts(t *testing.T) {
 func TestRunInspections(t *testing.T) {
 	// Load layout template used as basis for all tests
 	var mb Metablock
-	if err := mb.Load("demo.layout.template"); err != nil {
+	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Unable to parse template file: %s", err)
 	}
 	layout := mb.Signed.(Layout)
@@ -436,7 +434,7 @@ func TestVerifyMatchRule(t *testing.T) {
 
 func TestReduceStepsMetadata(t *testing.T) {
 	var mb Metablock
-	if err := mb.Load("demo.layout.template"); err != nil {
+	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Unable to parse template file: %s", err)
 	}
 	layout := mb.Signed.(Layout)
@@ -515,7 +513,7 @@ func TestReduceStepsMetadata(t *testing.T) {
 
 func TestVerifyStepCommandAlignment(t *testing.T) {
 	var mb Metablock
-	if err := mb.Load("demo.layout.template"); err != nil {
+	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Unable to load template file: %s", err)
 	}
 	layout := mb.Signed.(Layout)
@@ -553,7 +551,7 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 	keyId3 := "abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca"
 
 	var mb Metablock
-	if err := mb.Load("demo.layout.template"); err != nil {
+	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Unable to load template file: %s", err)
 	}
 	layout := mb.Signed.(Layout)
@@ -619,7 +617,7 @@ func TestLoadLinksForLayout(t *testing.T) {
 	keyId1 := "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498"
 	keyId2 := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
 	var mb Metablock
-	if err := mb.Load("demo.layout.template"); err != nil {
+	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Unable to load template file: %s", err)
 	}
 	layout := mb.Signed.(Layout)
@@ -652,7 +650,7 @@ func TestLoadLinksForLayout(t *testing.T) {
 
 func TestVerifyLayoutExpiration(t *testing.T) {
 	var mb Metablock
-	if err := mb.Load("demo.layout.template"); err != nil {
+	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Unable to load template file: %s", err)
 	}
 	layout := mb.Signed.(Layout)
@@ -682,7 +680,7 @@ func TestVerifyLayoutExpiration(t *testing.T) {
 
 func TestVerifyLayoutSignatures(t *testing.T) {
 	var mbLayout Metablock
-	if err := mbLayout.Load("demo.layout.template"); err != nil {
+	if err := mbLayout.Load("demo.layout"); err != nil {
 		t.Errorf("Unable to load template file: %s", err)
 	}
 	var layoutKey Key

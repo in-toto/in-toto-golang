@@ -287,7 +287,7 @@ func TestMetablockVerifySignature(t *testing.T) {
 
 	// Test successful metablock signature verification
 	var mb Metablock
-	if err := mb.Load("demo.layout.template"); err != nil {
+	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Cannot parse template file: %s", err)
 	}
 	err := mb.VerifySignature(key)
@@ -413,7 +413,7 @@ func TestValidateLink(t *testing.T) {
 
 func TestValidateLayout(t *testing.T) {
 	var mb Metablock
-	if err := mb.Load("demo.layout.template"); err != nil {
+	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Metablock load returned '%s'", err)
 	}
 	if err := validateLayout(mb.Signed.(Layout)); err != nil {
@@ -1098,7 +1098,7 @@ func TestValidateSupplyChainItem(t *testing.T) {
 
 func TestMetablockSignWithRSA(t *testing.T) {
 	var mb Metablock
-	if err := mb.Load("demo.layout.template"); err != nil {
+	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Cannot parse template file: %s", err)
 	}
 	invalidKey := Key{
@@ -1116,7 +1116,7 @@ func TestMetablockSignWithRSA(t *testing.T) {
 
 func TestMetablockSignWithEd25519(t *testing.T) {
 	var mb Metablock
-	if err := mb.Load("demo.layout.template"); err != nil {
+	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Cannot parse template file: %s", err)
 	}
 	invalidKey := Key{
@@ -1137,7 +1137,7 @@ func TestMetablockSignWithEd25519(t *testing.T) {
 
 func TestMetaBlockSignWithEcdsa(t *testing.T) {
 	var mb Metablock
-	if err := mb.Load("demo.layout.template"); err != nil {
+	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Cannot parse template file: %s", err)
 	}
 	invalidKey := Key{
