@@ -28,4 +28,3 @@ If any of these features are necessary for your use case please let us know and
 we will try to provide them as soon as possible!
 
 * [GPG keys](https://github.com/in-toto/in-toto-golang/issues/26)
-* [Exclude patterns (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/33)
