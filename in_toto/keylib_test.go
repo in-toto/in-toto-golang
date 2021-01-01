@@ -1,7 +1,6 @@
 package in_toto
 
 import (
-	"encoding/asn1"
 	"errors"
 	"os"
 	"testing"
@@ -388,7 +387,7 @@ func TestVerifySignatureErrors(t *testing.T) {
 		}, Signature{
 			KeyId: "invalid",
 			Sig:   "BAAAAAAD",
-		}, asn1.SyntaxError{Msg: "truncated tag or length"},
+		}, ErrInvalidSignature,
 		},
 		{
 			"ed25519 with invalid public key", Key{
