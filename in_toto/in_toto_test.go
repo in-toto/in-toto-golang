@@ -52,5 +52,5 @@ func TestMain(m *testing.M) {
 	}(testDir)
 
 	// Run tests
-	os.Exit(m.Run())
+	m.Run()
 }

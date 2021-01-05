@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"math/big"
 	"os"
 	"reflect"
 	"regexp"
@@ -15,16 +14,6 @@ import (
 	"strings"
 	"time"
 )
-
-/*
-EcdsaSignature is being used for constructing an ASN.1 marshalled ecdsa
-signature. We use *big.Int here and not big.Int, because all functions
-on big.Int are pointer receivers. `asn1:"tag2"` refers to ASN.1 INTEGER.
-*/
-type EcdsaSignature struct {
-	R *big.Int `asn1:"tag:2"`
-	S *big.Int `asn1:"tag:2"`
-}
 
 /*
 KeyVal contains the actual values of a key, as opposed to key metadata such as

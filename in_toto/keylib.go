@@ -7,7 +7,6 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
-	"encoding/asn1"
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
@@ -438,21 +437,10 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		default:
 			panic("unexpected Error in GenerateSignature function")
 		}
-		// ecdsa.Sign returns a signature that consists of two components called: r and s
-		// We assume here, that r and s are of the same size nLen and that
-		// the signature is 2*nLen. Furthermore we must note  that hashes get truncated
-		// if they are too long for the curve.
-		r, s, err := ecdsa.Sign(rand.Reader, parsedKey.(*ecdsa.PrivateKey), hashed)
-		if err != nil {
-			return signature, nil
-		}
 		// Generate the ecdsa signature on the same way, as we do in the securesystemslib
 		// We are marshalling the ecdsaSignature struct as ASN.1 INTEGER SEQUENCES
 		// into an ASN.1 Object.
-		signatureBuffer, err = asn1.Marshal(EcdsaSignature{
-			R: r,
-			S: s,
-		})
+		signatureBuffer, err = ecdsa.SignASN1(rand.Reader, parsedKey.(*ecdsa.PrivateKey), hashed[:])
 	case ed25519KeyType:
 		// We do not need a scheme switch here, because ed25519
 		// only consist of sha256 and curve25519.
@@ -527,7 +515,6 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 			panic("unexpected Error in VerifySignature function")
 		}
 	case ecdsaKeyType:
-		var ecdsaSignature EcdsaSignature
 		// We do not need the pemData here, so we can throw it away via '_'
 		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
 		if err != nil {
@@ -555,14 +542,7 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		default:
 			panic("unexpected Error in VerifySignature function")
 		}
-		// Unmarshal the ASN.1 DER marshalled ecdsa signature to
-		// ecdsaSignature. asn1.Unmarshal returns the rest and an error
-		// we can skip the rest here..
-		_, err = asn1.Unmarshal(sigBytes, &ecdsaSignature)
-		if err != nil {
-			return err
-		}
-		if err := ecdsa.Verify(parsedKey.(*ecdsa.PublicKey), hashed, ecdsaSignature.R, ecdsaSignature.S); err == false {
+		if ok := ecdsa.VerifyASN1(parsedKey.(*ecdsa.PublicKey), hashed, sigBytes); !ok {
 			return ErrInvalidSignature
 		}
 	case ed25519KeyType:
