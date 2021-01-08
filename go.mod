@@ -1,4 +1,4 @@
-module github.com/in-toto/in-toto-golang
+module github.com/boxboat/in-toto-golang
 
 go 1.15
 
