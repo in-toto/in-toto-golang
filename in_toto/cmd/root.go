@@ -6,7 +6,6 @@ import (
 
 	intoto "github.com/boxboat/in-toto-golang/in_toto"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var rootCmd = &cobra.Command{
@@ -50,8 +49,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&layoutPath, "layout-path", "", "Full Path For Layout")
 	rootCmd.PersistentFlags().StringVar(&pubKeyPath, "pubkey-path", "", "Full Path For Public Key")
 	rootCmd.PersistentFlags().StringVar(&linkDir, "link-metadata", "", "Link metadata directory")
-
-	viper.BindPFlags(rootCmd.PersistentFlags())
 }
 
 func Execute() {
