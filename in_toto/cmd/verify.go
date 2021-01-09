@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	intoto "github.com/boxboat/in-toto-golang/in_toto"
 	"github.com/spf13/cobra"
@@ -11,10 +12,10 @@ var verifyCmd = &cobra.Command{
 	Use:   "verify",
 	Short: "Verify that the software supply chain of the delivered product",
 	Long: `in-toto-verify is the main verification tool of the suite, and 
-	it is used to verify that the software supply chain of the delivered 
-	product was carried out as defined in the passed in-toto supply chain 
-	layout. Evidence for supply chain steps must be available in the form 
-	of link metadata files named ‘<step name>.<functionary keyid prefix>.link’.`,
+it is used to verify that the software supply chain of the delivered 
+product was carried out as defined in the passed in-toto supply chain 
+layout. Evidence for supply chain steps must be available in the form 
+of link metadata files named ‘<step name>.<functionary keyid prefix>.link’.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var layoutMb intoto.Metablock
 
@@ -29,22 +30,19 @@ var verifyCmd = &cobra.Command{
 			var pubKey intoto.Key
 
 			if err := pubKey.LoadKey(pubKeyPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
-				fmt.Println(err.Error())
+				fmt.Println("Invalid Key Error:", err.Error())
+				os.Exit(1)
 			}
 
 			layoutKeys[pubKey.KeyId] = pubKey
 		}
 
-		result, err := intoto.InTotoVerify(layoutMb, layoutKeys, linkDir, "", make(map[string]string))
+		//Verify
+		_, err := intoto.InTotoVerify(layoutMb, layoutKeys, linkDir, "", make(map[string]string))
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println("Inspection Failed Error", err.Error())
+			os.Exit(1)
 		}
-
-		resultjson, err := result.GetSignableRepresentation()
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-		fmt.Println(resultjson)
 	},
 }
 
