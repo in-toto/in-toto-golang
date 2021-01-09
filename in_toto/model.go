@@ -280,8 +280,9 @@ of the Key, which was used to create the signature and the signature data.  The
 used signature scheme is found in the corresponding Key.
 */
 type Signature struct {
-	KeyID string `json:"keyid"`
-	Sig   string `json:"sig"`
+	KeyID       string       `json:"keyid",omitempty`
+	Certificate *Certificate `json:"cert",omitempty`
+	Sig         string       `json:"sig"`
 }
 
 /*
@@ -289,6 +290,10 @@ validateSignature is a function used to check if a passed signature is valid,
 by inspecting the key ID and the signature itself.
 */
 func validateSignature(signature Signature) error {
+	if (isSignedByKey(signature) && isSignedByCertificate(signature)) ||
+		(!isSignedByKey(signature) && !isSignedByCertificate(signature)) {
+		return fmt.Errorf("signatures must be signed by a single key or a single certificate")
+	}
 	if err := validateHexString(signature.KeyID); err != nil {
 		return err
 	}
@@ -296,6 +301,14 @@ func validateSignature(signature Signature) error {
 		return err
 	}
 	return nil
+}
+
+func isSignedByKey(signature Signature) bool {
+	return len(signature.KeyID) >= 0
+}
+
+func isSignedByCertificate(signature Signature) bool {
+	return signature.Certificate != nil
 }
 
 /*
@@ -527,6 +540,7 @@ type Layout struct {
 	Steps   []Step         `json:"steps"`
 	Inspect []Inspection   `json:"inspect"`
 	Keys    map[string]Key `json:"keys"`
+	CaCert  string         `json:"cacert"`
 	Expires string         `json:"expires"`
 	Readme  string         `json:"readme"`
 }
@@ -842,4 +856,8 @@ func (mb *Metablock) Sign(key Key) error {
 
 	mb.Signatures = append(mb.Signatures, newSignature)
 	return nil
+}
+
+type Certificate struct {
+	Data string `json:"data"`
 }
