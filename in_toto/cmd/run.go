@@ -5,13 +5,14 @@ import (
 	"os"
 
 	intoto "github.com/boxboat/in-toto-golang/in_toto"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/spf13/cobra"
 )
 
 var stepName string
 var keyPath string
-var materialsPath string
-var productsPath string
+var materialsPaths []string
+var productsPaths []string
 
 var runCmd = &cobra.Command{
 	Use:   "run",
@@ -29,26 +30,21 @@ with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 			fmt.Println(err.Error())
 		}
 
-		//Load Keys
-		layoutKeys := make(map[string]intoto.Key, len(pubKeyPaths))
+		//Load Key
+		var key intoto.Key
 
-		for _, pubKeyPath := range pubKeyPaths {
-			var pubKey intoto.Key
-
-			if err := pubKey.LoadKey(pubKeyPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
-				fmt.Println("Invalid Key Error:", err.Error())
-				os.Exit(1)
-			}
-
-			layoutKeys[pubKey.KeyId] = pubKey
-		}
-
-		//Verify
-		_, err := intoto.InTotoVerify(layoutMb, layoutKeys, linkDir, "", make(map[string]string))
-		if err != nil {
-			fmt.Println("Inspection Failed Error", err.Error())
+		if err := key.LoadKey(keyPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
+			fmt.Println("Invalid Key Error:", err.Error())
 			os.Exit(1)
 		}
+
+		block, err := intoto.InTotoRun(stepName, materialsPaths, productsPaths, args, key, []string{"sha256"}, []string{})
+		if err != nil {
+			fmt.Println("Error writing meta-block:", err.Error())
+			os.Exit(1)
+		}
+		spew.Dump(block)
+
 	},
 }
 
@@ -65,13 +61,13 @@ layout.`)
 		`Path to a PEM formatted private key file used to sign
 the resulting link metadata. (passing one of '--key'
 or '--gpg' is required) `)
-	runCmd.PersistentFlags().StringVarP(&materialsPath,
-		"materials", "m", "",
+	runCmd.PersistentFlags().StringArrayVarP(&materialsPaths,
+		"materials", "m", []string{},
 		`Paths to files or directories, whose paths and hashes
 are stored in the resulting link metadata before the
 command is executed. Symlinks are followed.`)
-	runCmd.PersistentFlags().StringVarP(&productsPath,
-		"products", "p", "",
+	runCmd.PersistentFlags().StringArrayVarP(&productsPaths,
+		"products", "p", []string{},
 		`Paths to files or directories, whose paths and hashes
 are stored in the resulting link metadata after the
 command is executed. Symlinks are followed.`)
