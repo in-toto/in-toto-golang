@@ -16,10 +16,6 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-var layoutPath string
-var pubKeyPaths []string
-var linkDir string
-
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
