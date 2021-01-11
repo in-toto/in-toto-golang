@@ -8,6 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var layoutPath string
+var pubKeyPaths []string
+var linkDir string
+
 var verifyCmd = &cobra.Command{
 	Use:   "verify",
 	Short: "Verify that the software supply chain of the delivered product",
