@@ -46,6 +46,7 @@ const (
 	pemPublicKey          string = "PUBLIC KEY"
 	pemPrivateKey         string = "PRIVATE KEY"
 	pemRSAPrivateKey      string = "PRIVATE RSA KEY"
+	pemCertificate        string = "CERTIFICATE"
 )
 
 /*
@@ -458,6 +459,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	}
 	signature.Sig = hex.EncodeToString(signatureBuffer)
 	signature.KeyId = key.KeyId
+	signature.Certificate = key.KeyVal.Certificate
 	return signature, nil
 }
 

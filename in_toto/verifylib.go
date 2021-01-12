@@ -6,6 +6,8 @@ See https://github.com/in-toto/docs/blob/master/in-toto-spec.md
 package in_toto
 
 import (
+	"crypto/x509"
+	"errors"
 	"fmt"
 	osPath "path"
 	"path/filepath"
@@ -407,6 +409,26 @@ func VerifyStepCommandAlignment(layout Layout,
 }
 
 /*
+LoadLayoutRootCertificate loads the root CA from the layout if one is in the layout.
+This will be used to check signatures that were used to sign links but not configured
+in the PubKeys section of the step.  No configured CA means we don't want to allow this.
+An empty CertPool will be returned in this case.
+*/
+func LoadLayoutRootCertificate(layout Layout) (*x509.CertPool, error) {
+	roots := x509.NewCertPool()
+	if layout.CaCert == "" {
+		return roots, nil
+	}
+
+	ok := roots.AppendCertsFromPEM([]byte(layout.CaCert))
+	if !ok {
+		return nil, errors.New("Failed to part root certificate")
+	}
+
+	return roots, nil
+}
+
+/*
 VerifyLinkSignatureThesholds verifies that for each step of the passed layout,
 there are at least Threshold links, validly signed by different authorized
 functionaries.  The returned map of link metadata per steps contains only
@@ -431,7 +453,7 @@ return value is an empty map of Metablock maps and the second return value is
 the error.
 */
 func VerifyLinkSignatureThesholds(layout Layout,
-	stepsMetadata map[string]map[string]Metablock) (
+	stepsMetadata map[string]map[string]Metablock, rootCertPool *x509.CertPool) (
 	map[string]map[string]Metablock, error) {
 	// This will stores links with valid signature from an authorized functionary
 	// for all steps
@@ -454,18 +476,30 @@ func VerifyLinkSignatureThesholds(layout Layout,
 		// authorized, the layout contains a verification key and the signature
 		// verification passes.  Only good links are stored, to verify thresholds
 		// below.
+		isAuthorizedSignature := false
 		for signerKeyID, linkMb := range linksPerStep {
 			for _, authorizedKeyID := range step.PubKeys {
 				if signerKeyID == authorizedKeyID {
 					if verifierKey, ok := layout.Keys[authorizedKeyID]; ok {
 						if err := linkMb.VerifySignature(verifierKey); err == nil {
 							linksPerStepVerified[signerKeyID] = linkMb
+							isAuthorizedSignature = true
 							break
 						}
 					}
 				}
 			}
+
+			// If the signer's key wasn't in our step's pubkeys array, check the cert pool to
+			// see if the key is known to us.
+			if !isAuthorizedSignature {
+				// test against the root CA with the key's certificate if it has one
+				if err := linkMb.VerifyWithCertificate(signerKeyID, rootCertPool); err == nil {
+					linksPerStepVerified[signerKeyID] = linkMb
+				}
+			}
 		}
+
 		// Store all good links for a step
 		stepsMetadataVerified[step.Name] = linksPerStepVerified
 	}
@@ -512,23 +546,29 @@ ignored. Only a preliminary threshold check is performed, that is, if there
 aren't at least Threshold links for any given step, the first return value
 is an empty map of Metablock maps and the second return value is the error.
 */
-func LoadLinksForLayout(layout Layout, linkDir string) (
-	map[string]map[string]Metablock, error) {
+func LoadLinksForLayout(layout Layout, linkDir string) (map[string]map[string]Metablock, error) {
 	stepsMetadata := make(map[string]map[string]Metablock)
 
 	for _, step := range layout.Steps {
 		linksPerStep := make(map[string]Metablock)
+		linkFiles, err := filepath.Glob(osPath.Join(linkDir, fmt.Sprintf(LinkGlobFormat, step.Name)))
+		if err != nil {
+			return nil, err
+		}
 
-		for _, authorizedKeyId := range step.PubKeys {
-			linkName := fmt.Sprintf(LinkNameFormat, step.Name, authorizedKeyId)
-			linkPath := osPath.Join(linkDir, linkName)
-
+		for _, linkPath := range linkFiles {
 			var linkMb Metablock
 			if err := linkMb.Load(linkPath); err != nil {
 				continue
 			}
 
-			linksPerStep[authorizedKeyId] = linkMb
+			signerShortKeyID := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(linkPath), step.Name), ".link")
+			for _, sig := range linkMb.Signatures {
+				if strings.HasPrefix(sig.KeyId, signerShortKeyID) {
+					linksPerStep[sig.KeyId] = linkMb
+					break
+				}
+			}
 		}
 
 		if len(linksPerStep) < step.Threshold {
@@ -774,6 +814,11 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		return summaryLink, err
 	}
 
+	rootCertPool, err := LoadLayoutRootCertificate(layout)
+	if err != nil {
+		return summaryLink, err
+	}
+
 	// Load links for layout
 	stepsMetadata, err := LoadLinksForLayout(layout, linkDir)
 	if err != nil {
@@ -782,7 +827,7 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 
 	// Verify link signatures
 	stepsMetadataVerified, err := VerifyLinkSignatureThesholds(layout,
-		stepsMetadata)
+		stepsMetadata, rootCertPool)
 	if err != nil {
 		return summaryLink, err
 	}
