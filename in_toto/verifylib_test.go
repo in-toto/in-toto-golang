@@ -1,6 +1,7 @@
 package in_toto
 
 import (
+	"crypto/x509"
 	"fmt"
 	"os"
 	"path"
@@ -134,7 +135,7 @@ func TestVerifySublayouts(t *testing.T) {
 
 	stepsMetadataVerified := make(map[string]map[string]Metablock)
 	if stepsMetadataVerified, err = VerifyLinkSignatureThesholds(
-		superLayoutMb.Signed.(Layout), stepsMetadata); err != nil {
+		superLayoutMb.Signed.(Layout), stepsMetadata, x509.NewCertPool()); err != nil {
 		t.Errorf("Unable to verify link threshold values")
 	}
 
@@ -589,7 +590,7 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 		{"foo": {keyID1: mbLink1, keyID2: mbLinkBroken}},
 	}
 	for i := 0; i < len(stepsMetadata); i++ {
-		result, err := VerifyLinkSignatureThesholds(layout, stepsMetadata[i])
+		result, err := VerifyLinkSignatureThesholds(layout, stepsMetadata[i], x509.NewCertPool())
 		if err == nil {
 			t.Errorf("VerifyLinkSignatureThesholds returned (%s, %s), expected"+
 				" 'not enough distinct valid links' error.", result, err)
@@ -604,7 +605,7 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 		{"foo": {keyID1: mbLink1, keyID2: mbLink2, keyID3: mbLinkBroken}},
 	}
 	for i := 0; i < len(stepsMetadata); i++ {
-		result, err := VerifyLinkSignatureThesholds(layout, stepsMetadata[i])
+		result, err := VerifyLinkSignatureThesholds(layout, stepsMetadata[i], x509.NewCertPool())
 		validLinks, ok := result["foo"]
 		if !ok || len(validLinks) != 2 {
 			t.Errorf("VerifyLinkSignatureThesholds returned (%s, %s), expected"+
