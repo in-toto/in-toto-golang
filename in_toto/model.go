@@ -3,7 +3,9 @@ package in_toto
 import (
 	"crypto/ecdsa"
 	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -22,8 +24,9 @@ and private keys in PEM format stored as strings.  For public keys the Private
 field may be an empty string.
 */
 type KeyVal struct {
-	Private string `json:"private"`
-	Public  string `json:"public"`
+	Private     string `json:"private"`
+	Public      string `json:"public"`
+	Certificate string `json:"-"`
 }
 
 /*
@@ -274,15 +277,20 @@ func validatePublicKey(key Key) error {
 	return nil
 }
 
+// TODO: implement this
+func validateCertificate(cert string) error {
+	return nil
+}
+
 /*
 Signature represents a generic in-toto signature that contains the identifier
 of the Key, which was used to create the signature and the signature data.  The
 used signature scheme is found in the corresponding Key.
 */
 type Signature struct {
-	KeyID       string       `json:"keyid",omitempty`
-	Certificate *Certificate `json:"cert",omitempty`
-	Sig         string       `json:"sig"`
+	KeyID       string `json:"keyid"`
+	Certificate string `json:"cert"`
+	Sig         string `json:"sig"`
 }
 
 /*
@@ -290,10 +298,6 @@ validateSignature is a function used to check if a passed signature is valid,
 by inspecting the key ID and the signature itself.
 */
 func validateSignature(signature Signature) error {
-	if (isSignedByKey(signature) && isSignedByCertificate(signature)) ||
-		(!isSignedByKey(signature) && !isSignedByCertificate(signature)) {
-		return fmt.Errorf("signatures must be signed by a single key or a single certificate")
-	}
 	if err := validateHexString(signature.KeyID); err != nil {
 		return err
 	}
@@ -301,14 +305,6 @@ func validateSignature(signature Signature) error {
 		return err
 	}
 	return nil
-}
-
-func isSignedByKey(signature Signature) bool {
-	return len(signature.KeyID) >= 0
-}
-
-func isSignedByCertificate(signature Signature) bool {
-	return signature.Certificate != nil
 }
 
 /*
@@ -397,6 +393,7 @@ LinkNameFormatShort is for links that are not signed, e.g.:
 	// returns "unsigned.link"
 */
 const LinkNameFormatShort = "%s.link"
+const LinkGlobFormat = "%s.????????.link"
 
 /*
 SublayoutLinkDirFormat represents the format of the name of the directory for
@@ -585,6 +582,12 @@ func validateLayout(layout Layout) error {
 		}
 		err := validatePublicKey(key)
 		if err != nil {
+			return err
+		}
+	}
+
+	if layout.CaCert != "" {
+		if err := validateCertificate(layout.CaCert); err != nil {
 			return err
 		}
 	}
@@ -811,6 +814,49 @@ func (mb *Metablock) VerifySignature(key Key) error {
 }
 
 /*
+VerifyWithCertificate uses a certificate from a signature and a root authority from the layout
+to ensure that some data was signed with a known key under our authority.
+*/
+func (mb *Metablock) VerifyWithCertificate(signerKeyID string, rootCertPool *x509.CertPool) error {
+	var sig Signature
+	for _, s := range mb.Signatures {
+		if s.KeyID == signerKeyID {
+			sig = s
+			break
+		}
+	}
+
+	if sig == (Signature{}) {
+		return fmt.Errorf("No signature found for key '%s'", signerKeyID)
+	}
+
+	block, _ := pem.Decode([]byte(sig.Certificate))
+	if block == nil {
+		return fmt.Errorf("Couldn't get certificate for signature '%s'", signerKeyID)
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return err
+	}
+
+	chain, err := cert.Verify(x509.VerifyOptions{Roots: rootCertPool})
+	if len(chain) == 0 || err != nil {
+		return fmt.Errorf("Could not verify cert for key: '%s'", signerKeyID)
+	}
+
+	dataCanonical, err := mb.GetSignableRepresentation()
+	if err != nil {
+		return err
+	}
+
+	//TODO: determine what we should really use as the signature algorithm...
+	//Since we're not storing the scheme for the key in the layout, we don't know
+	//what scheme was used to sign the data... Defaulting to the cert's signature algorithm
+	return cert.CheckSignature(cert.SignatureAlgorithm, dataCanonical, []byte(sig.Sig))
+}
+
+/*
 validateMetablock ensures that a passed Metablock object is valid. It indirectly
 validates the Link or Layout that the Metablock object contains.
 */
@@ -856,8 +902,4 @@ func (mb *Metablock) Sign(key Key) error {
 
 	mb.Signatures = append(mb.Signatures, newSignature)
 	return nil
-}
-
-type Certificate struct {
-	Data string `json:"data"`
 }
