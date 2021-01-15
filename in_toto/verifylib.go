@@ -567,7 +567,7 @@ func LoadLinksForLayout(layout Layout, linkDir string) (map[string]map[string]Me
 
 			// To get the full key from the metadata's signatures, we have to check
 			// for one with the same short id...
-			signerShortKeyID := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(linkPath), step.Name + "."), ".link")
+			signerShortKeyID := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(linkPath), step.Name+"."), ".link")
 			for _, sig := range linkMb.Signatures {
 				if strings.HasPrefix(sig.KeyID, signerShortKeyID) {
 					linksPerStep[sig.KeyID] = linkMb
