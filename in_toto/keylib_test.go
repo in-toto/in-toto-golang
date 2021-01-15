@@ -16,7 +16,7 @@ func TestLoadKey(t *testing.T) {
 		hashAlgorithms []string
 		expectedKeyID  string
 	}{
-		{"rsa public key", "alice.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}, "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b588f3e9cc48b35"},
+		{"rsa public key", "alice.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}, "70ca5750c2eda80b18f41f4ec5f92146789b5d68dd09577be422a0159bd13680"},
 		{"rsa private key", "dan", "rsassa-pss-sha256", []string{"sha256", "sha512"}, "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401"},
 		{"rsa public key", "dan.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}, "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401"},
 		{"ed25519 private key", "carol", "ed25519", []string{"sha256", "sha512"}, "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6"},
