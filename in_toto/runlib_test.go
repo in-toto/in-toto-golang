@@ -381,7 +381,7 @@ func TestInTotoRun(t *testing.T) {
 				Type: "link",
 				Materials: map[string]interface{}{
 					"alice.pub": map[string]interface{}{
-						"sha256": "54d66a3cda423bb31027f388ffb6753a37e7bd5d9d883140fb818dac73456695",
+						"sha256": "f051e8b561835b7b2aa7791db7bc72f2613411b0b7d428a0ac33d45b8c518039",
 					},
 				},
 				Products: map[string]interface{}{
@@ -397,7 +397,7 @@ func TestInTotoRun(t *testing.T) {
 			},
 			Signatures: []Signature{{
 				KeyId: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
-				Sig:   "aef29094ba7378811897e5914842e65353a834d4f73cac0dcb2148b88a436e3ddc7a6644a6695d3a20693726130f0d8ace916f6482b4a74e29cc77fd7571d401",
+				Sig:   "71dfec1af747d02f6463d4baf3bb2c1d903c107470be86c12349433f780b1030e5ca36a10ee5c5d74de16344fe16b459154fd2be05a58fb556dff934d6682403",
 			}},
 		},
 		},

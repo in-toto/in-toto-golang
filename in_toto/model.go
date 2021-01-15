@@ -3,7 +3,9 @@ package in_toto
 import (
 	"crypto/ecdsa"
 	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -22,8 +24,9 @@ and private keys in PEM format stored as strings.  For public keys the Private
 field may be an empty string.
 */
 type KeyVal struct {
-	Private string `json:"private"`
-	Public  string `json:"public"`
+	Private     string `json:"private"`
+	Public      string `json:"public"`
+	Certificate string `json:"-"` // We just use this for signing, no need to store it
 }
 
 /*
@@ -274,6 +277,11 @@ func validatePublicKey(key Key) error {
 	return nil
 }
 
+// TODO: implement this
+func validateCertificates(cert []string) error {
+	return nil
+}
+
 /*
 Signature represents a generic in-toto signature that contains the identifier
 of the Key, which was used to create the signature and the signature data.  The
@@ -282,6 +290,10 @@ used signature scheme is found in the corresponding Key.
 type Signature struct {
 	KeyId string `json:"keyid"`
 	Sig   string `json:"sig"`
+	// We store the certificate with the signature because we won't every key's public
+	// key as part of the layout at verification time.  Maybe instead of storing it with
+	// the signature we instead pass the cert's file along with the signed metadata?
+	Certificate string `json:"cert"`
 }
 
 /*
@@ -383,6 +395,7 @@ that are not signed, e.g.:
 
 */
 const LinkNameFormat = "%s.%.8s.link"
+const LinkGlobFormat = "%s.????????.link"
 const LinkNameFormatShort = "%s.link"
 const SublayoutLinkDirFormat = "%s.%.8s"
 
@@ -522,6 +535,7 @@ type Layout struct {
 	Steps   []Step         `json:"steps"`
 	Inspect []Inspection   `json:"inspect"`
 	Keys    map[string]Key `json:"keys"`
+	CaCerts []string       `json:"cacerts"`
 	Expires string         `json:"expires"`
 	Readme  string         `json:"readme"`
 }
@@ -568,6 +582,10 @@ func validateLayout(layout Layout) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if err := validateCertificates(layout.CaCerts); err != nil {
+		return err
 	}
 
 	var namesSeen = make(map[string]bool)
@@ -788,6 +806,49 @@ func (mb *Metablock) VerifySignature(key Key) error {
 		return err
 	}
 	return nil
+}
+
+/*
+VerifyWithCertificate uses a certificate from a signature and a root authority from the layout
+to ensure that some data was signed with a known key under our authority.
+*/
+func (mb *Metablock) VerifyWithCertificate(signerKeyID string, rootCertPool *x509.CertPool) error {
+	var sig Signature
+	for _, s := range mb.Signatures {
+		if s.KeyId == signerKeyID {
+			sig = s
+			break
+		}
+	}
+
+	if sig == (Signature{}) {
+		return fmt.Errorf("No signature found for key '%s'", signerKeyID)
+	}
+
+	block, _ := pem.Decode([]byte(sig.Certificate))
+	if block == nil {
+		return fmt.Errorf("Couldn't get certificate for signature '%s'", signerKeyID)
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return err
+	}
+
+	chain, err := cert.Verify(x509.VerifyOptions{Roots: rootCertPool})
+	if len(chain) == 0 || err != nil {
+		return fmt.Errorf("Could not verify cert for key: '%s'", signerKeyID)
+	}
+
+	dataCanonical, err := mb.GetSignableRepresentation()
+	if err != nil {
+		return err
+	}
+
+	//TODO: determine what we should really use as the signature algorithm...
+	//Since we're not storing the scheme for the key in the layout, we don't know
+	//what scheme was used to sign the data... Defaulting to the cert's signature algorithm
+	return cert.CheckSignature(cert.SignatureAlgorithm, dataCanonical, []byte(sig.Sig))
 }
 
 /*
