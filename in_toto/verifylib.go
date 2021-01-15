@@ -7,7 +7,6 @@ package in_toto
 
 import (
 	"crypto/x509"
-	"errors"
 	"fmt"
 	osPath "path"
 	"path/filepath"
@@ -409,20 +408,22 @@ func VerifyStepCommandAlignment(layout Layout,
 }
 
 /*
-LoadLayoutRootCertificate loads the root CA from the layout if one is in the layout.
+LoadLayoutRootCertificates loads the root CA from the layout if one is in the layout.
 This will be used to check signatures that were used to sign links but not configured
 in the PubKeys section of the step.  No configured CA means we don't want to allow this.
 An empty CertPool will be returned in this case.
 */
-func LoadLayoutRootCertificate(layout Layout) (*x509.CertPool, error) {
+func LoadLayoutRootCertificates(layout Layout) (*x509.CertPool, error) {
 	roots := x509.NewCertPool()
-	if layout.CaCert == "" {
+	if len(layout.CaCerts) == 0 {
 		return roots, nil
 	}
 
-	ok := roots.AppendCertsFromPEM([]byte(layout.CaCert))
-	if !ok {
-		return nil, errors.New("Failed to part root certificate")
+	for _, certPem := range layout.CaCerts {
+		ok := roots.AppendCertsFromPEM([]byte(certPem))
+		if !ok {
+			continue
+		}
 	}
 
 	return roots, nil
@@ -493,7 +494,7 @@ func VerifyLinkSignatureThesholds(layout Layout,
 			// If the signer's key wasn't in our step's pubkeys array, check the cert pool to
 			// see if the key is known to us.
 			if !isAuthorizedSignature {
-				// test against the root CA with the key's certificate if it has one
+				// test against the root pool with the key's certificate if it has any
 				if err := linkMb.VerifyWithCertificate(signerKeyID, rootCertPool); err == nil {
 					linksPerStepVerified[signerKeyID] = linkMb
 				}
@@ -551,6 +552,8 @@ func LoadLinksForLayout(layout Layout, linkDir string) (map[string]map[string]Me
 
 	for _, step := range layout.Steps {
 		linksPerStep := make(map[string]Metablock)
+		// Since we can verify against certificates belonging to a CA, we need to
+		// load any possible links
 		linkFiles, err := filepath.Glob(osPath.Join(linkDir, fmt.Sprintf(LinkGlobFormat, step.Name)))
 		if err != nil {
 			return nil, err
@@ -562,6 +565,8 @@ func LoadLinksForLayout(layout Layout, linkDir string) (map[string]map[string]Me
 				continue
 			}
 
+			// To get the full key from the metadata's signatures, we have to check
+			// for one with the same short id...
 			signerShortKeyID := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(linkPath), step.Name), ".link")
 			for _, sig := range linkMb.Signatures {
 				if strings.HasPrefix(sig.KeyId, signerShortKeyID) {
@@ -814,7 +819,7 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		return summaryLink, err
 	}
 
-	rootCertPool, err := LoadLayoutRootCertificate(layout)
+	rootCertPool, err := LoadLayoutRootCertificates(layout)
 	if err != nil {
 		return summaryLink, err
 	}
