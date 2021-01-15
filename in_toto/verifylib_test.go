@@ -136,7 +136,7 @@ func TestVerifySublayouts(t *testing.T) {
 	stepsMetadataVerified := make(map[string]map[string]Metablock)
 	if stepsMetadataVerified, err = VerifyLinkSignatureThesholds(
 		superLayoutMb.Signed.(Layout), stepsMetadata, x509.NewCertPool()); err != nil {
-		t.Errorf("Unable to verify link threshold values")
+			t.Errorf("Unable to verify link threshold values: %v", err)
 	}
 
 	result, err := VerifySublayouts(superLayoutMb.Signed.(Layout),
