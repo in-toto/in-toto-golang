@@ -26,7 +26,7 @@ field may be an empty string.
 type KeyVal struct {
 	Private     string `json:"private"`
 	Public      string `json:"public"`
-	Certificate string `json:"-"`
+	Certificate string `json:"-"` // We just use this for signing, no need to store it
 }
 
 /*
@@ -278,7 +278,7 @@ func validatePublicKey(key Key) error {
 }
 
 // TODO: implement this
-func validateCertificate(cert string) error {
+func validateCertificates(cert []string) error {
 	return nil
 }
 
@@ -288,9 +288,12 @@ of the Key, which was used to create the signature and the signature data.  The
 used signature scheme is found in the corresponding Key.
 */
 type Signature struct {
-	KeyID       string `json:"keyid"`
+	KeyID string `json:"keyid"`
+	Sig   string `json:"sig"`
+	// We store the certificate with the signature because we won't every key's public
+	// key as part of the layout at verification time.  Maybe instead of storing it with
+	// the signature we instead pass the cert's file along with the signed metadata?
 	Certificate string `json:"cert"`
-	Sig         string `json:"sig"`
 }
 
 /*
@@ -537,7 +540,7 @@ type Layout struct {
 	Steps   []Step         `json:"steps"`
 	Inspect []Inspection   `json:"inspect"`
 	Keys    map[string]Key `json:"keys"`
-	CaCert  string         `json:"cacert"`
+	CaCerts []string       `json:"cacerts"`
 	Expires string         `json:"expires"`
 	Readme  string         `json:"readme"`
 }
@@ -586,10 +589,8 @@ func validateLayout(layout Layout) error {
 		}
 	}
 
-	if layout.CaCert != "" {
-		if err := validateCertificate(layout.CaCert); err != nil {
-			return err
-		}
+	if err := validateCertificates(layout.CaCerts); err != nil {
+		return err
 	}
 
 	var namesSeen = make(map[string]bool)

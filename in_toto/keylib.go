@@ -45,7 +45,6 @@ const (
 	pemPublicKey          string = "PUBLIC KEY"
 	pemPrivateKey         string = "PRIVATE KEY"
 	pemRSAPrivateKey      string = "PRIVATE RSA KEY"
-	pemCertificate        string = "CERTIFICATE"
 )
 
 /*
