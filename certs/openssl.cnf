@@ -1,0 +1,21 @@
+[req]
+default_bits = 2048
+default_md = sha512
+distinguished_name = dn
+
+[dn]
+
+[v3-req]
+subjectKeyIdentifier=hash
+basicConstraints=critical,CA:TRUE
+keyUsage=critical,keyCertSign,cRLSign
+subjectAltName=URI:spiffe://example.com
+
+[ v3-intermediate ]
+subjectAltName=URI:spiffe://example.com
+basicConstraints=CA:true
+
+[ v3-leaf ]
+subjectAltName=critical,URI:spiffe://example.com/STEP
+keyUsage = critical,digitalSignature,keyEncipherment
+basicConstraints = CA:false
