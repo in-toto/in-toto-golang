@@ -1,0 +1,31 @@
+[req]
+default_bits = {{DEFUALT_BITS}}
+default_md = {{DEFAULT_MD}}
+distinguished_name = dn
+prompt = no
+encrypt_key = no
+
+[dn]
+CN = {{SPIFFE_PATH}}.{{TRUST_DOMAIN_FQDN}}
+OU = {{ORGANIZATIONAL_UNIT}}
+O = {{ORGANIZATION}}
+
+[v3-root]
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid:always,issuer:always
+basicConstraints=critical,CA:TRUE
+keyUsage=critical,keyCertSign,cRLSign
+subjectAltName=URI:spiffe://root
+
+[ v3-intermediate ]
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid:always,issuer:always
+basicConstraints=critical,CA:TRUE
+keyUsage=critical,keyCertSign,cRLSign
+subjectAltName=URI:spiffe://{{TRUST_DOMAIN_FQDN}}
+
+
+[ v3-leaf ]
+subjectAltName=critical,URI:spiffe://{{TRUST_DOMAIN_FQDN}}/{{SPIFFE_PATH}}
+keyUsage = critical,digitalSignature,keyEncipherment,nonRepudiation
+basicConstraints = CA:false
