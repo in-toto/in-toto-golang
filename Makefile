@@ -15,7 +15,20 @@ PROJECTNAME := in-toto-go
 #LDFLAGS=-ldflags "-X=main.Version=$(VERSION) -X=main.Build=$(BUILD)"
 
 # Make is verbose in Linux. Make it silent.
-MAKEFLAGS += --silent
+#MAKEFLAGS += --silent
+
+#Common Certificate Attributes
+TRUST_DOMAIN_FQDN := example.com
+DEFAULT_BITS := 2048
+DEFAULT_MD := sha512
+ORGANIZATIONAL_UNIT := example
+ORGANIZATION := example
+ROOT_DAYS := 3650
+INTERMEDIATE_DAYS := 3650
+LEAF_DAYS := 1
+
+#Template Location
+OPENSSL_TMPL := ./certs/openssl.cnf.tmpl
 
 build: modules
 	@mkdir -p bin
@@ -28,7 +41,7 @@ clean:
 	@rm -rf ./bin
 
 clean-certs:
-	@rm ./certs/*.pem ./certs/*.srl
+	@rm ./certs/*.pem ./certs/*.srl ./certs/*.cnf
 
 test: go-test test-verify test-run
 
@@ -44,56 +57,72 @@ go-test:
 generate-test-certs: intermediate_cert
 
 root-cert:
+	$(call generate_openssl_conf,root)
 	#Create Root Key
-	@openssl ecparam  -name prime256v1 -genkey -noout -out ./certs/root_key.pem
+	@openssl ecparam  -name prime256v1 -genkey -noout -out ./certs/root.key.pem
 	#Create Root Cert
-	@openssl req -subj "/C=US/ST=/L=/O=SPIRE/OU=/CN=root/" -days 3650 -x509 -new \
-	-key "./certs/root_key.pem" -out "./certs/root_cert.pem" \
-	-config ./certs/openssl.cnf \
-	-extensions v3-req
+	@openssl req -subj "/C=/ST=/L=/O=$(ORGANIZATION)/OU=$(ORGANIZATIONAL_UNIT)CN=root/" -days $(ROOT_DAYS) -x509 -new \
+	-key "./certs/root.key.pem" -out "./certs/root.cert.pem" \
+	-config ./certs/$(TRUST_DOMAIN_FQDN).root.openssl.cnf \
+	-extensions v3-root
 
 
 intermediate_cert: root-cert
+	$(call generate_openssl_conf,intermediate)
 	#Create intermediate key
-	@openssl ecparam -name prime256v1 -genkey -noout -out ./certs/intermediate_key.pem
+	@openssl ecparam -name prime256v1 -genkey -noout -out ./certs/$(TRUST_DOMAIN_FQDN).intermediate.key.pem
 	#Generate intermediate CSR
-	@openssl req -subj "/C=US/ST=/L=/O=SPIRE/OU=/CN=intermediate/" -new \
-	-key ./certs/intermediate_key.pem \
-	-out ./certs/intermediate_csr.pem \
-	-config ./certs/openssl.cnf \
+	@openssl req -subj "/C=/ST=/L=/O=$(ORGANIZATION)/OU=$(ORGANIZATIONAL_UNIT)CN=$(TRUST_DOMAIN_FQDN)" -new \
+	-key ./certs/$(TRUST_DOMAIN_FQDN).intermediate.key.pem \
+	-out ./certs/$(TRUST_DOMAIN_FQDN).intermediate.csr.pem \
+	-config ./certs/$(TRUST_DOMAIN_FQDN).intermediate.openssl.cnf \
 	-extensions v3-intermediate
 	#Sign Intermediate CSR Using Root Certificate
-	@openssl x509 -days 3650 -req \
+	@openssl x509 -days $(INTERMEDIATE_DAYS) -req \
 	-CAcreateserial \
-	-CA ./certs/root_cert.pem \
-	-CAkey ./certs/root_key.pem \
-	-in ./certs/intermediate_csr.pem \
-	-out ./certs/intermediate_cert.pem \
-	-extfile ./certs/openssl.cnf \
+	-CA ./certs/root.cert.pem \
+	-CAkey ./certs/root.key.pem \
+	-in ./certs/$(TRUST_DOMAIN_FQDN).intermediate.csr.pem \
+	-out ./certs/$(TRUST_DOMAIN_FQDN).intermediate.cert.pem \
+	-extfile ./certs/$(TRUST_DOMAIN_FQDN).intermediate.openssl.cnf \
 	-extensions v3-intermediate
-	@openssl verify -CAfile ./certs/root_cert.pem ./certs/intermediate_cert.pem
+	@openssl verify -CAfile ./certs/root.cert.pem ./certs/$(TRUST_DOMAIN_FQDN).intermediate.cert.pem
 
-leaf_cert: intermediate_cert
-	@cat ./certs/openssl.cnf | sed -e 's#STEP#step1#' > ./certs/openssl.cnf.tmp
+leaf_certs: intermediate_cert
+	$(call gernerate_leaf_cert,step1)
+	$(call gernerate_leaf_cert,step2)
+
+define gernerate_leaf_cert
+	$(call generate_openssl_conf,$(1))
 	#Generate leaf signing key
-	@openssl ecparam -name prime256v1 -genkey -noout -out ./certs/step1_key.pem
+	@openssl ecparam -name prime256v1 -genkey -noout -out ./certs/$(TRUST_DOMAIN_FQDN).$(1).key.pem
 	#Generate leaf CSR
-	@openssl req -subj "/C=US/ST=/L=/O=SPIRE/OU=/CN=step1/" -new \
-	-key ./certs/step1_key.pem \
-	-out ./certs/step1_csr.pem \
-	-config ./certs/openssl.cnf.tmp \
+	openssl req -new \
+	-key ./certs/$(TRUST_DOMAIN_FQDN).$(1).key.pem \
+	-out ./certs/$(TRUST_DOMAIN_FQDN).$(1).csr.pem \
+	-config ./certs/$(TRUST_DOMAIN_FQDN).$(1).openssl.cnf \
 	-extensions v3-leaf
 	#Sign leaf CSR Using intermediate Certificate
-	@openssl x509 -days 1 -req \
+	@openssl x509 -days $(LEAF_DAYS) -req \
 	-CAcreateserial \
-	-CA ./certs/intermediate_cert.pem \
-	-CAkey ./certs/intermediate_key.pem \
-	-in ./certs/step1_csr.pem \
-	-out ./certs/step1_cert.pem \
-	-extfile ./certs/openssl.cnf.tmp \
+	-CA ./certs/$(TRUST_DOMAIN_FQDN).intermediate.cert.pem \
+	-CAkey ./certs/$(TRUST_DOMAIN_FQDN).intermediate.key.pem \
+	-in ./certs/$(TRUST_DOMAIN_FQDN).$(1).csr.pem \
+	-out ./certs/$(TRUST_DOMAIN_FQDN).$(1).cert.pem \
+	-extfile ./certs/$(TRUST_DOMAIN_FQDN).$(1).openssl.cnf \
 	-extensions v3-leaf
-	@rm ./certs/openssl.cnf.tmp
-	
+endef
+
+define generate_openssl_conf
+	@cat $(OPENSSL_TMPL) | sed -e 's/{{TRUST_DOMAIN_FQDN}}/$(TRUST_DOMAIN_FQDN)/'  | \
+	sed -e 's/{{ORGANIZATIONAL_UNIT}}/$(ORGANIZATIONAL_UNIT)/' | \
+	sed -e 's/{{ORGANIZATION}}/$(ORGANIZATION)/' | \
+	sed -e 's/{{DEFUALT_BITS}}/$(DEFAULT_BITS)/' | \
+	sed -e 's/{{DEFAULT_MD}}/$(DEFAULT_MD)/' | \
+	sed -e 's/{{SPIFFE_PATH}}/$(1)/' > certs/$(TRUST_DOMAIN_FQDN).$(1).openssl.cnf
+endef
+
+
 
 
 .PHONY: help
