@@ -51,7 +51,7 @@ test-verify: build
 test-run: build
 	#Step 1
 	@mkdir -p ./test/products/step1
-	@./bin/in-toto run -k ./certs/example.com.step1.key.pem -m ./test/data/foo.tar.gz -n step1 ./test/products/step1 -- tar -xzf ./test/data/foo.tar.gz -C ./test/products/step1
+	@./bin/in-toto run -k ./certs/example.com.step1.key.pem -m ./test/data/foo.tar.gz -n step1 -p ./test/products/step1/ -- tar -xzf ./test/data/foo.tar.gz -C ./test/products/step1
 go-test:
 	@go test ./...
 
