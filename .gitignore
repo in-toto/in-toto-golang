@@ -2,3 +2,4 @@
 *.pem
 *.srl
 *.cnf
+**/test/products
