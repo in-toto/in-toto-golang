@@ -49,8 +49,9 @@ test-verify: build
 	@./bin/in-toto verify
 
 test-run: build
-	@./bin/in-toto run
-
+	#Step 1
+	@mkdir -p ./test/products/step1
+	@./bin/in-toto run -k ./certs/example.com.step1.key.pem -m ./test/data/foo.tar.gz -n step1 -p ./test/products/step1/ -- tar -xzf ./test/data/foo.tar.gz -C ./test/products/step1
 go-test:
 	@go test ./...
 
@@ -59,7 +60,7 @@ generate-test-certs: intermediate_cert
 root-cert:
 	$(call generate_openssl_conf,root)
 	#Create Root Key
-	@openssl ecparam  -name prime256v1 -genkey -noout -out ./certs/root.key.pem
+	@openssl genrsa -out ./certs/root.key.pem
 	#Create Root Cert
 	@openssl req -subj "/C=/ST=/L=/O=$(ORGANIZATION)/OU=$(ORGANIZATIONAL_UNIT)CN=root/" -days $(ROOT_DAYS) -x509 -new \
 	-key "./certs/root.key.pem" -out "./certs/root.cert.pem" \
@@ -70,7 +71,7 @@ root-cert:
 intermediate_cert: root-cert
 	$(call generate_openssl_conf,intermediate)
 	#Create intermediate key
-	@openssl ecparam -name prime256v1 -genkey -noout -out ./certs/$(TRUST_DOMAIN_FQDN).intermediate.key.pem
+	@openssl genrsa -out ./certs/$(TRUST_DOMAIN_FQDN).intermediate.key.pem
 	#Generate intermediate CSR
 	@openssl req -subj "/C=/ST=/L=/O=$(ORGANIZATION)/OU=$(ORGANIZATIONAL_UNIT)CN=$(TRUST_DOMAIN_FQDN)" -new \
 	-key ./certs/$(TRUST_DOMAIN_FQDN).intermediate.key.pem \
@@ -95,7 +96,7 @@ leaf_certs: intermediate_cert
 define gernerate_leaf_cert
 	$(call generate_openssl_conf,$(1))
 	#Generate leaf signing key
-	@openssl ecparam -name prime256v1 -genkey -noout -out ./certs/$(TRUST_DOMAIN_FQDN).$(1).key.pem
+	@openssl genrsa -out ./certs/$(TRUST_DOMAIN_FQDN).$(1).key.pem
 	#Generate leaf CSR
 	openssl req -new \
 	-key ./certs/$(TRUST_DOMAIN_FQDN).$(1).key.pem \
