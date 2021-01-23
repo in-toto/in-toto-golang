@@ -408,25 +408,29 @@ func VerifyStepCommandAlignment(layout Layout,
 }
 
 /*
-LoadLayoutRootCertificates loads the root CA from the layout if one is in the layout.
+LoadLayoutCertificates loads the root and intermediate CAs from the layout if ne in the layout.
 This will be used to check signatures that were used to sign links but not configured
-in the PubKeys section of the step.  No configured CA means we don't want to allow this.
-An empty CertPool will be returned in this case.
+in the PubKeys section of the step.  No configured CAs means we don't want to allow this.
+Returned CertPools will empty in this case.
 */
-func LoadLayoutRootCertificates(layout Layout) (*x509.CertPool, error) {
-	roots := x509.NewCertPool()
-	if len(layout.CaCerts) == 0 {
-		return roots, nil
-	}
-
-	for _, certPem := range layout.CaCerts {
-		ok := roots.AppendCertsFromPEM([]byte(certPem))
+func LoadLayoutCertificates(layout Layout) (*x509.CertPool, *x509.CertPool, error) {
+	rootPool := x509.NewCertPool()
+	for _, certPem := range layout.RootCas {
+		ok := rootPool.AppendCertsFromPEM([]byte(certPem))
 		if !ok {
-			continue
+			return nil, nil, fmt.Errorf("Failed to load root certificates for layout.")
 		}
 	}
 
-	return roots, nil
+	intermediatePool := x509.NewCertPool()
+	for _, intermediatePem := range layout.IntermediateCas {
+		ok := intermediatePool.AppendCertsFromPEM([]byte(intermediatePem))
+		if !ok {
+			return nil, nil, fmt.Errorf("Failed to load intermediate certificates for layout.")
+		}
+	}
+
+	return rootPool, intermediatePool, nil
 }
 
 /*
@@ -454,7 +458,7 @@ return value is an empty map of Metablock maps and the second return value is
 the error.
 */
 func VerifyLinkSignatureThesholds(layout Layout,
-	stepsMetadata map[string]map[string]Metablock, rootCertPool *x509.CertPool) (
+	stepsMetadata map[string]map[string]Metablock, rootCertPool, intermediateCertPool *x509.CertPool) (
 	map[string]map[string]Metablock, error) {
 	// This will stores links with valid signature from an authorized functionary
 	// for all steps
@@ -495,7 +499,7 @@ func VerifyLinkSignatureThesholds(layout Layout,
 			// see if the key is known to us.
 			if !isAuthorizedSignature {
 				// test against the root pool with the key's certificate if it has any
-				if err := linkMb.VerifyWithCertificate(signerKeyID, rootCertPool); err == nil {
+				if err := linkMb.VerifyWithCertificate(signerKeyID, rootCertPool, intermediateCertPool); err == nil {
 					linksPerStepVerified[signerKeyID] = linkMb
 				}
 			}
@@ -819,7 +823,7 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		return summaryLink, err
 	}
 
-	rootCertPool, err := LoadLayoutRootCertificates(layout)
+	rootCertPool, intermediateCertPool, err := LoadLayoutCertificates(layout)
 	if err != nil {
 		return summaryLink, err
 	}
@@ -832,7 +836,7 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 
 	// Verify link signatures
 	stepsMetadataVerified, err := VerifyLinkSignatureThesholds(layout,
-		stepsMetadata, rootCertPool)
+		stepsMetadata, rootCertPool, intermediateCertPool)
 	if err != nil {
 		return summaryLink, err
 	}

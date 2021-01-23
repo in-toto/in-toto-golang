@@ -5,12 +5,12 @@ import (
 	"os"
 
 	intoto "github.com/boxboat/in-toto-golang/in_toto"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/spf13/cobra"
 )
 
 var stepName string
 var keyPath string
+var certPath string
 var materialsPaths []string
 var productsPaths []string
 
@@ -24,12 +24,6 @@ return value, stdout, stderr, ...) to a link metadata file, which is signed
 with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		var layoutMb intoto.Metablock
-
-		if err := layoutMb.Load(layoutPath); err != nil {
-			fmt.Println(err.Error())
-		}
-
 		//Load Key
 		var key intoto.Key
 
@@ -38,13 +32,24 @@ with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 			os.Exit(1)
 		}
 
+		if len(certPath) > 0 {
+			if err := key.LoadKey(certPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
+				fmt.Println("Invalid Certificate Error:", err.Error())
+				os.Exit(1)
+			}
+		}
+
 		block, err := intoto.InTotoRun(stepName, materialsPaths, productsPaths, args, key, []string{"sha256"}, []string{})
 		if err != nil {
-			fmt.Println("Error writing meta-block:", err.Error())
+			fmt.Println("Error generating meta-block:", err.Error())
 			os.Exit(1)
 		}
-		spew.Dump(block)
 
+		linkName := fmt.Sprintf(intoto.LinkNameFormat, block.Signed.(intoto.Link).Name, key.KeyId)
+		err = block.Dump(linkName)
+		if err != nil {
+			fmt.Println("Error writing meta-block:", err.Error())
+		}
 	},
 }
 
@@ -71,4 +76,8 @@ command is executed. Symlinks are followed.`)
 		`Paths to files or directories, whose paths and hashes
 are stored in the resulting link metadata after the
 command is executed. Symlinks are followed.`)
+	runCmd.PersistentFlags().StringVarP(&certPath,
+		"cert", "c", "",
+		`Path to a PEM formatted certificate that corresponds with
+the provided key.`)
 }
