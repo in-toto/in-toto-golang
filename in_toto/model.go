@@ -1,9 +1,12 @@
 package in_toto
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -536,13 +539,14 @@ contained in a generic Metablock object, which provides functionality for
 signing and signature verification, and reading from and writing to disk.
 */
 type Layout struct {
-	Type    string         `json:"_type"`
-	Steps   []Step         `json:"steps"`
-	Inspect []Inspection   `json:"inspect"`
-	Keys    map[string]Key `json:"keys"`
-	CaCerts []string       `json:"cacerts"`
-	Expires string         `json:"expires"`
-	Readme  string         `json:"readme"`
+	Type            string         `json:"_type"`
+	Steps           []Step         `json:"steps"`
+	Inspect         []Inspection   `json:"inspect"`
+	Keys            map[string]Key `json:"keys"`
+	RootCas         []string       `json:"rootcas"`
+	IntermediateCas []string       `json:"intermediatecas"`
+	Expires         string         `json:"expires"`
+	Readme          string         `json:"readme"`
 }
 
 // Go does not allow to pass `[]T` (slice with certain type) to a function
@@ -589,7 +593,11 @@ func validateLayout(layout Layout) error {
 		}
 	}
 
-	if err := validateCertificates(layout.CaCerts); err != nil {
+	if err := validateCertificates(layout.RootCas); err != nil {
+		return err
+	}
+
+	if err := validateCertificates(layout.IntermediateCas); err != nil {
 		return err
 	}
 
@@ -818,7 +826,7 @@ func (mb *Metablock) VerifySignature(key Key) error {
 VerifyWithCertificate uses a certificate from a signature and a root authority from the layout
 to ensure that some data was signed with a known key under our authority.
 */
-func (mb *Metablock) VerifyWithCertificate(signerKeyID string, rootCertPool *x509.CertPool) error {
+func (mb *Metablock) VerifyWithCertificate(signerKeyID string, rootCertPool, intermediateCertPool *x509.CertPool) error {
 	var sig Signature
 	for _, s := range mb.Signatures {
 		if s.KeyID == signerKeyID {
@@ -841,8 +849,8 @@ func (mb *Metablock) VerifyWithCertificate(signerKeyID string, rootCertPool *x50
 		return err
 	}
 
-	chain, err := cert.Verify(x509.VerifyOptions{Roots: rootCertPool})
-	if len(chain) == 0 || err != nil {
+	chains, err := cert.Verify(x509.VerifyOptions{Roots: rootCertPool, Intermediates: intermediateCertPool})
+	if len(chains) == 0 || err != nil {
 		return fmt.Errorf("Could not verify cert for key: '%s'", signerKeyID)
 	}
 
@@ -853,8 +861,14 @@ func (mb *Metablock) VerifyWithCertificate(signerKeyID string, rootCertPool *x50
 
 	//TODO: determine what we should really use as the signature algorithm...
 	//Since we're not storing the scheme for the key in the layout, we don't know
-	//what scheme was used to sign the data... Defaulting to the cert's signature algorithm
-	return cert.CheckSignature(cert.SignatureAlgorithm, dataCanonical, []byte(sig.Sig))
+	hashMapping := getHashMapping()
+	hashed := hashToHex(hashMapping["sha256"](), dataCanonical)
+	sigBytes, err := hex.DecodeString(sig.Sig)
+	if err != nil {
+		return err
+	}
+
+	return rsa.VerifyPSS(cert.PublicKey.(*rsa.PublicKey), crypto.SHA256, hashed, sigBytes, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
 }
 
 /*

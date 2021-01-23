@@ -2,9 +2,9 @@
  "signatures": [],
  "signed": {
   "_type": "layout",
-  "cacerts": [],
   "expires": "2021-03-06T11:54:25Z",
   "inspect": [],
+  "intermediatecas": [],
   "keys": {
    "70ca5750c2eda80b18f41f4ec5f92146789b5d68dd09577be422a0159bd13680": {
     "keyid": "70ca5750c2eda80b18f41f4ec5f92146789b5d68dd09577be422a0159bd13680",
@@ -21,6 +21,7 @@
    }
   },
   "readme": "",
+  "rootcas": [],
   "steps": [
    {
     "_type": "step",
