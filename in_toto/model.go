@@ -299,6 +299,21 @@ type Signature struct {
 	Certificate string `json:"cert"`
 }
 
+// GetCertificate returns the parsed x509 certificate attached to the signature,
+// if it exists.
+func (sig Signature) GetCertificate() (*x509.Certificate, error) {
+	if len(sig.Certificate) == 0 {
+		return nil, errors.New("Signature has empty Certificate")
+	}
+
+	block, _ := pem.Decode([]byte(sig.Certificate))
+	if block == nil {
+		return nil, errors.New("Couldn't get certificate for signature")
+	}
+
+	return x509.ParseCertificate(block.Bytes)
+}
+
 /*
 validateSignature is a function used to check if a passed signature is valid,
 by inspecting the key ID and the signature itself.
@@ -496,11 +511,24 @@ by the step are constrained by the artifact rules in the step's
 ExpectedMaterials and ExpectedProducts fields.
 */
 type Step struct {
-	Type            string   `json:"_type"`
-	PubKeys         []string `json:"pubkeys"`
-	ExpectedCommand []string `json:"expected_command"`
-	Threshold       int      `json:"threshold"`
+	Type                   string                  `json:"_type"`
+	PubKeys                []string                `json:"pubkeys"`
+	CertificateConstraints []CertificateConstraint `json:"cert_constraints"`
+	ExpectedCommand        []string                `json:"expected_command"`
+	Threshold              int                     `json:"threshold"`
 	SupplyChainItem
+}
+
+// CheckCertConstraints returns true if the provided certificate matches at least one
+// of the constraints for this step.
+func (s Step) CheckCertConstraints(cert *x509.Certificate) bool {
+	for _, constraint := range s.CertificateConstraints {
+		if constraint.Check(cert) {
+			return true
+		}
+	}
+
+	return false
 }
 
 /*
@@ -799,16 +827,9 @@ the passed Key, the object in Signed cannot be canonicalized, or the Signature
 is invalid.
 */
 func (mb *Metablock) VerifySignature(key Key) error {
-	var sig Signature
-	for _, s := range mb.Signatures {
-		if s.KeyID == key.KeyID {
-			sig = s
-			break
-		}
-	}
-
-	if sig == (Signature{}) {
-		return fmt.Errorf("No signature found for key '%s'", key.KeyID)
+	sig, err := mb.GetSignatureForKeyId(key.KeyID)
+	if err != nil {
+		return err
 	}
 
 	dataCanonical, err := mb.GetSignableRepresentation()
@@ -823,35 +844,13 @@ func (mb *Metablock) VerifySignature(key Key) error {
 }
 
 /*
-VerifyWithCertificate uses a certificate from a signature and a root authority from the layout
+VerifySignatureWithCertificate uses a certificate from a signature and a root authority from the layout
 to ensure that some data was signed with a known key under our authority.
 */
-func (mb *Metablock) VerifyWithCertificate(signerKeyID string, rootCertPool, intermediateCertPool *x509.CertPool) error {
-	var sig Signature
-	for _, s := range mb.Signatures {
-		if s.KeyID == signerKeyID {
-			sig = s
-			break
-		}
-	}
-
-	if sig == (Signature{}) {
-		return fmt.Errorf("No signature found for key '%s'", signerKeyID)
-	}
-
-	block, _ := pem.Decode([]byte(sig.Certificate))
-	if block == nil {
-		return fmt.Errorf("Couldn't get certificate for signature '%s'", signerKeyID)
-	}
-
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return err
-	}
-
+func (mb *Metablock) VerifySignatureWithCertificate(sig Signature, cert *x509.Certificate, rootCertPool, intermediateCertPool *x509.CertPool) error {
 	chains, err := cert.Verify(x509.VerifyOptions{Roots: rootCertPool, Intermediates: intermediateCertPool})
 	if len(chains) == 0 || err != nil {
-		return fmt.Errorf("Could not verify cert for key: '%s'", signerKeyID)
+		return errors.New("Could not verify cert for key")
 	}
 
 	dataCanonical, err := mb.GetSignableRepresentation()
@@ -869,6 +868,17 @@ func (mb *Metablock) VerifyWithCertificate(signerKeyID string, rootCertPool, int
 	}
 
 	return rsa.VerifyPSS(cert.PublicKey.(*rsa.PublicKey), crypto.SHA256, hashed, sigBytes, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
+}
+
+// GetSignatureForKeyId returns the signature that was created by the provided keyId, if it exists.
+func (mb *Metablock) GetSignatureForKeyId(keyId string) (Signature, error) {
+	for _, s := range mb.Signatures {
+		if s.KeyID == keyId {
+			return s, nil
+		}
+	}
+
+	return Signature{}, fmt.Errorf("No signature found for key '%s'", keyId)
 }
 
 /*

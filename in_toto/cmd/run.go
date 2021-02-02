@@ -45,7 +45,7 @@ with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 			os.Exit(1)
 		}
 
-		linkName := fmt.Sprintf(intoto.LinkNameFormat, block.Signed.(intoto.Link).Name, key.KeyId)
+		linkName := fmt.Sprintf(intoto.LinkNameFormat, block.Signed.(intoto.Link).Name, key.KeyID)
 		err = block.Dump(linkName)
 		if err != nil {
 			fmt.Println("Error writing meta-block:", err.Error())

@@ -498,8 +498,23 @@ func VerifyLinkSignatureThesholds(layout Layout,
 			// If the signer's key wasn't in our step's pubkeys array, check the cert pool to
 			// see if the key is known to us.
 			if !isAuthorizedSignature {
+				sig, err := linkMb.GetSignatureForKeyId(signerKeyID)
+				if err != nil {
+					continue
+				}
+
+				cert, err := sig.GetCertificate()
+				if err != nil {
+					continue
+				}
+
+				// test certificate against the step's constraints to make sure it's a valid functionary
+				if !step.CheckCertConstraints(cert) {
+					continue
+				}
+
 				// test against the root pool with the key's certificate if it has any
-				if err := linkMb.VerifyWithCertificate(signerKeyID, rootCertPool, intermediateCertPool); err == nil {
+				if err := linkMb.VerifySignatureWithCertificate(sig, cert, rootCertPool, intermediateCertPool); err == nil {
 					linksPerStepVerified[signerKeyID] = linkMb
 				}
 			}

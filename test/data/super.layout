@@ -25,6 +25,7 @@
   "steps": [
    {
     "_type": "step",
+    "cert_constraints": [],
     "expected_command": [],
     "expected_materials": [],
     "expected_products": [],
