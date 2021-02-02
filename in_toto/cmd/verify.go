@@ -38,7 +38,7 @@ of link metadata files named ‘<step name>.<functionary keyid prefix>.link’.`
 				os.Exit(1)
 			}
 
-			layoutKeys[pubKey.KeyId] = pubKey
+			layoutKeys[pubKey.KeyID] = pubKey
 		}
 
 		//Verify
