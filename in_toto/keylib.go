@@ -3,6 +3,7 @@ package in_toto
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -15,8 +16,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
-
-	"golang.org/x/crypto/ed25519"
 )
 
 // ErrFailedPEMParsing gets returned when PKCS1, PKCS8 or PKIX key parsing fails
