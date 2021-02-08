@@ -28,7 +28,7 @@ func TestMetablockLoad(t *testing.T) {
 	// - invalid signed type
 	// - invalid signed field for type link
 	// - invalid signed field for type layout
-	invalidJsonBytes := [][]byte{
+	invalidJSONBytes := [][]byte{
 		[]byte("{"),
 		[]byte("{}"),
 		[]byte(`{"signatures": null, "signed": {}}`),
@@ -111,9 +111,9 @@ func TestMetablockLoad(t *testing.T) {
 		"json: unknown field \"foo\"",
 	}
 
-	for i := 0; i < len(invalidJsonBytes); i++ {
+	for i := 0; i < len(invalidJSONBytes); i++ {
 		fn := fmt.Sprintf("invalid-metadata-%v.tmp", i)
-		if err := ioutil.WriteFile(fn, invalidJsonBytes[i], 0644); err != nil {
+		if err := ioutil.WriteFile(fn, invalidJSONBytes[i], 0644); err != nil {
 			fmt.Printf("Could not write file: %s", err)
 		}
 		var mb Metablock
@@ -187,7 +187,7 @@ func TestMetablockLoadDumpLoad(t *testing.T) {
 		},
 		Signatures: []Signature{
 			{
-				KeyId: "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498",
+				KeyID: "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498",
 				Sig: "66365d379d66a2e76d39a1f048847826393127572ba43bead96419499b0256" +
 					"1a08e1cb06cf91f2addd87c30a01f776a8ccc599574bc9a2bd519558351f56cff" +
 					"a61ac4f994d0d491204ff54707937e15f9abfa97c5bda1ec1ae2a2afea63f8086" +
@@ -265,10 +265,10 @@ func TestMetablockVerifySignature(t *testing.T) {
 	mbs := []Metablock{
 		{},
 		{
-			Signatures: []Signature{{KeyId: key.KeyId, Sig: "bad sig"}},
+			Signatures: []Signature{{KeyID: key.KeyID, Sig: "bad sig"}},
 		},
 		{
-			Signatures: []Signature{{KeyId: key.KeyId}},
+			Signatures: []Signature{{KeyID: key.KeyID}},
 			Signed:     TestMetablockVerifySignature,
 		},
 	}
@@ -594,7 +594,7 @@ func TestValidateLayout(t *testing.T) {
 				Type:    "layout",
 				Expires: "2020-02-27T18:03:43Z",
 				Keys: map[string]Key{
-					"deadbeef": Key{KeyId: "livebeef"},
+					"deadbeef": Key{KeyID: "livebeef"},
 				},
 			},
 			"invalid key found",
@@ -604,7 +604,7 @@ func TestValidateLayout(t *testing.T) {
 				Type:    "layout",
 				Expires: "2020-02-27T18:03:43Z",
 				Keys: map[string]Key{
-					"deadbeef": Key{KeyId: "deadbeef"},
+					"deadbeef": Key{KeyID: "deadbeef"},
 				},
 			},
 			"empty field in key: keytype",
@@ -708,7 +708,7 @@ func TestValidateHexSchema(t *testing.T) {
 
 func TestValidatePubKey(t *testing.T) {
 	testKey := Key{
-		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyID:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
 		KeyType: "rsa",
 		KeyVal: KeyVal{
 			Private: "",
@@ -733,7 +733,7 @@ func TestValidatePubKey(t *testing.T) {
 	}
 
 	testKey = Key{
-		KeyId:   "Z776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyID:   "Z776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
 		KeyType: "rsa",
 		KeyVal: KeyVal{
 			Private: "",
@@ -758,7 +758,7 @@ func TestValidatePubKey(t *testing.T) {
 	}
 
 	testKey = Key{
-		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyID:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
 		KeyType: "rsa",
 		KeyVal: KeyVal{
 			Private: "invalid",
@@ -783,7 +783,7 @@ func TestValidatePubKey(t *testing.T) {
 	}
 
 	testKey = Key{
-		KeyId:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+		KeyID:   "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
 		KeyType: "rsa",
 		KeyVal: KeyVal{
 			Private: "",
@@ -802,7 +802,7 @@ func TestValidateMetablock(t *testing.T) {
 	testMetablock := Metablock{
 		Signatures: []Signature{
 			{
-				KeyId: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
+				KeyID: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
 					"8f3e9cc48b35",
 				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9d" +
 					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
@@ -837,7 +837,7 @@ func TestValidateMetablock(t *testing.T) {
 	testMetablock = Metablock{
 		Signatures: []Signature{
 			{
-				KeyId: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
+				KeyID: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
 					"8f3e9cc48b35",
 				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9d" +
 					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
@@ -892,7 +892,7 @@ func TestValidateMetablock(t *testing.T) {
 	testMetablock = Metablock{
 		Signatures: []Signature{
 			{
-				KeyId: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
+				KeyID: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
 					"8f3e9cc48b35",
 				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9d" +
 					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
@@ -928,7 +928,7 @@ func TestValidateMetablock(t *testing.T) {
 	testMetablock = Metablock{
 		Signatures: []Signature{
 			{
-				KeyId: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
+				KeyID: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
 					"8f3e9cc48b35",
 				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9d" +
 					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
@@ -984,7 +984,7 @@ func TestValidateMetablock(t *testing.T) {
 	testMetablock = Metablock{
 		Signatures: []Signature{
 			{
-				KeyId: "Z556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b5" +
+				KeyID: "Z556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b5" +
 					"8f3e9cc48b35",
 				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9d" +
 					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
@@ -1020,7 +1020,7 @@ func TestValidateMetablock(t *testing.T) {
 	testMetablock = Metablock{
 		Signatures: []Signature{
 			{
-				KeyId: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
+				KeyID: "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b58" +
 					"8f3e9cc48b35",
 				Sig: "02813858670c66647c17802d84f06453589f41850013a544609e9z" +
 					"33ba21fa19280e8371701f8274fb0c56bd95ff4f34c418456b002af" +
@@ -1102,8 +1102,8 @@ func TestMetablockSignWithRSA(t *testing.T) {
 		t.Errorf("Cannot parse template file: %s", err)
 	}
 	invalidKey := Key{
-		KeyId:               "test",
-		KeyIdHashAlgorithms: nil,
+		KeyID:               "test",
+		KeyIDHashAlgorithms: nil,
 		KeyType:             "rsa",
 		KeyVal:              KeyVal{},
 		Scheme:              "rsassa-pss-sha256",
@@ -1120,8 +1120,8 @@ func TestMetablockSignWithEd25519(t *testing.T) {
 		t.Errorf("Cannot parse template file: %s", err)
 	}
 	invalidKey := Key{
-		KeyId:               "invalid",
-		KeyIdHashAlgorithms: nil,
+		KeyID:               "invalid",
+		KeyIDHashAlgorithms: nil,
 		KeyType:             "ed25519",
 		KeyVal: KeyVal{
 			Private: "BAD",
@@ -1141,8 +1141,8 @@ func TestMetaBlockSignWithEcdsa(t *testing.T) {
 		t.Errorf("Cannot parse template file: %s", err)
 	}
 	invalidKey := Key{
-		KeyId:               "invalid",
-		KeyIdHashAlgorithms: nil,
+		KeyID:               "invalid",
+		KeyIDHashAlgorithms: nil,
 		KeyType:             "ecdsa",
 		KeyVal: KeyVal{
 			Private: "BAD",
@@ -1162,15 +1162,15 @@ func TestValidateKeyErrors(t *testing.T) {
 		err  error
 	}{
 		{"empty key", Key{
-			KeyId:               "",
-			KeyIdHashAlgorithms: nil,
+			KeyID:               "",
+			KeyIDHashAlgorithms: nil,
 			KeyType:             "",
 			KeyVal:              KeyVal{},
 			Scheme:              "",
 		}, ErrInvalidHexString},
 		{"keytype missing", Key{
-			KeyId:               "bad",
-			KeyIdHashAlgorithms: []string{"sha256"},
+			KeyID:               "bad",
+			KeyIDHashAlgorithms: []string{"sha256"},
 			KeyType:             "",
 			KeyVal: KeyVal{
 				Private: "",
@@ -1179,8 +1179,8 @@ func TestValidateKeyErrors(t *testing.T) {
 			Scheme: "rsassa-psa-sha256",
 		}, ErrEmptyKeyField},
 		{"key scheme missing", Key{
-			KeyId:               "bad",
-			KeyIdHashAlgorithms: []string{"sha256"},
+			KeyID:               "bad",
+			KeyIDHashAlgorithms: []string{"sha256"},
 			KeyType:             "ed25519",
 			KeyVal: KeyVal{
 				Private: "bad",
@@ -1191,8 +1191,8 @@ func TestValidateKeyErrors(t *testing.T) {
 		{
 			name: "invalid key type",
 			key: Key{
-				KeyId:               "bad",
-				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyID:               "bad",
+				KeyIDHashAlgorithms: []string{"sha256"},
 				KeyType:             "invalid",
 				KeyVal: KeyVal{
 					Private: "invalid",
@@ -1205,8 +1205,8 @@ func TestValidateKeyErrors(t *testing.T) {
 		{
 			name: "keytype scheme mismatch",
 			key: Key{
-				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
-				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyID:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIDHashAlgorithms: []string{"sha256"},
 				KeyType:             "ed25519",
 				KeyVal: KeyVal{
 					Private: "29ad59693fe94c9d623afbb66554b4f6bb248c47761689ada4875ebda94840ae393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c",
@@ -1217,10 +1217,10 @@ func TestValidateKeyErrors(t *testing.T) {
 			err: ErrSchemeKeyTypeMismatch,
 		},
 		{
-			name: "unsupported KeyIdHashAlgorithms",
+			name: "unsupported KeyIDHashAlgorithms",
 			key: Key{
-				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
-				KeyIdHashAlgorithms: []string{"sha128"},
+				KeyID:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIDHashAlgorithms: []string{"sha128"},
 				KeyType:             "ed25519",
 				KeyVal: KeyVal{
 					Private: "29ad59693fe94c9d623afbb66554b4f6bb248c47761689ada4875ebda94840ae393e671b200f964c49083d34a867f5d989ec1c69df7b66758fe471c8591b139c",
@@ -1228,7 +1228,7 @@ func TestValidateKeyErrors(t *testing.T) {
 				},
 				Scheme: "ed25519",
 			},
-			err: ErrUnsupportedKeyIdHashAlgorithms,
+			err: ErrUnsupportedKeyIDHashAlgorithms,
 		},
 	}
 
@@ -1249,8 +1249,8 @@ func TestValidateKeyVal(t *testing.T) {
 		{
 			name: "invalid rsa private key",
 			key: Key{
-				KeyId:               "bad",
-				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyID:               "bad",
+				KeyIDHashAlgorithms: []string{"sha256"},
 				KeyType:             "rsa",
 				KeyVal: KeyVal{
 					Private: "invalid",
@@ -1263,8 +1263,8 @@ func TestValidateKeyVal(t *testing.T) {
 		{
 			name: "invalid rsa pub key",
 			key: Key{
-				KeyId:               "bad",
-				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyID:               "bad",
+				KeyIDHashAlgorithms: []string{"sha256"},
 				KeyType:             "rsa",
 				KeyVal: KeyVal{
 					Private: "",
@@ -1277,8 +1277,8 @@ func TestValidateKeyVal(t *testing.T) {
 		{
 			name: "invalid ed25519 public key",
 			key: Key{
-				KeyId:               "bad",
-				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyID:               "bad",
+				KeyIDHashAlgorithms: []string{"sha256"},
 				KeyType:             "ed25519",
 				KeyVal: KeyVal{
 					Private: "invalid",
@@ -1291,8 +1291,8 @@ func TestValidateKeyVal(t *testing.T) {
 		{
 			name: "invalid ed25519 private key",
 			key: Key{
-				KeyId:               "bad",
-				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyID:               "bad",
+				KeyIDHashAlgorithms: []string{"sha256"},
 				KeyType:             "ed25519",
 				KeyVal: KeyVal{
 					Private: "invalid",
@@ -1305,8 +1305,8 @@ func TestValidateKeyVal(t *testing.T) {
 		{
 			name: "valid rsa public, but bad private key",
 			key: Key{
-				KeyId:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
-				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyID:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
+				KeyIDHashAlgorithms: []string{"sha256"},
 				KeyType:             "rsa",
 				KeyVal: KeyVal{
 					Private: "-----BEGIN PRIVATE KEY-----\nMIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIB6fQnV71xKx6kFgJv\nYTMq0ytvWi2mDlYu6aNm1761c1OSInbBxBNb0ligpM65KyaeeRce6JR9eQW6TB6R\n+5pNzvOhgYkDgYYABAFy0CeDAyV/2mY1NqxLLgqEXSxaqM3fM8gYn/ZWzrLnO+1h\nK2QAanID3JuPff1NdhehhL/U1prXdyyaItA5X4ChkQHMTsiS/3HkWRuLR8L22SGs\nB+7KqOeO5ELkqHO5tsy4kvsNrmersCGRQGY6A5V/0JFhP1u1JUvAVVhfRbdQXuu3\nrw==\n-----END PRIVATE KEY-----\n",
@@ -1319,8 +1319,8 @@ func TestValidateKeyVal(t *testing.T) {
 		{
 			name: "valid ecdsa public key, but invalid ecdsa private key",
 			key: Key{
-				KeyId:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
-				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyID:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
+				KeyIDHashAlgorithms: []string{"sha256"},
 				KeyType:             "ecdsa",
 				KeyVal: KeyVal{
 					Private: "-----BEGIN RSA PRIVATE KEY-----\n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\n-----END RSA PRIVATE KEY-----",
@@ -1333,8 +1333,8 @@ func TestValidateKeyVal(t *testing.T) {
 		{
 			name: "rsa key, but with ed25519 private key",
 			key: Key{
-				KeyId:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
-				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyID:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
+				KeyIDHashAlgorithms: []string{"sha256"},
 				KeyType:             "rsa",
 				KeyVal: KeyVal{
 					Private: "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEICmtWWk/6UydYjr7tmVUtPa7JIxHdhaJraSHXr2pSECu\n-----END PRIVATE KEY-----\n",
@@ -1347,8 +1347,8 @@ func TestValidateKeyVal(t *testing.T) {
 		{
 			name: "unsupported key type",
 			key: Key{
-				KeyId:               "",
-				KeyIdHashAlgorithms: nil,
+				KeyID:               "",
+				KeyIDHashAlgorithms: nil,
 				KeyType:             "invalid",
 				KeyVal:              KeyVal{},
 				Scheme:              "",
@@ -1358,8 +1358,8 @@ func TestValidateKeyVal(t *testing.T) {
 		{
 			name: "rsa key type, but ed25519 key",
 			key: Key{
-				KeyId:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
-				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyID:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
+				KeyIDHashAlgorithms: []string{"sha256"},
 				KeyType:             "rsa",
 				KeyVal: KeyVal{
 					Private: "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEICmtWWk/6UydYjr7tmVUtPa7JIxHdhaJraSHXr2pSECu\n-----END PRIVATE KEY-----\n",
@@ -1372,8 +1372,8 @@ func TestValidateKeyVal(t *testing.T) {
 		{
 			name: "rsa key, but not ecdsa key type",
 			key: Key{
-				KeyId:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
-				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyID:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
+				KeyIDHashAlgorithms: []string{"sha256"},
 				KeyType:             "ecdsa",
 				KeyVal: KeyVal{
 					Private: "",
@@ -1386,8 +1386,8 @@ func TestValidateKeyVal(t *testing.T) {
 		{
 			name: "ecdsa key, but rsa key type",
 			key: Key{
-				KeyId:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
-				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyID:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
+				KeyIDHashAlgorithms: []string{"sha256"},
 				KeyType:             "rsa",
 				KeyVal: KeyVal{
 					Private: "-----BEGIN PRIVATE KEY-----\nMIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIB6fQnV71xKx6kFgJv\nYTMq0ytvWi2mDlYu6aNm1761c1OSInbBxBNb0ligpM65KyaeeRce6JR9eQW6TB6R\n+5pNzvOhgYkDgYYABAFy0CeDAyV/2mY1NqxLLgqEXSxaqM3fM8gYn/ZWzrLnO+1h\nK2QAanID3JuPff1NdhehhL/U1prXdyyaItA5X4ChkQHMTsiS/3HkWRuLR8L22SGs\nB+7KqOeO5ELkqHO5tsy4kvsNrmersCGRQGY6A5V/0JFhP1u1JUvAVVhfRbdQXuu3\nrw==\n-----END PRIVATE KEY-----\n",
@@ -1400,8 +1400,8 @@ func TestValidateKeyVal(t *testing.T) {
 		{
 			name: "ecdsa key, but rsa key type",
 			key: Key{
-				KeyId:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
-				KeyIdHashAlgorithms: []string{"sha256"},
+				KeyID:               "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
+				KeyIDHashAlgorithms: []string{"sha256"},
 				KeyType:             "ecdsa",
 				KeyVal: KeyVal{
 					Private: "-----BEGIN PRIVATE KEY-----\nMIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIB6fQnV71xKx6kFgJv\nYTMq0ytvWi2mDlYu6aNm1761c1OSInbBxBNb0ligpM65KyaeeRce6JR9eQW6TB6R\n+5pNzvOhgYkDgYYABAFy0CeDAyV/2mY1NqxLLgqEXSxaqM3fM8gYn/ZWzrLnO+1h\nK2QAanID3JuPff1NdhehhL/U1prXdyyaItA5X4ChkQHMTsiS/3HkWRuLR8L22SGs\nB+7KqOeO5ELkqHO5tsy4kvsNrmersCGRQGY6A5V/0JFhP1u1JUvAVVhfRbdQXuu3\nrw==\n-----END PRIVATE KEY-----\n",
@@ -1428,8 +1428,8 @@ func TestMatchKeyTypeScheme(t *testing.T) {
 	}{
 		{name: "test for unsupported key type",
 			key: Key{
-				KeyId:               "",
-				KeyIdHashAlgorithms: nil,
+				KeyID:               "",
+				KeyIDHashAlgorithms: nil,
 				KeyType:             "invalid",
 				KeyVal:              KeyVal{},
 				Scheme:              "",
@@ -1439,8 +1439,8 @@ func TestMatchKeyTypeScheme(t *testing.T) {
 		{
 			name: "test for scheme key type mismatch",
 			key: Key{
-				KeyId:               "",
-				KeyIdHashAlgorithms: nil,
+				KeyID:               "",
+				KeyIDHashAlgorithms: nil,
 				KeyType:             "rsa",
 				KeyVal:              KeyVal{},
 				Scheme:              "ed25519",
@@ -1464,8 +1464,8 @@ func TestValidatePublicKey(t *testing.T) {
 		{
 			name: "test with valid key",
 			key: Key{
-				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
-				KeyIdHashAlgorithms: []string{"sha512"},
+				KeyID:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIDHashAlgorithms: []string{"sha512"},
 				KeyType:             "ed25519",
 				KeyVal: KeyVal{
 					Private: "",
@@ -1490,8 +1490,8 @@ func TestValidatePublicKey(t *testing.T) {
 		{
 			name: "test with valid key",
 			key: Key{
-				KeyId:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
-				KeyIdHashAlgorithms: []string{"sha512"},
+				KeyID:               "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyIDHashAlgorithms: []string{"sha512"},
 				KeyType:             "ed25519",
 				KeyVal: KeyVal{
 					Private: "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEICmtWWk/6UydYjr7tmVUtPa7JIxHdhaJraSHXr2pSECu\n-----END PRIVATE KEY-----\n",
