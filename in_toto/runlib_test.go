@@ -305,7 +305,7 @@ func TestRecordArtifacts(t *testing.T) {
 	}
 }
 
-func TestWaitErrToExitCode(t *testing.T) {
+func TestwaitErrToExitCode(t *testing.T) {
 	// TODO: Find way to test/mock ExitError
 	// Test exit code from error assessment
 	parameters := []error{
@@ -320,9 +320,9 @@ func TestWaitErrToExitCode(t *testing.T) {
 	}
 
 	for i := 0; i < len(parameters); i++ {
-		result := WaitErrToExitCode(parameters[i])
+		result := waitErrToExitCode(parameters[i])
 		if result != expected[i] {
-			t.Errorf("WaitErrToExitCode returned %d, expected %d",
+			t.Errorf("waitErrToExitCode returned %d, expected %d",
 				result, expected[i])
 		}
 	}
@@ -396,7 +396,7 @@ func TestInTotoRun(t *testing.T) {
 				Environment: map[string]interface{}{},
 			},
 			Signatures: []Signature{{
-				KeyId: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				KeyID: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
 				Sig:   "aef29094ba7378811897e5914842e65353a834d4f73cac0dcb2148b88a436e3ddc7a6644a6695d3a20693726130f0d8ace916f6482b4a74e29cc77fd7571d401",
 			}},
 		},
@@ -439,8 +439,8 @@ func TestInTotoRun(t *testing.T) {
 		{[]string{""}, []string{"/invalid-path/"}, []string{"sh", "-c", "printf test"}, Key{}, []string{"sha256"}},
 		{[]string{}, []string{}, []string{"command-does-not-exist"}, Key{}, []string{"sha256"}},
 		{[]string{"demo.layout"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, Key{
-			KeyId:               "this-is-invalid",
-			KeyIdHashAlgorithms: nil,
+			KeyID:               "this-is-invalid",
+			KeyIDHashAlgorithms: nil,
 			KeyType:             "",
 			KeyVal:              KeyVal{},
 			Scheme:              "",

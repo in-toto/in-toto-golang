@@ -28,7 +28,7 @@ func ExampleInTotoVerify() {
 		fmt.Printf("Unable to load public key: %s", err)
 	}
 	var layoutKeys = map[string]Key{
-		pubKey.KeyId: pubKey,
+		pubKey.KeyID: pubKey,
 	}
 
 	// Perform in-toto software supply chain verification, using the provided

@@ -14,8 +14,8 @@ func TestEncodeCanonical(t *testing.T) {
 				Private: "priv",
 				Public:  "pub",
 			},
-			KeyIdHashAlgorithms: []string{"hash"},
-			KeyId:               "id",
+			KeyIDHashAlgorithms: []string{"hash"},
+			KeyID:               "id",
 			KeyType:             "type",
 			Scheme:              "scheme",
 		},
@@ -63,17 +63,17 @@ func TestEncodeCanonicalErr(t *testing.T) {
 	}
 }
 
-func Test_encodeCanonical(t *testing.T) {
+func TestencodeCanonical(t *testing.T) {
 	expectedError := "Can't canonicalize"
 
 	objects := []interface{}{
-		Test_encodeCanonical,
-		[]interface{}{Test_encodeCanonical},
+		TestencodeCanonical,
+		[]interface{}{TestencodeCanonical},
 	}
 
 	for i := 0; i < len(objects); i++ {
 		var result bytes.Buffer
-		err := _encodeCanonical(objects[i], &result)
+		err := encodeCanonical(objects[i], &result)
 		if err == nil || !strings.Contains(err.Error(), expectedError) {
 			t.Errorf("EncodeCanonical returned '%s', expected '%s' error",
 				err, expectedError)
