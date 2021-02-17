@@ -45,7 +45,7 @@ clean-certs:
 
 test: go-test test-verify test-run
 
-test-verify: build
+test-verify: test-run
 	@./bin/in-toto verify
 
 test-run: build
