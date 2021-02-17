@@ -50,8 +50,14 @@ test-verify: build
 
 test-run: build
 	#Step 1
-	@mkdir -p ./test/products/step1
-	@./bin/in-toto run -k ./certs/example.com.step1.key.pem -m ./test/data/foo.tar.gz -n step1 -p ./test/products/step1/ -- tar -xzf ./test/data/foo.tar.gz -C ./test/products/step1
+	@./bin/in-toto run -n write-code -c ./certs/example.com.write-code.cert.pem -k ./certs/example.com.write-code.key.pem -p ./test/data/foo.py -- "-c" "echo hello > ./test/data/foo.py"
+	#Step 2
+	@./bin/in-toto run -n package -c ./certs/example.com.package.cert.pem -k ./certs/example.com.package.key.pem -m ./test/data/foo.py -p ./test/data/foo.tar.gz -- tar zcvf ./test/data/foo.py
+
+	
+
+
+
 go-test:
 	@go test ./...
 
@@ -90,8 +96,8 @@ intermediate_cert: root-cert
 	@openssl verify -CAfile ./certs/root.cert.pem ./certs/$(TRUST_DOMAIN_FQDN).intermediate.cert.pem
 
 leaf_certs: intermediate_cert
-	$(call gernerate_leaf_cert,step1)
-	$(call gernerate_leaf_cert,step2)
+	$(call gernerate_leaf_cert,write-code)
+	$(call gernerate_leaf_cert,package)
 
 define gernerate_leaf_cert
 	$(call generate_openssl_conf,$(1))

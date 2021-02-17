@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/shibumi/go-pathspec"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"syscall"
+
+	"github.com/shibumi/go-pathspec"
 )
 
 // ErrSymCycle signals a detected symlink cycle in our RecordArtifacts() function.
@@ -229,8 +230,10 @@ NOTE: Since stdout and stderr are captured, they cannot be seen during the
 command execution.
 */
 func RunCommand(cmdArgs []string) (map[string]interface{}, error) {
+	//Hacky should be resolved with #21
+	cmdArgs = append([]string{"-c"}, cmdArgs...)
+	cmd := exec.Command("sh", cmdArgs[1:]...)
 
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
 		return nil, err
