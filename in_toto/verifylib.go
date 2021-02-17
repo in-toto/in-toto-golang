@@ -498,7 +498,7 @@ func VerifyLinkSignatureThesholds(layout Layout,
 			// If the signer's key wasn't in our step's pubkeys array, check the cert pool to
 			// see if the key is known to us.
 			if !isAuthorizedSignature {
-				sig, err := linkMb.GetSignatureForKeyId(signerKeyID)
+				sig, err := linkMb.GetSignatureForKeyID(signerKeyID)
 				if err != nil {
 					continue
 				}

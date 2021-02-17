@@ -827,7 +827,7 @@ the passed Key, the object in Signed cannot be canonicalized, or the Signature
 is invalid.
 */
 func (mb *Metablock) VerifySignature(key Key) error {
-	sig, err := mb.GetSignatureForKeyId(key.KeyID)
+	sig, err := mb.GetSignatureForKeyID(key.KeyID)
 	if err != nil {
 		return err
 	}
@@ -870,15 +870,15 @@ func (mb *Metablock) VerifySignatureWithCertificate(sig Signature, cert *x509.Ce
 	return rsa.VerifyPSS(cert.PublicKey.(*rsa.PublicKey), crypto.SHA256, hashed, sigBytes, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
 }
 
-// GetSignatureForKeyId returns the signature that was created by the provided keyId, if it exists.
-func (mb *Metablock) GetSignatureForKeyId(keyId string) (Signature, error) {
+// GetSignatureForKeyID returns the signature that was created by the provided keyID, if it exists.
+func (mb *Metablock) GetSignatureForKeyID(keyID string) (Signature, error) {
 	for _, s := range mb.Signatures {
-		if s.KeyID == keyId {
+		if s.KeyID == keyID {
 			return s, nil
 		}
 	}
 
-	return Signature{}, fmt.Errorf("No signature found for key '%s'", keyId)
+	return Signature{}, fmt.Errorf("No signature found for key '%s'", keyID)
 }
 
 /*
