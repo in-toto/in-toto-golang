@@ -53,19 +53,22 @@ of link metadata files named ‘<step name>.<functionary keyid prefix>.link’.`
 func init() {
 	rootCmd.AddCommand(verifyCmd)
 
-	verifyCmd.PersistentFlags().StringVarP(&layoutPath,
+	verifyCmd.Flags().StringVarP(&layoutPath,
 		"layout", "l", "",
 		`Path to root layout specifying the software supply chain to be verified`)
-	verifyCmd.PersistentFlags().StringSliceVar(&pubKeyPaths,
-		"layout-keys", []string{},
+	verifyCmd.Flags().StringSliceVarP(&pubKeyPaths,
+		"layout-keys", "k", []string{},
 		`Path(s) to PEM formatted public key(s), used to verify the passed 
 root layout's signature(s). Passing at	least one key using
 '--layout-keys' is	required. For each passed key the layout 
 must carry a valid signature.`)
-	verifyCmd.PersistentFlags().StringVarP(&linkDir,
+	verifyCmd.Flags().StringVarP(&linkDir,
 		"link-dir", "d", "",
 		`Path to directory where link metadata files for steps defined in 
 the root layout should be loaded from. If not passed links are 
 loaded from the current working	directory.`)
+
+	verifyCmd.MarkFlagRequired("layout")
+	verifyCmd.MarkFlagRequired("layout-keys")
 
 }

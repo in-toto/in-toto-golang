@@ -11,9 +11,6 @@ var rootCmd = &cobra.Command{
 	Use:   "in-toto",
 	Short: "Framework to secure integrity of software supply chains",
 	Long:  `A framework to secure the integrity of software supply chains https://in-toto.io/`,
-	Run: func(cmd *cobra.Command, args []string) {
-
-	},
 }
 
 //Execute root
