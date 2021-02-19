@@ -33,7 +33,7 @@ func TestInTotoVerifyPass(t *testing.T) {
 
 	// No error should occur
 	if _, err := InTotoVerify(layoutMb, layouKeys, linkDir, "",
-		make(map[string]string)); err != nil {
+		make(map[string]string), [][]byte{}); err != nil {
 		t.Error(err)
 	}
 }
@@ -133,7 +133,7 @@ func TestVerifySublayouts(t *testing.T) {
 		t.Errorf("Unable to load link metadata for super layout")
 	}
 
-	rootCertPool, intermediateCertPool, err := LoadLayoutCertificates(superLayoutMb.Signed.(Layout))
+	rootCertPool, intermediateCertPool, err := LoadLayoutCertificates(superLayoutMb.Signed.(Layout), [][]byte{})
 	if err != nil {
 		t.Errorf("Unable to load layout certificates")
 	}
@@ -145,7 +145,7 @@ func TestVerifySublayouts(t *testing.T) {
 	}
 
 	result, err := VerifySublayouts(superLayoutMb.Signed.(Layout),
-		stepsMetadataVerified, ".")
+		stepsMetadataVerified, ".", [][]byte{})
 	if err != nil {
 		t.Errorf("Unable to verify sublayouts")
 	}

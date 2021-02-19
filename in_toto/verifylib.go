@@ -413,7 +413,7 @@ This will be used to check signatures that were used to sign links but not confi
 in the PubKeys section of the step.  No configured CAs means we don't want to allow this.
 Returned CertPools will empty in this case.
 */
-func LoadLayoutCertificates(layout Layout) (*x509.CertPool, *x509.CertPool, error) {
+func LoadLayoutCertificates(layout Layout, intermediatePems [][]byte) (*x509.CertPool, *x509.CertPool, error) {
 	rootPool := x509.NewCertPool()
 	for _, certPem := range layout.RootCas {
 		ok := rootPool.AppendCertsFromPEM([]byte(certPem))
@@ -427,6 +427,13 @@ func LoadLayoutCertificates(layout Layout) (*x509.CertPool, *x509.CertPool, erro
 		ok := intermediatePool.AppendCertsFromPEM([]byte(intermediatePem))
 		if !ok {
 			return nil, nil, fmt.Errorf("Failed to load intermediate certificates for layout.")
+		}
+	}
+
+	for _, intermediatePem := range intermediatePems {
+		ok := intermediatePool.AppendCertsFromPEM(intermediatePem)
+		if !ok {
+			return nil, nil, fmt.Errorf("Failed to load provided intermediate certificates.")
 		}
 	}
 
@@ -684,7 +691,7 @@ steps carried out in the sublayout.
 */
 func VerifySublayouts(layout Layout,
 	stepsMetadataVerified map[string]map[string]Metablock,
-	superLayoutLinkPath string) (map[string]map[string]Metablock, error) {
+	superLayoutLinkPath string, intermediatePems [][]byte) (map[string]map[string]Metablock, error) {
 	for stepName, linkData := range stepsMetadataVerified {
 		for keyID, metadata := range linkData {
 			if _, ok := metadata.Signed.(Layout); ok {
@@ -696,7 +703,7 @@ func VerifySublayouts(layout Layout,
 				sublayoutLinkPath := filepath.Join(superLayoutLinkPath,
 					sublayoutLinkDir)
 				summaryLink, err := InTotoVerify(metadata, layoutKeys,
-					sublayoutLinkPath, stepName, make(map[string]string))
+					sublayoutLinkPath, stepName, make(map[string]string), intermediatePems)
 				if err != nil {
 					return nil, err
 				}
@@ -813,7 +820,7 @@ NOTE: Artifact rules of type "create", "modify"
 and "delete" are currently not supported.
 */
 func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
-	linkDir string, stepName string, parameterDictionary map[string]string) (
+	linkDir string, stepName string, parameterDictionary map[string]string, intermediatePems [][]byte) (
 	Metablock, error) {
 
 	var summaryLink Metablock
@@ -838,7 +845,7 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		return summaryLink, err
 	}
 
-	rootCertPool, intermediateCertPool, err := LoadLayoutCertificates(layout)
+	rootCertPool, intermediateCertPool, err := LoadLayoutCertificates(layout, intermediatePems)
 	if err != nil {
 		return summaryLink, err
 	}
@@ -858,7 +865,7 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 
 	// Verify and resolve sublayouts
 	stepsSublayoutVerified, err := VerifySublayouts(layout,
-		stepsMetadataVerified, linkDir)
+		stepsMetadataVerified, linkDir, intermediatePems)
 	if err != nil {
 		return summaryLink, err
 	}

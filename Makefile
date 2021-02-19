@@ -50,9 +50,9 @@ test-verify: test-run
 
 test-run: build
 	#Step 1
-	@./bin/in-toto run -n write-code -c ./certs/example.com.write-code.cert.pem -k ./certs/example.com.write-code.key.pem -p ./test/data/foo.py -- /bin/sh -c "echo hello > ./test/data/foo.py"
+	@./bin/in-toto run -n write-code -c ./certs/example.com.write-code.cert.pem -k ./certs/example.com.write-code.key.pem -p foo.py -- /bin/sh -c "echo hello > foo.py"
 	#Step 2
-	@./bin/in-toto run -n package -c ./certs/example.com.package.cert.pem -k ./certs/example.com.package.key.pem -m ./test/data/foo.py -p ./test/data/foo.tar.gz -- tar zcvf ./test/data/foo.py
+	@./bin/in-toto run -n package -c ./certs/example.com.package.cert.pem -k ./certs/example.com.package.key.pem -m foo.py -p foo.tar.gz -- tar zcvf foo.tar.gz foo.py
 
 	
 
