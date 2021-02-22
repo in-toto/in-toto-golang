@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var outputPath string
+
 var signCmd = &cobra.Command{
 	Use:   "sign",
 	Short: "Provides command line interface to sign in-toto link or layout metadata",
@@ -30,7 +32,7 @@ var signCmd = &cobra.Command{
 
 		//Sign
 		block.Sign(layoutKey)
-		block.Dump("signed.layout")
+		block.Dump(outputPath)
 
 	},
 }
@@ -38,15 +40,20 @@ var signCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(signCmd)
 
+	signCmd.Flags().StringVarP(&outputPath,
+		"output", "o", "",
+		`Path to store metadata file to be signed`)
 	signCmd.Flags().StringVarP(&layoutPath,
-		"layout", "l", "",
-		`Path to root layout specifying the software supply chain to be verified`)
+		"file", "f", "",
+		`Path to link or layout file to be signed or verified.`)
 	signCmd.Flags().StringVarP(&keyPath,
-		"layout-key", "k", "",
-		`Path(s) to PEM formatted private key(s) used to sign the passed 
+		"key", "k", "",
+		`Path to PEM formatted private key used to sign the passed 
 root layout's signature(s). Passing exactly one key using
 '--layout-key' is	required.`)
-	signCmd.MarkFlagRequired("layout")
-	signCmd.MarkFlagRequired("layout-key")
+
+	signCmd.MarkFlagRequired("file")
+	signCmd.MarkFlagRequired("key")
+	signCmd.MarkFlagRequired("output")
 
 }

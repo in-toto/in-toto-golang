@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	intoto "github.com/boxboat/in-toto-golang/in_toto"
 	"github.com/spf13/cobra"
@@ -13,6 +14,7 @@ var keyPath string
 var certPath string
 var materialsPaths []string
 var productsPaths []string
+var outDir string
 
 var runCmd = &cobra.Command{
 	Use:   "run",
@@ -25,7 +27,7 @@ with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		//Load Key
-		var key intoto.Key
+		var cert, key intoto.Key
 
 		if err := key.LoadKey(keyPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
 			fmt.Println("Invalid Key Error:", err.Error())
@@ -33,10 +35,12 @@ with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 		}
 
 		if len(certPath) > 0 {
-			if err := key.LoadKey(certPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
+			if err := cert.LoadKey(certPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
 				fmt.Println("Invalid Certificate Error:", err.Error())
 				os.Exit(1)
 			}
+
+			key.KeyVal.Certificate = cert.KeyVal.Certificate
 		}
 
 		block, err := intoto.InTotoRun(stepName, materialsPaths, productsPaths, args, key, []string{"sha256"}, []string{})
@@ -46,7 +50,8 @@ with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 		}
 
 		linkName := fmt.Sprintf(intoto.LinkNameFormat, block.Signed.(intoto.Link).Name, key.KeyID)
-		err = block.Dump(linkName)
+
+		err = block.Dump(filepath.Join(outDir, linkName))
 		if err != nil {
 			fmt.Println("Error writing meta-block:", err.Error())
 		}
@@ -79,6 +84,9 @@ command is executed. Symlinks are followed.`)
 		"cert", "c", "",
 		`Path to a PEM formatted certificate that corresponds with
 the provided key.`)
+	runCmd.Flags().StringVarP(&outDir,
+		"output-directory", "d", "./",
+		`directory to store link metadata`)
 
 	runCmd.MarkFlagRequired("name")
 	// TODO: Once gpg support is added we need to change this to make sure key or gpg is supplied

@@ -40,7 +40,7 @@
     "run": [
      "tar",
      "xfz",
-     "foo.tar.gz"
+     "./test/tmp/foo.tar.gz"
     ]
    }
   ],
@@ -61,7 +61,7 @@
       ]
      }
     ],
-    "expected_command": ["/bin/sh -c echo hello > foo.py"],
+    "expected_command": ["/bin/sh -c echo hello > ./test/tmp/foo.py"],
     "expected_materials": [],
     "expected_products": [
      [
@@ -86,8 +86,8 @@
     "expected_command": [
      "tar",
      "zcvf",
-     "foo.tar.gz",
-     "foo.py"
+     "./test/tmp/foo.tar.gz",
+     "./test/tmp/foo.py"
     ],
     "expected_materials": [
      [

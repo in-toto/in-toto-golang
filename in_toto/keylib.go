@@ -310,14 +310,17 @@ func (k *Key) LoadKeyReader(r io.Reader, scheme string, KeyIDHashAlgorithms []st
 		return err
 	}
 
-	// Use type switch to identify the key format
+	return k.loadKey(key, pemData, scheme, KeyIDHashAlgorithms)
+}
+
+func (k *Key) loadKey(key interface{}, pemData *pem.Block, scheme string, keyIDHashAlgorithms []string) error {
 	switch key.(type) {
 	case *rsa.PublicKey:
 		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*rsa.PublicKey))
 		if err != nil {
 			return err
 		}
-		if err := k.setKeyComponents(pubKeyBytes, []byte{}, rsaKeyType, scheme, KeyIDHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, []byte{}, rsaKeyType, scheme, keyIDHashAlgorithms); err != nil {
 			return err
 		}
 	case *rsa.PrivateKey:
@@ -327,16 +330,16 @@ func (k *Key) LoadKeyReader(r io.Reader, scheme string, KeyIDHashAlgorithms []st
 		if err != nil {
 			return err
 		}
-		if err := k.setKeyComponents(pubKeyBytes, pemData.Bytes, rsaKeyType, scheme, KeyIDHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, pemData.Bytes, rsaKeyType, scheme, keyIDHashAlgorithms); err != nil {
 			return err
 		}
 	case ed25519.PublicKey:
-		if err := k.setKeyComponents(key.(ed25519.PublicKey), []byte{}, ed25519KeyType, scheme, KeyIDHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(key.(ed25519.PublicKey), []byte{}, ed25519KeyType, scheme, keyIDHashAlgorithms); err != nil {
 			return err
 		}
 	case ed25519.PrivateKey:
 		pubKeyBytes := key.(ed25519.PrivateKey).Public()
-		if err := k.setKeyComponents(pubKeyBytes.(ed25519.PublicKey), key.(ed25519.PrivateKey), ed25519KeyType, scheme, KeyIDHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes.(ed25519.PublicKey), key.(ed25519.PrivateKey), ed25519KeyType, scheme, keyIDHashAlgorithms); err != nil {
 			return err
 		}
 	case *ecdsa.PrivateKey:
@@ -344,7 +347,7 @@ func (k *Key) LoadKeyReader(r io.Reader, scheme string, KeyIDHashAlgorithms []st
 		if err != nil {
 			return err
 		}
-		if err := k.setKeyComponents(pubKeyBytes, pemData.Bytes, ecdsaKeyType, scheme, KeyIDHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, pemData.Bytes, ecdsaKeyType, scheme, keyIDHashAlgorithms); err != nil {
 			return err
 		}
 	case *ecdsa.PublicKey:
@@ -352,16 +355,22 @@ func (k *Key) LoadKeyReader(r io.Reader, scheme string, KeyIDHashAlgorithms []st
 		if err != nil {
 			return err
 		}
-		if err := k.setKeyComponents(pubKeyBytes, []byte{}, ecdsaKeyType, scheme, KeyIDHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, []byte{}, ecdsaKeyType, scheme, keyIDHashAlgorithms); err != nil {
 			return err
 		}
 	case *x509.Certificate:
-		k.KeyVal.Certificate = strings.TrimSpace(string(pemBytes))
+		err := k.loadKey(key.(*x509.Certificate).PublicKey, pemData, scheme, keyIDHashAlgorithms)
+		if err != nil {
+			return err
+		}
+
+		k.KeyVal.Certificate = string(pem.EncodeToMemory(pemData))
 
 	default:
 		// We should never get here, because we implement all from Go supported Key Types
-		panic("unexpected Error in LoadKey function")
+		return errors.New("unexpected Error in LoadKey function")
 	}
+
 	return nil
 }
 

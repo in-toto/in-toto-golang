@@ -507,7 +507,6 @@ func VerifyLinkSignatureThesholds(layout Layout,
 			if !isAuthorizedSignature {
 				sig, err := linkMb.GetSignatureForKeyID(signerKeyID)
 				if err != nil {
-					fmt.Println(err)
 					continue
 				}
 

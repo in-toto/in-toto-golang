@@ -83,7 +83,7 @@ func init() {
 		"layout-keys", "k", []string{},
 		`Path(s) to PEM formatted public key(s), used to verify the passed 
 root layout's signature(s). Passing at least one key using
-'--layout-keys' is	required. For each passed key the layout
+'--layout-keys' is required. For each passed key the layout
 must carry a valid signature.`)
 	verifyCmd.Flags().StringVarP(&linkDir,
 		"link-dir", "d", "",
