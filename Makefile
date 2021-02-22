@@ -29,6 +29,7 @@ LEAF_DAYS := 1
 
 #Template Location
 OPENSSL_TMPL := ./certs/openssl.cnf.tmpl
+LAYOUT_TMPL := ./certs/layout.tmpl
 
 build: modules
 	@mkdir -p bin
@@ -45,8 +46,12 @@ clean-certs:
 
 test: go-test test-verify test-run
 
-test-verify: test-run
-	@./bin/in-toto verify
+test-verify: test-sign test-run
+	@./bin/in-toto verify -l ./signed.layout -k ./certs/root.cert.pem -i ./certs/example.com.intermediate.cert.pem
+
+test-sign: generate_layout
+	@./bin/in-toto sign -l ./certs/test.layout -k ./certs/example.com.layout.key.pem
+
 
 test-run: build
 	#Step 1
@@ -55,8 +60,6 @@ test-run: build
 	@./bin/in-toto run -n package -c ./certs/example.com.package.cert.pem -k ./certs/example.com.package.key.pem -m foo.py -p foo.tar.gz -- tar zcvf foo.tar.gz foo.py
 
 	
-
-
 
 go-test:
 	@go test ./...
@@ -96,10 +99,21 @@ intermediate_cert: root-cert
 	@openssl verify -CAfile ./certs/root.cert.pem ./certs/$(TRUST_DOMAIN_FQDN).intermediate.cert.pem
 
 leaf_certs: intermediate_cert
+	$(call gernerate_leaf_cert,layout)
 	$(call gernerate_leaf_cert,write-code)
 	$(call gernerate_leaf_cert,package)
 
-define gernerate_leaf_cert
+
+generate_layout: leaf_certs
+	$(eval rootca := $(shell  awk -v ORS='\\\\n' '1' ./certs/root.cert.pem))
+	@cat $(LAYOUT_TMPL) | sed -e 's#{{ROOTCA}}#$(rootca)#' > certs/test.layout
+
+
+
+
+
+
+define gernerate_leaf_cert	
 	$(call generate_openssl_conf,$(1))
 	#Generate leaf signing key
 	@openssl genrsa -out ./certs/$(TRUST_DOMAIN_FQDN).$(1).key.pem
@@ -128,8 +142,6 @@ define generate_openssl_conf
 	sed -e 's/{{DEFAULT_MD}}/$(DEFAULT_MD)/' | \
 	sed -e 's/{{SPIFFE_PATH}}/$(1)/' > certs/$(TRUST_DOMAIN_FQDN).$(1).openssl.cnf
 endef
-
-
 
 
 .PHONY: help
