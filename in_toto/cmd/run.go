@@ -55,29 +55,32 @@ with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-
-	runCmd.PersistentFlags().StringVarP(&stepName,
+	runCmd.Flags().StringVarP(&stepName,
 		"name", "n", "",
 		`Name used to associate the resulting link metadata
 with the corresponding step defined in an in-toto
 layout.`)
-	runCmd.PersistentFlags().StringVarP(&keyPath,
+	runCmd.Flags().StringVarP(&keyPath,
 		"key", "k", "",
 		`Path to a PEM formatted private key file used to sign
 the resulting link metadata. (passing one of '--key'
 or '--gpg' is required) `)
-	runCmd.PersistentFlags().StringArrayVarP(&materialsPaths,
+	runCmd.Flags().StringArrayVarP(&materialsPaths,
 		"materials", "m", []string{},
 		`Paths to files or directories, whose paths and hashes
 are stored in the resulting link metadata before the
 command is executed. Symlinks are followed.`)
-	runCmd.PersistentFlags().StringArrayVarP(&productsPaths,
+	runCmd.Flags().StringArrayVarP(&productsPaths,
 		"products", "p", []string{},
 		`Paths to files or directories, whose paths and hashes
 are stored in the resulting link metadata after the
 command is executed. Symlinks are followed.`)
-	runCmd.PersistentFlags().StringVarP(&certPath,
+	runCmd.Flags().StringVarP(&certPath,
 		"cert", "c", "",
 		`Path to a PEM formatted certificate that corresponds with
 the provided key.`)
+
+	runCmd.MarkFlagRequired("name")
+	// TODO: Once gpg support is added we need to change this to make sure key or gpg is supplied
+	runCmd.MarkFlagRequired("key")
 }
