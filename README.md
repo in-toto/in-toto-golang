@@ -1,7 +1,7 @@
 # in-toto-spiffe Proof Of Concept -- Not for Prod
 
 in-toto is a specification to provide policy and attestations for software supply chains.
-Managing the PKI around in-toto has been a major reason cited as lack of adoption.  This
+Managing the PKI around in-toto has been a major reason cited as lack of adoption.
 The project aims to provide a non-production proof of concept on integrating SPIRE PKI orchestration
 with in-toto build chain attestation.
 
