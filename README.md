@@ -15,8 +15,8 @@ will allow end-users to integrate in-toto with exisiting enterprise PKI.
 To run the demo, pull down the source code, install Go, and run `make test-verify`
 This will use openssl to gerate a certificate chain.
 
-Leaf certificates are generated with a SPIFFE SVID Compliant.  These certifcates are consumed
-by in-toto to sign link-meta data and the build layout policy.
+SPIFFE compliant Leaf certificates are generated with SVIDs corresponsing to fuctionaries.  These certifcates are consumed
+by in-toto to sign link-meta data and the layout policy.
 
 Durring the in-toto verification process `certificate contraints` are checked to ensure
 the build step link meta-data was signed with the correct SVID.
