@@ -2,24 +2,25 @@
 
 in-toto is a specification to provide policy and attestations for software supply chains.
 Managing the PKI around in-toto has been a major reason cited as lack of adoption.  This
-project aims to provide a non-production proof of concept on integrating SPIRE PKI orchistration
-with in-toto build chain attesation.
+The project aims to provide a non-production proof of concept on integrating SPIRE PKI orchestration
+with in-toto build chain attestation.
 
 The integration effort required support for CA based validation of functionaries.  In-toto currently
-requires the corresponsing public key for each key used in the process.  This process does not
-fit within most enterprise PKI policy.  Validation of signitures based on certifcate contraists
-will allow end-users to integrate in-toto with exisiting enterprise PKI.
+requires the corresponding public key for each key used in the process.  This process does not
+fit within most enterprise PKI policy.  Validation of signatures based on certificate constraints
+will allow end-users to integrate in-toto with existing enterprise PKI.
 
 ## Running the Demo
 
 To run the demo, pull down the source code, install Go, and run `make test-verify`
 This will use openssl to gerate a certificate chain.
 
-SPIFFE compliant Leaf certificates are generated with SVIDs corresponsing to fuctionaries.  These certifcates are consumed
+SPIFFE compliant Leaf certificates are generated with SVIDs corresponding to functionaries.  These certificates are consumed
 by in-toto to sign link-meta data and the layout policy.
 
-Durring the in-toto verification process `certificate contraints` are checked to ensure
+During the in-toto verification process, `certificate constraints` are checked to ensure
 the build step link meta-data was signed with the correct SVID.
+
 
 ## Building
 
