@@ -6,8 +6,8 @@ The project aims to provide a non-production proof of concept on integrating SPI
 with in-toto build chain attestation.
 
 The integration effort required support for CA based validation of functionaries.  In-toto currently
-requires the corresponding public key for each private key used in the build attestation process.  
-This schema does not fit within most enterprise PKI policy.  Validation of signatures based on certificate 
+requires the corresponding public key for each private key used in the build attestation process.  This schema
+does not fit within most oranization PKI policy.  Validation of signatures based on certificate 
 constraints will allow end-users to integrate in-toto with existing enterprise PKI.
 
 ## Running the Demo
