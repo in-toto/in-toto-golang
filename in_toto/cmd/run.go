@@ -54,6 +54,7 @@ with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 		err = block.Dump(filepath.Join(outDir, linkName))
 		if err != nil {
 			fmt.Println("Error writing meta-block:", err.Error())
+			os.Exit(1)
 		}
 	},
 }

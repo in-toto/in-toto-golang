@@ -407,6 +407,7 @@ the first 8 characters of the signing key id. E.g.:
 	// returns "package.2f89b9272.link"
 */
 const LinkNameFormat = "%s.%.8s.link"
+const PreliminaryLinkNameFormat = ".%s.%.8s.link-unfinished"
 
 /*
 LinkNameFormatShort is for links that are not signed, e.g.:

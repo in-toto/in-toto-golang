@@ -304,3 +304,57 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 	}
 	return linkMb, nil
 }
+
+func InTotoRecordStart(name string, materialPaths []string, key Key, hashAlgorithms, gitignorePatterns []string) (Metablock, error) {
+	var linkMb Metablock
+	materials, err := RecordArtifacts(materialPaths, hashAlgorithms, gitignorePatterns)
+	if err != nil {
+		return linkMb, err
+	}
+
+	linkMb.Signed = Link{
+		Type:        "link",
+		Name:        name,
+		Materials:   materials,
+		Products:    map[string]interface{}{},
+		ByProducts:  map[string]interface{}{},
+		Command:     []string{},
+		Environment: map[string]interface{}{},
+	}
+
+	if !reflect.ValueOf(key).IsZero() {
+		if err := linkMb.Sign(key); err != nil {
+			return linkMb, err
+		}
+	}
+
+	return linkMb, nil
+}
+
+func InTotoRecordStop(prelimLinkMb Metablock, productPaths []string, key Key, hashAlgorithms, gitignorePatterns []string) (Metablock, error) {
+	var linkMb Metablock
+	if err := prelimLinkMb.VerifySignature(key); err != nil {
+		return linkMb, err
+	}
+
+	link, ok := prelimLinkMb.Signed.(Link)
+	if !ok {
+		return linkMb, errors.New("Invalid metadata block")
+	}
+
+	products, err := RecordArtifacts(productPaths, hashAlgorithms, gitignorePatterns)
+	if err != nil {
+		return linkMb, err
+	}
+
+	link.Products = products
+	linkMb.Signed = link
+
+	if !reflect.ValueOf(key).IsZero() {
+		if err := linkMb.Sign(key); err != nil {
+			return linkMb, err
+		}
+	}
+
+	return linkMb, nil
+}
