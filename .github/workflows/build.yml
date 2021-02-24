@@ -26,3 +26,12 @@ jobs:
       run: |
         GO111MODULE=off go get github.com/mattn/goveralls
         $(go env GOPATH)/bin/goveralls -coverprofile=profile.cov -service=github
+    - name: Build
+      if: runner.os == 'Linux'
+      run: go build -o bin/in-toto ./main.go
+    - name: Publish
+      if: runner.os == 'Linux'
+      uses: actions/upload-artifact@v2
+      with: |
+        name: in-toto
+        path: bin/in-toto
