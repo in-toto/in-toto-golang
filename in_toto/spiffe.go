@@ -8,7 +8,7 @@ import (
 )
 
 //GetSVID grabs the x.509 context.
-func GetSVID(socketPath string, ctx context.Context) *workloadapi.X509Context {
+func GetSVID(socketPath string, ctx context.Context) Key {
 
 	client, err := workloadapi.New(ctx, workloadapi.WithAddr(socketPath))
 	if err != nil {
@@ -23,5 +23,10 @@ func GetSVID(socketPath string, ctx context.Context) *workloadapi.X509Context {
 
 	certBytes, keyBytes, err := svidContext.DefaultSVID().Marshal()
 
-	return
+	var cert Key
+
+	//assume RSA type for now.
+	cert.setKeyComponents(certBytes, keyBytes, rsaKeyType, "rsassa-pss-sha256", []string{"sha256", "sha512"})
+
+	return cert
 }

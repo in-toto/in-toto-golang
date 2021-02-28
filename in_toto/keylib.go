@@ -143,6 +143,7 @@ implementation and the securesystemslib.
 */
 func (k *Key) setKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyType string, scheme string, KeyIDHashAlgorithms []string) error {
 	// assume we have a privateKey if the key size is bigger than 0
+
 	switch keyType {
 	case rsaKeyType:
 		if len(privateKeyBytes) > 0 {

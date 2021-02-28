@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,21 +27,29 @@ return value, stdout, stderr, ...) to a link metadata file, which is signed
 with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+
 		//Load Key
 		var cert, key intoto.Key
 
-		if err := key.LoadKey(keyPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
-			fmt.Println("Invalid Key Error:", err.Error())
-			os.Exit(1)
-		}
+		if spiffeUDS != "" {
+			ctx := context.Background()
+			key = intoto.GetSVID(spiffeUDS, ctx)
 
-		if len(certPath) > 0 {
-			if err := cert.LoadKey(certPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
-				fmt.Println("Invalid Certificate Error:", err.Error())
+		} else {
+
+			if err := key.LoadKey(keyPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
+				fmt.Println("Invalid Key Error:", err.Error())
 				os.Exit(1)
 			}
 
-			key.KeyVal.Certificate = cert.KeyVal.Certificate
+			if len(certPath) > 0 {
+				if err := cert.LoadKey(certPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
+					fmt.Println("Invalid Certificate Error:", err.Error())
+					os.Exit(1)
+				}
+
+				key.KeyVal.Certificate = cert.KeyVal.Certificate
+			}
 		}
 
 		block, err := intoto.InTotoRun(stepName, materialsPaths, productsPaths, args, key, []string{"sha256"}, []string{})
@@ -89,6 +98,4 @@ the provided key.`)
 		`directory to store link metadata`)
 
 	runCmd.MarkFlagRequired("name")
-	// TODO: Once gpg support is added we need to change this to make sure key or gpg is supplied
-	runCmd.MarkFlagRequired("key")
 }
