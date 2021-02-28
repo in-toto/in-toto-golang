@@ -8,7 +8,9 @@ import (
 )
 
 //GetSVID grabs the x.509 context.
-func GetSVID(socketPath string, ctx context.Context) Key {
+func GetSVID(ctx context.Context, socketPath string) Key {
+
+	var k Key
 
 	client, err := workloadapi.New(ctx, workloadapi.WithAddr(socketPath))
 	if err != nil {
@@ -18,15 +20,21 @@ func GetSVID(socketPath string, ctx context.Context) Key {
 
 	svidContext, err := client.FetchX509Context(ctx)
 	if err != nil {
-		log.Fatalf("Error grabbing x.509 context")
+		log.Fatalf("Error grabbing x.509 context: %v", err)
 	}
 
-	certBytes, keyBytes, err := svidContext.DefaultSVID().Marshal()
+	_, keyBytes, err := svidContext.DefaultSVID().Marshal()
+	if err != nil {
+		log.Fatalf("Error marshaling certificate: %v", err)
+	}
+	svidContext.DefaultSVID().ID.Path()
 
-	var cert Key
+	pemData, key, err := decodeAndParse(keyBytes)
 
-	//assume RSA type for now.
-	cert.setKeyComponents(certBytes, keyBytes, rsaKeyType, "rsassa-pss-sha256", []string{"sha256", "sha512"})
+	if err != nil {
+		log.Fatalf("Error decoding: %v", err)
+	}
 
-	return cert
+	k.loadKey(key, pemData, "rsassa-pss-sha256", []string{"sha256", "sha512"})
+	return k
 }

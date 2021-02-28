@@ -33,7 +33,7 @@ with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 
 		if spiffeUDS != "" {
 			ctx := context.Background()
-			key = intoto.GetSVID(spiffeUDS, ctx)
+			key = intoto.GetSVID(ctx, spiffeUDS)
 
 		} else {
 
@@ -51,6 +51,9 @@ with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 				key.KeyVal.Certificate = cert.KeyVal.Certificate
 			}
 		}
+
+		fmt.Println(key.KeyVal.Public)
+		fmt.Println(key.KeyVal.Private)
 
 		block, err := intoto.InTotoRun(stepName, materialsPaths, productsPaths, args, key, []string{"sha256"}, []string{})
 		if err != nil {
