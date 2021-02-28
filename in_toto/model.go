@@ -84,6 +84,7 @@ validateHexString is used to validate that a string passed to it contains
 only valid hexadecimal characters.
 */
 func validateHexString(str string) error {
+	fmt.Println("Here")
 	formatCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", str)
 	if !formatCheck {
 		return fmt.Errorf("%w: %s", ErrInvalidHexString, str)

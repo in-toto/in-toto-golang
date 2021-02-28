@@ -44,7 +44,7 @@ const (
 	ed25519Scheme         string = "ed25519"
 	pemPublicKey          string = "PUBLIC KEY"
 	pemPrivateKey         string = "PRIVATE KEY"
-	pemRSAPrivateKey      string = "PRIVATE RSA KEY"
+	pemRSAPrivateKey      string = "RSA PRIVATE KEY"
 )
 
 /*
@@ -238,6 +238,7 @@ func decodeAndParse(pemBytes []byte) (*pem.Block, interface{}, error) {
 	if data == nil {
 		return nil, nil, ErrNoPEMBlock
 	}
+
 	// Try to load private key, if this fails try to load
 	// key as public key
 	key, err := parseKey(data.Bytes)
@@ -315,6 +316,7 @@ func (k *Key) LoadKeyReader(r io.Reader, scheme string, KeyIDHashAlgorithms []st
 }
 
 func (k *Key) loadKey(key interface{}, pemData *pem.Block, scheme string, keyIDHashAlgorithms []string) error {
+
 	switch key.(type) {
 	case *rsa.PublicKey:
 		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*rsa.PublicKey))
@@ -436,10 +438,11 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 			return Signature{}, ErrKeyKeyTypeMismatch
 		}
 		curveSize := parsedKey.(*ecdsa.PrivateKey).Curve.Params().BitSize
+		fmt.Printf("%v", curveSize)
 		var hashed []byte
-		if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
-			return Signature{}, ErrCurveSizeSchemeMismatch
-		}
+		// if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
+		// 	return Signature{}, ErrCurveSizeSchemeMismatch
+		// }
 		// implement https://tools.ietf.org/html/rfc5656#section-6.2.1
 		// We determine the curve size and choose the correct hashing
 		// method based on the curveSize
@@ -458,6 +461,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		// into an ASN.1 Object.
 		signatureBuffer, err = ecdsa.SignASN1(rand.Reader, parsedKey.(*ecdsa.PrivateKey), hashed[:])
 	case ed25519KeyType:
+		fmt.Println("ed25519")
 		// We do not need a scheme switch here, because ed25519
 		// only consist of sha256 and curve25519.
 		privateHex, err := hex.DecodeString(key.KeyVal.Private)

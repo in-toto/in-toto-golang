@@ -269,18 +269,22 @@ return value is an empty Metablock and the second return value is the error.
 func InTotoRun(name string, materialPaths []string, productPaths []string,
 	cmdArgs []string, key Key, hashAlgorithms []string, gitignorePatterns []string) (Metablock, error) {
 	var linkMb Metablock
+
 	materials, err := RecordArtifacts(materialPaths, hashAlgorithms, gitignorePatterns)
 	if err != nil {
+		fmt.Println(err)
 		return linkMb, err
 	}
 
 	byProducts, err := RunCommand(cmdArgs)
 	if err != nil {
+		fmt.Println(err)
 		return linkMb, err
 	}
 
 	products, err := RecordArtifacts(productPaths, hashAlgorithms, gitignorePatterns)
 	if err != nil {
+		fmt.Println(err)
 		return linkMb, err
 	}
 
@@ -293,14 +297,18 @@ func InTotoRun(name string, materialPaths []string, productPaths []string,
 		Command:     cmdArgs,
 		Environment: map[string]interface{}{},
 	}
+
 	linkMb.Signatures = []Signature{}
 	// We use a new feature from Go1.13 here, to check the key struct.
 	// IsZero() will return True, if the key hasn't been initialized
+
 	// with other values than the default ones.
 	if !reflect.ValueOf(key).IsZero() {
 		if err := linkMb.Sign(key); err != nil {
+			fmt.Println(err)
 			return linkMb, err
 		}
 	}
+
 	return linkMb, nil
 }

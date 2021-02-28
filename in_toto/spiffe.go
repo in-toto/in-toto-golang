@@ -12,6 +12,8 @@ func GetSVID(ctx context.Context, socketPath string) Key {
 
 	var k Key
 
+	//*x509.Certificate
+
 	client, err := workloadapi.New(ctx, workloadapi.WithAddr(socketPath))
 	if err != nil {
 		log.Fatalf("Unable to create workload API client: %v", err)
@@ -23,18 +25,20 @@ func GetSVID(ctx context.Context, socketPath string) Key {
 		log.Fatalf("Error grabbing x.509 context: %v", err)
 	}
 
-	_, keyBytes, err := svidContext.DefaultSVID().Marshal()
+	pubBytes, keyBytes, err := svidContext.DefaultSVID().Marshal()
 	if err != nil {
 		log.Fatalf("Error marshaling certificate: %v", err)
 	}
-	svidContext.DefaultSVID().ID.Path()
 
-	pemData, key, err := decodeAndParse(keyBytes)
-
+	k.KeyVal.Private = string(keyBytes)
+	k.KeyVal.Public = string(pubBytes)
+	k.Scheme = ecdsaSha2nistp384
+	k.KeyType = ecdsaKeyType
+	k.KeyIDHashAlgorithms = []string{"sha256", "sha512"}
+	err = k.generateKeyID()
 	if err != nil {
-		log.Fatalf("Error decoding: %v", err)
+		log.Fatalf("Error generating keyID: %v", err)
 	}
 
-	k.loadKey(key, pemData, "rsassa-pss-sha256", []string{"sha256", "sha512"})
 	return k
 }
