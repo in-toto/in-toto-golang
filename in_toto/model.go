@@ -797,10 +797,10 @@ func (mb *Metablock) VerifySignature(key Key) error {
 }
 
 /*
-validateMetablock ensures that a passed Metablock object is valid. It indirectly
+ValidateMetablock ensures that a passed Metablock object is valid. It indirectly
 validates the Link or Layout that the Metablock object contains.
 */
-func validateMetablock(mb Metablock) error {
+func ValidateMetablock(mb Metablock) error {
 	switch mbSignedType := mb.Signed.(type) {
 	case Layout:
 		if err := validateLayout(mb.Signed.(Layout)); err != nil {
