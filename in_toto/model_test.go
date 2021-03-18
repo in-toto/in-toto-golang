@@ -830,8 +830,8 @@ func TestValidateMetablock(t *testing.T) {
 		},
 	}
 
-	if err := validateMetablock(testMetablock); err != nil {
-		t.Error("validateMetablock error: valid metablock failed")
+	if err := ValidateMetablock(testMetablock); err != nil {
+		t.Error("ValidateMetablock error: valid metablock failed")
 	}
 
 	testMetablock = Metablock{
@@ -885,8 +885,8 @@ func TestValidateMetablock(t *testing.T) {
 		},
 	}
 
-	if err := validateMetablock(testMetablock); err != nil {
-		t.Error("validateMetablock error: valid metablock failed")
+	if err := ValidateMetablock(testMetablock); err != nil {
+		t.Error("ValidateMetablock error: valid metablock failed")
 	}
 
 	testMetablock = Metablock{
@@ -920,9 +920,9 @@ func TestValidateMetablock(t *testing.T) {
 		},
 	}
 
-	if err := validateMetablock(testMetablock); err.Error() !=
+	if err := ValidateMetablock(testMetablock); err.Error() !=
 		"invalid Type value for layout: should be 'layout'" {
-		t.Error("validateMetablock Error: invalid Type not detected")
+		t.Error("ValidateMetablock Error: invalid Type not detected")
 	}
 
 	testMetablock = Metablock{
@@ -976,9 +976,9 @@ func TestValidateMetablock(t *testing.T) {
 		},
 	}
 
-	if err := validateMetablock(testMetablock); err.Error() !=
+	if err := ValidateMetablock(testMetablock); err.Error() !=
 		"invalid type for link 'test_type': should be 'link'" {
-		t.Error("validateMetablock Error: invalid Type not detected")
+		t.Error("ValidateMetablock Error: invalid Type not detected")
 	}
 
 	testMetablock = Metablock{
@@ -1012,9 +1012,9 @@ func TestValidateMetablock(t *testing.T) {
 		},
 	}
 
-	err := validateMetablock(testMetablock)
+	err := ValidateMetablock(testMetablock)
 	if !errors.Is(err, ErrInvalidHexString) {
-		t.Error("validateMetablock Error: invalid key ID not detected")
+		t.Error("ValidateMetablock Error: invalid key ID not detected")
 	}
 
 	testMetablock = Metablock{
@@ -1048,9 +1048,9 @@ func TestValidateMetablock(t *testing.T) {
 		},
 	}
 
-	err = validateMetablock(testMetablock)
+	err = ValidateMetablock(testMetablock)
 	if !errors.Is(err, ErrInvalidHexString) {
-		t.Error("validateMetablock error: invalid signature not detected")
+		t.Error("ValidateMetablock error: invalid signature not detected")
 	}
 
 	cases := map[string]struct {
@@ -1063,7 +1063,7 @@ func TestValidateMetablock(t *testing.T) {
 		},
 	}
 	for name, tc := range cases {
-		err := validateMetablock(tc.Arg)
+		err := ValidateMetablock(tc.Arg)
 		if err == nil || !strings.Contains(err.Error(), tc.Expected) {
 			t.Errorf("%s: '%s' not in '%s'", name, tc.Expected, err)
 		}
