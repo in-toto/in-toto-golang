@@ -897,12 +897,12 @@ type Statement struct {
 	Predicate interface{} `json:"predicate"`
 }
 
-// Builder idenfifies the entity that executed the build steps.
+// ProvenanceBuilder idenfifies the entity that executed the build steps.
 type ProvenanceBuilder struct {
 	ID string `json:"id,omitempty"`
 }
 
-// Recipe describes the actions performed by the builder.
+// ProvenanceRecipe describes the actions performed by the builder.
 type ProvenanceRecipe struct {
 	Type              string      `json:"type,omitempty"`
 	DefinedInMaterial *int        `json:"definedInMaterial"`
