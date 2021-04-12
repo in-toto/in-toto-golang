@@ -2,6 +2,7 @@ package in_toto
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -9,7 +10,15 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	// Make sure all strings formatted are in tz Zulu
+	os.Setenv("TZ", "UTC")
+}
 
 func TestMatchEcdsaScheme(t *testing.T) {
 	curveSize := 224
@@ -1508,4 +1517,226 @@ func TestValidatePublicKey(t *testing.T) {
 			t.Errorf("%s returned unexpected error %s, we should got: %s", table.name, err, table.err)
 		}
 	}
+}
+
+func TestDecodeProvenanceStatement(t *testing.T) {
+	// Data from example in specification for generalized link format,
+	// subject and materials trimmed.
+	var data = `
+{
+  "subject": [
+    { "name": "curl-7.72.0.tar.bz2",
+      "digest": { "sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef" }},
+    { "name": "curl-7.72.0.tar.gz",
+      "digest": { "sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2" }}
+  ],
+  "predicateType": "https://in-toto.io/Provenance/v1",
+  "predicate": {
+    "builder": { "id": "https://github.com/Attestations/GitHubHostedActions@v1" },
+    "recipe": {
+      "type": "https://github.com/Attestations/GitHubActionsWorkflow@v1",
+      "definedInMaterial": 0,
+      "entryPoint": "build.yaml:maketgz"
+    },
+    "metadata": {
+      "buildStartedOn": "2020-08-19T08:38:00Z"
+    },
+    "materials": [
+      {
+        "uri": "git+https://github.com/curl/curl-docker@master",
+        "digest": { "sha1": "d6525c840a62b398424a78d792f457477135d0cf" },
+        "mediaType": "application/vnd.git.commit",
+        "tags": ["source"]
+      }, {
+        "uri": "github_hosted_vm:ubuntu-18.04:20210123.1",
+        "tags": ["base-image"]
+      }
+    ]
+  }
+}
+`
+
+	var want = ProvenanceStatement{
+		StatementHeader: StatementHeader{
+			PredicateType: PredicateProvenanceV1,
+			Subject: []Subject{
+				Subject{
+					Name: "curl-7.72.0.tar.bz2",
+					Digest: DigestSet{
+						"sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef",
+					},
+				},
+				Subject{
+					Name: "curl-7.72.0.tar.gz",
+					Digest: DigestSet{
+						"sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2",
+					},
+				},
+			},
+		},
+		Predicate: ProvenancePredicate{
+			Builder: ProvenanceBuilder{
+				ID: "https://github.com/Attestations/GitHubHostedActions@v1",
+			},
+			Recipe: ProvenanceRecipe{
+				Type:              "https://github.com/Attestations/GitHubActionsWorkflow@v1",
+				DefinedInMaterial: new(int),
+				EntryPoint:        "build.yaml:maketgz",
+			},
+			Metadata: ProvenanceMetadata{
+				BuildStartedOn:    time.Unix(1597826280, 0),
+				MaterialsComplete: false,
+			},
+			Materials: []ProvenanceMaterial{
+				ProvenanceMaterial{
+					URI: "git+https://github.com/curl/curl-docker@master",
+					Digest: DigestSet{
+						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
+					},
+					MediaType: "application/vnd.git.commit",
+					Tags:      []string{"source"},
+				},
+				ProvenanceMaterial{
+					URI:  "github_hosted_vm:ubuntu-18.04:20210123.1",
+					Tags: []string{"base-image"},
+				},
+			},
+		},
+	}
+	var got ProvenanceStatement
+
+	if err := json.Unmarshal([]byte(data), &got); err != nil {
+		t.Errorf("Failed to unmarshal json: %s\n", err)
+		return
+	}
+
+	// Make sure parsed time have same location set, location is only used
+	// for display purposes.
+	loc := want.Predicate.Metadata.BuildStartedOn.Location()
+	got.Predicate.Metadata.BuildStartedOn =
+		got.Predicate.Metadata.BuildStartedOn.In(loc)
+	assert.Equal(t, want, got, "Unexpexted object after decoding")
+}
+
+func TestEncodeProvenanceStatement(t *testing.T) {
+	var p = ProvenanceStatement{
+		StatementHeader: StatementHeader{
+			PredicateType: PredicateProvenanceV1,
+			Subject: []Subject{
+				Subject{
+					Name: "curl-7.72.0.tar.bz2",
+					Digest: DigestSet{
+						"sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef",
+					},
+				},
+				Subject{
+					Name: "curl-7.72.0.tar.gz",
+					Digest: DigestSet{
+						"sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2",
+					},
+				},
+			},
+		},
+		Predicate: ProvenancePredicate{
+			Builder: ProvenanceBuilder{
+				ID: "https://github.com/Attestations/GitHubHostedActions@v1",
+			},
+			Recipe: ProvenanceRecipe{
+				Type:              "https://github.com/Attestations/GitHubActionsWorkflow@v1",
+				DefinedInMaterial: new(int),
+				EntryPoint:        "build.yaml:maketgz",
+			},
+			Metadata: ProvenanceMetadata{
+				BuildStartedOn:    time.Unix(1597826280, 0),
+				MaterialsComplete: false,
+			},
+			Materials: []ProvenanceMaterial{
+				ProvenanceMaterial{
+					URI: "git+https://github.com/curl/curl-docker@master",
+					Digest: DigestSet{
+						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
+					},
+					MediaType: "application/vnd.git.commit",
+					Tags:      []string{"source"},
+				},
+				ProvenanceMaterial{
+					URI:  "github_hosted_vm:ubuntu-18.04:20210123.1",
+					Tags: []string{"base-image"},
+				},
+			},
+		},
+	}
+	var want = `{"predicateType":"https://in-toto.io/Provenance/v1","subject":[{"name":"curl-7.72.0.tar.bz2","digest":{"sha256":"ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef"}},{"name":"curl-7.72.0.tar.gz","digest":{"sha256":"d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2"}}],"predicate":{"builder":{"id":"https://github.com/Attestations/GitHubHostedActions@v1"},"recipe":{"type":"https://github.com/Attestations/GitHubActionsWorkflow@v1","definedInMaterial":0,"entryPoint":"build.yaml:maketgz"},"Metadata":{"buildStartedOn":"2020-08-19T08:38:00Z"},"materials":[{"URI":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"},"mediaType":"application/vnd.git.commit","tags":["source"]},{"URI":"github_hosted_vm:ubuntu-18.04:20210123.1","digest":null,"mediaType":"","tags":["base-image"]}]}}`
+
+	b, err := json.Marshal(&p)
+	assert.Nil(t, err, "Error during JSON marshal")
+	assert.Equal(t, want, string(b), "Wrong JSON produced")
+}
+
+func TestLinkStatement(t *testing.T) {
+	var data = `
+{
+  "subject": [
+     {"name": "baz",
+      "digest": { "sha256": "hash1" }}
+  ],
+  "predicateType": "https://in-toto.io/Link/v1",
+  "predicate": {
+    "_type": "link",
+    "name": "name",
+    "command": ["cc", "-o", "baz", "baz.z"],
+    "materials": {
+		  "kv": "vv"
+	},
+    "products": {
+		  "kp": "vp"
+	},
+    "byproducts": {
+		  "kb": "vb"
+	},
+    "environment": {
+		  "FOO": "BAR"
+	}
+  }
+}
+`
+
+	var want = LinkStatement{
+		StatementHeader: StatementHeader{
+			PredicateType: PredicateLinkV1,
+			Subject: []Subject{
+				Subject{
+					Name: "baz",
+					Digest: DigestSet{
+						"sha256": "hash1",
+					},
+				},
+			},
+		},
+		Predicate: Link{
+			Type: "link",
+			Name: "name",
+			Materials: map[string]interface{}{
+				"kv": "vv",
+			},
+			Products: map[string]interface{}{
+				"kp": "vp",
+			},
+			ByProducts: map[string]interface{}{
+				"kb": "vb",
+			},
+			Environment: map[string]interface{}{
+				"FOO": "BAR",
+			},
+			Command: []string{"cc", "-o", "baz", "baz.z"},
+		},
+	}
+	var got LinkStatement
+
+	if err := json.Unmarshal([]byte(data), &got); err != nil {
+		t.Errorf("Failed to unmarshal json: %s\n", err)
+		return
+	}
+
+	assert.Equal(t, want, got, "Unexpexted object after decoding")
 }
