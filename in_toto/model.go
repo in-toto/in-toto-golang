@@ -952,7 +952,7 @@ SpdxStatement is the definition for an entire SPDX statement.
 Currently not implemented. Some tooling exists here:
 https://github.com/spdx/tools-golang, but this software is still in
 early state.
-This struct is the same as the generic Statement struct bud is added for
+This struct is the same as the generic Statement struct but is added for
 completeness
 */
 type SpdxStatement struct {
