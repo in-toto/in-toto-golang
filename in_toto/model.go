@@ -905,6 +905,8 @@ type ProvenanceBuilder struct {
 // ProvenanceRecipe describes the actions performed by the builder.
 type ProvenanceRecipe struct {
 	Type              string      `json:"type,omitempty"`
+	// DefinedInMaterial can be sent as the null pointer to indicate that
+	// the value is not present.
 	DefinedInMaterial *int        `json:"definedInMaterial"`
 	EntryPoint        string      `json:"entryPoint,omitempty"`
 	Arguments         interface{} `json:"arguments,omitempty"`
