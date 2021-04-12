@@ -911,7 +911,7 @@ type ProvenanceRecipe struct {
 	Reproducibility   interface{} `json:"reproducibility,omitempty"`
 }
 
-// ProvenanceMetadata contains metadata for the buildt.
+// ProvenanceMetadata contains metadata for the built artifact.
 type ProvenanceMetadata struct {
 	BuildStartedOn    time.Time `json:"buildStartedOn,omitempty"`
 	MaterialsComplete bool      `json:"materialsComplete,omitempty"`
