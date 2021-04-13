@@ -899,32 +899,32 @@ type Statement struct {
 
 // ProvenanceBuilder idenfifies the entity that executed the build steps.
 type ProvenanceBuilder struct {
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 }
 
 // ProvenanceRecipe describes the actions performed by the builder.
 type ProvenanceRecipe struct {
-	Type              string      `json:"type,omitempty"`
+	Type string `json:"type"`
 	// DefinedInMaterial can be sent as the null pointer to indicate that
 	// the value is not present.
-	DefinedInMaterial *int        `json:"definedInMaterial"`
-	EntryPoint        string      `json:"entryPoint,omitempty"`
+	DefinedInMaterial *int        `json:"definedInMaterial,omitempty"`
+	EntryPoint        string      `json:"entryPoint"`
 	Arguments         interface{} `json:"arguments,omitempty"`
 	Reproducibility   interface{} `json:"reproducibility,omitempty"`
 }
 
 // ProvenanceMetadata contains metadata for the built artifact.
 type ProvenanceMetadata struct {
-	BuildStartedOn    time.Time `json:"buildStartedOn,omitempty"`
-	MaterialsComplete bool      `json:"materialsComplete,omitempty"`
+	BuildStartedOn    *time.Time `json:"buildStartedOn,omitempty"`
+	MaterialsComplete bool       `json:"materialsComplete"`
 }
 
 // ProvenanceMaterial defines the materials used to build an artifact.
 type ProvenanceMaterial struct {
-	URI       string    `json:"uri,omitempty`
-	Digest    DigestSet `json:"digest"`
+	URI       string    `json:"uri"`
+	Digest    DigestSet `json:"digest,omitempty"`
 	MediaType string    `json:"mediaType"`
-	Tags      []string  `json:"tags"`
+	Tags      []string  `json:"tags,omitempty"`
 }
 
 // ProvenancePredicate is the provenance predicate definition.
@@ -932,7 +932,7 @@ type ProvenancePredicate struct {
 	Builder   ProvenanceBuilder    `json:"builder"`
 	Recipe    ProvenanceRecipe     `json:"recipe"`
 	Metadata  ProvenanceMetadata   `json:"metadata"`
-	Materials []ProvenanceMaterial `json:"materials"`
+	Materials []ProvenanceMaterial `json:"materials,omitempty"`
 }
 
 // ProvenanceStatement is the definition for an entire provenance statement.
