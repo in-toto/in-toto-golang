@@ -1686,17 +1686,17 @@ func TestLinkStatement(t *testing.T) {
     "name": "name",
     "command": ["cc", "-o", "baz", "baz.z"],
     "materials": {
-		  "kv": "vv"
-	},
+       "kv": "vv"
+    },
     "products": {
-		  "kp": "vp"
-	},
+       "kp": "vp"
+    },
     "byproducts": {
-		  "kb": "vb"
-	},
+       "kb": "vb"
+    },
     "environment": {
-		  "FOO": "BAR"
-	}
+       "FOO": "BAR"
+    }
   }
 }
 `
