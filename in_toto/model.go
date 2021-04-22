@@ -859,17 +859,6 @@ func (mb *Metablock) Sign(key Key) error {
 }
 
 /*
-Envelope captures an envelope as described by the Secure Systems Lab
-Signing Specification. See here:
- https://github.com/secure-systems-lab/signing-spec/blob/master/envelope.md
-*/
-type Envelope struct {
-	PayloadType string      `json:"payloadType"`
-	Payload     string      `json:"payload"`
-	Signatures  []Signature `json:"signatures"`
-}
-
-/*
 DigestSet contains a set of digests. It is represented as a map from
 algorithm name to lowercase hex-encoded value.
 */
