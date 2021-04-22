@@ -24,7 +24,7 @@ func Pae(data [][]byte) ([]byte, error) {
 	// Negative values sets highest bit two 1 with 2 complements encoding
 	// high bit must be 0 for interoperability with languages that lacks
 	//  unisnged integer types.
-	if l < 0  || l > 2^63 {
+	if l < 0 || l > 2^63 {
 		return nil, fmt.Errorf("length must be less than 2^63")
 	}
 	if err = binary.Write(&buf, binary.LittleEndian, uint64(l)); err != nil {
@@ -35,7 +35,7 @@ func Pae(data [][]byte) ([]byte, error) {
 		var bw int
 		l = len(b)
 
-		if l < 0  || l > 2^63 {
+		if l < 0 || l > 2^63 {
 			return nil, fmt.Errorf("length must be less than 2^63")
 		}
 		if err = binary.Write(&buf, binary.LittleEndian, uint64(l)); err != nil {
@@ -68,7 +68,7 @@ func NewEnvelopeSigner(s ByteSigner) *EnvelopeSigner {
 
 func (es *EnvelopeSigner) Sign(payloadType string, body []byte, keyIDs []string) (*Envelope, error) {
 	var e = Envelope{
-		Payload: base64.StdEncoding.EncodeToString(body),
+		Payload:     base64.StdEncoding.EncodeToString(body),
 		PayloadType: payloadType,
 	}
 
@@ -96,7 +96,7 @@ func (es *EnvelopeSigner) Sign(payloadType string, body []byte, keyIDs []string)
 
 		e.Signatures = append(e.Signatures, Signature{
 			KeyID: key,
-			Sig: base64.StdEncoding.EncodeToString(sig),
+			Sig:   base64.StdEncoding.EncodeToString(sig),
 		})
 	}
 
