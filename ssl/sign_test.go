@@ -122,6 +122,7 @@ func (n errsigner) Verify(keyID string, data, sig []byte) (bool, error) {
 }
 
 type errverifier int
+
 var errVerify = fmt.Errorf("test err verify")
 
 func (n errverifier) Sign(data []byte) ([]byte, string, error) {
@@ -210,7 +211,7 @@ func TestSignError(t *testing.T) {
 	assert.Equal(t, "signing error", err.Error(), "wrong error")
 }
 
-func newEcdsaKey() *ecdsa.PrivateKey{
+func newEcdsaKey() *ecdsa.PrivateKey {
 	var x big.Int
 	var y big.Int
 	var d big.Int
@@ -241,11 +242,13 @@ func newEcdsaKey() *ecdsa.PrivateKey{
 }
 
 type EcdsaSigner struct {
-	keyID string
-	key *ecdsa.PrivateKey
+	keyID    string
+	key      *ecdsa.PrivateKey
+	rLen     int
+	verified bool
 }
 
-func (es* EcdsaSigner) Sign(data []byte) ([]byte, string, error) {
+func (es *EcdsaSigner) Sign(data []byte) ([]byte, string, error) {
 	// Data is complete message, hash it and sign the digest
 	digest := sha256.Sum256(data)
 	r, s, err := rfc6979.SignECDSA(es.key, digest[:], sha256.New)
@@ -255,13 +258,30 @@ func (es* EcdsaSigner) Sign(data []byte) ([]byte, string, error) {
 
 	rb := r.Bytes()
 	sb := s.Bytes()
+	es.rLen = len(rb)
 	rawSig := append(rb, sb...)
 
 	return rawSig, es.keyID, nil
 }
 
-func (es* EcdsaSigner) Verify(keyID string, data, sig []byte) (bool, error) {
-	return false, nil
+func (es *EcdsaSigner) Verify(keyID string, data, sig []byte) (bool, error) {
+	if keyID != es.keyID {
+		return false, ErrUnknownKey
+	}
+
+	var r big.Int
+	var s big.Int
+	digest := sha256.Sum256(data)
+	// Signature here is the raw bytes of r and s concatenated
+	rb := sig[:es.rLen]
+	sb := sig[es.rLen:]
+	r.SetBytes(rb)
+	s.SetBytes(sb)
+
+	ok := ecdsa.Verify(&es.key.PublicKey, digest[:], &r, &s)
+	es.verified = ok
+
+	return ok, nil
 }
 
 // Test against the example in the protocol specification:
@@ -272,15 +292,15 @@ func TestEcdsaSign(t *testing.T) {
 	var payload = "hello world"
 	var ecdsa = &EcdsaSigner{
 		keyID: keyID,
-		key: newEcdsaKey(),
+		key:   newEcdsaKey(),
 	}
 	var want = Envelope{
-		Payload: "aGVsbG8gd29ybGQ=",
+		Payload:     "aGVsbG8gd29ybGQ=",
 		PayloadType: payloadType,
 		Signatures: []Signature{
 			Signature{
 				KeyID: keyID,
-				Sig: "Cc3RkvYsLhlaFVd+d6FPx4ZClhqW4ZT0rnCYAfv6/ckoGdwT7g/blWNpOBuL/tZhRiVFaglOGTU8GEjm4aEaNA==",
+				Sig:   "Cc3RkvYsLhlaFVd+d6FPx4ZClhqW4ZT0rnCYAfv6/ckoGdwT7g/blWNpOBuL/tZhRiVFaglOGTU8GEjm4aEaNA==",
 			},
 		},
 	}
@@ -289,6 +309,12 @@ func TestEcdsaSign(t *testing.T) {
 	env, err := signer.Sign(payloadType, []byte(payload))
 	assert.Nil(t, err, "unexecpted error")
 	assert.Equal(t, &want, env, "Wrong envelope generated")
+
+	// Now verify
+	ok, err := signer.Verify(env)
+	assert.True(t, ok, "verify failed")
+	assert.Nil(t, err, "unexpected error")
+	assert.True(t, ecdsa.verified, "verify was not called")
 }
 
 func TestB64Decode(t *testing.T) {
@@ -384,9 +410,7 @@ func TestBadVerifier(t *testing.T) {
 func TestVerifyNoSig(t *testing.T) {
 	var badv badverifier
 	signer, _ := NewEnvelopeSigner(badv)
-	env := &Envelope{
-
-	}
+	env := &Envelope{}
 
 	ok, err := signer.Verify(env)
 	assert.False(t, ok, "verify failed")
@@ -434,7 +458,7 @@ func TestVerifyNoMatch(t *testing.T) {
 	signer, _ := NewEnvelopeSigner(ns, null)
 	env := &Envelope{
 		PayloadType: payloadType,
-		Payload: "cGF5bG9hZAo=",
+		Payload:     "cGF5bG9hZAo=",
 		Signatures: []Signature{
 			Signature{
 				Sig: "cGF5bG9hZAo=",
@@ -448,8 +472,8 @@ func TestVerifyNoMatch(t *testing.T) {
 }
 
 type interceptSigner struct {
-	keyID string
-	verifyRes bool
+	keyID        string
+	verifyRes    bool
 	verifyCalled bool
 }
 
@@ -466,17 +490,16 @@ func (i *interceptSigner) Verify(keyID string, data, sig []byte) (bool, error) {
 	return i.verifyRes, nil
 }
 
-
 func TestVerifyOneFail(t *testing.T) {
 	var payloadType = "http://example.com/HelloWorld"
 	var payload = "hello world"
 
 	var s1 = &interceptSigner{
-		keyID: "i1",
+		keyID:     "i1",
 		verifyRes: true,
 	}
 	var s2 = &interceptSigner{
-		keyID: "i2",
+		keyID:     "i2",
 		verifyRes: false,
 	}
 	signer, _ := NewEnvelopeSigner(s1, s2)

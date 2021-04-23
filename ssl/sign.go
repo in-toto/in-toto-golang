@@ -10,8 +10,10 @@ import (
 // ErrUnknownKey indicates that the implementation does not recognize the
 // key.
 var ErrUnknownKey = fmt.Errorf("unknown key")
+
 // ErrNoSignature indicates that an envelope did not contain any signatures.
 var ErrNoSignature = fmt.Errorf("no signature found")
+
 /*
 Envelope captures an envelope as described by the Secure Systems Lab
 Signing Specification. See here:
@@ -87,7 +89,7 @@ type Verifier interface {
 	Verify(keyID string, data, sig []byte) (bool, error)
 }
 
-type SignVerifier interface{
+type SignVerifier interface {
 	Signer
 	Verifier
 }
@@ -157,7 +159,7 @@ func (es *EnvelopeSigner) Sign(payloadType string, body []byte) (*Envelope, erro
 // Any domain specific validation such as parsing the decoded body and
 // validating the payload type is left out to the caller.
 func (es *EnvelopeSigner) Verify(e *Envelope) (bool, error) {
-	if len(e.Signatures) == 0{
+	if len(e.Signatures) == 0 {
 		return false, ErrNoSignature
 	}
 
@@ -171,9 +173,12 @@ func (es *EnvelopeSigner) Verify(e *Envelope) (bool, error) {
 		[]byte(e.PayloadType),
 		body,
 	})
+	if err != nil {
+		return false, err
+	}
 
 	verified := false
-	for _, s := range e.Signatures{
+	for _, s := range e.Signatures {
 		sig, err := b64Decode(s.Sig)
 		if err != nil {
 			return false, err
