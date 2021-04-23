@@ -199,6 +199,10 @@ func (es *EnvelopeSigner) Verify(e *Envelope) (bool, error) {
 		return false, err
 	}
 
+	// It is enough if a single signature can be validated.
+	// But if we find an occurrence of a signature not correct,
+	// the verifictaion step fails regardless if at least one of the
+	// signatures was correct.
 	verified := false
 	for _, s := range e.Signatures {
 		sig, err := b64Decode(s.Sig)
@@ -221,6 +225,7 @@ func (es *EnvelopeSigner) Verify(e *Envelope) (bool, error) {
 			if !ok {
 				return false, nil
 			}
+
 			verified = true
 			break
 		}

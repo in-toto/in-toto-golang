@@ -475,7 +475,8 @@ func TestVerifyNoMatch(t *testing.T) {
 		Payload:     "cGF5bG9hZAo=",
 		Signatures: []Signature{
 			Signature{
-				Sig: "cGF5bG9hZAo=",
+				KeyID: "not found",
+				Sig:   "cGF5bG9hZAo=",
 			},
 		},
 	}
