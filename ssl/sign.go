@@ -1,6 +1,7 @@
 /*
 Package ssl implements the Secure Systems Lab signing-spec (sometimes
 abbreviated SSL Siging spec.
+https://github.com/secure-systems-lab/signing-spec
 */
 package ssl
 
