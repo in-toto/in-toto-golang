@@ -46,8 +46,8 @@ func Pae(data [][]byte) ([]byte, error) {
 
 	// Negative values sets highest bit two 1 with 2 complements encoding
 	// high bit must be 0 for interoperability with languages that lacks
-	//  unisnged integer types.
-	if l < 0 || l > 2^63 {
+	// unsigned integer types.
+	if !verifyPaeLength(int64(l)) {
 		return nil, fmt.Errorf("length must be less than 2^63")
 	}
 	if err = binary.Write(&buf, binary.LittleEndian, uint64(l)); err != nil {
@@ -58,7 +58,7 @@ func Pae(data [][]byte) ([]byte, error) {
 		var bw int
 		l = len(b)
 
-		if l < 0 || l > 2^63 {
+		if !verifyPaeLength(int64(l)) {
 			return nil, fmt.Errorf("length must be less than 2^63")
 		}
 		if err = binary.Write(&buf, binary.LittleEndian, uint64(l)); err != nil {
@@ -73,6 +73,16 @@ func Pae(data [][]byte) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func verifyPaeLength(l int64) bool {
+	// l is signed, so max value it can take is 2^63 - 1, which have
+	// highest bit set to 0. Test only for negative values.
+	if l < 0 {
+		return false
+	}
+
+	return true
 }
 
 /*
