@@ -17,7 +17,7 @@ var ErrNoSignature = fmt.Errorf("no signature found")
 /*
 Envelope captures an envelope as described by the Secure Systems Lab
 Signing Specification. See here:
- https://github.com/secure-systems-lab/signing-spec/blob/master/envelope.md
+https://github.com/secure-systems-lab/signing-spec/blob/master/envelope.md
 */
 type Envelope struct {
 	PayloadType string      `json:"payloadType"`
@@ -35,8 +35,10 @@ type Signature struct {
 	Sig   string `json:"sig"`
 }
 
-// Pae implementes PASETO Pre-Authentic Encoding
-// https://github.com/paragonie/paseto/blob/master/docs/01-Protocol-Versions/Common.md#authentication-padding
+/*
+Pae implementes PASETO Pre-Authentic Encoding
+https://github.com/paragonie/paseto/blob/master/docs/01-Protocol-Versions/Common.md#authentication-padding
+*/
 func Pae(data [][]byte) ([]byte, error) {
 	var buf = bytes.Buffer{}
 	var l = len(data)
@@ -73,18 +75,22 @@ func Pae(data [][]byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Signer is an abstract signing algorithm.
-// The full message is provided as the parameter. Any hashing or similar
-// must not be performed by the caller, it is the signer implementor's
-// responsibility.
-// The returned Signature shall contain the base64 encoding of the
-// binary signature and the Key id used (if applicable).
+/*
+Signer is an abstract signing algorithm.
+The full message is provided as the parameter. Any hashing or similar
+must not be performed by the caller, it is the signer implementor's
+responsibility.
+The returned Signature shall contain the base64 encoding of the
+binary signature and the Key id used (if applicable).
+*/
 type Signer interface {
 	Sign(data []byte) ([]byte, string, error)
 }
 
-// Verifier verifies a complete message against a signature and key.
-// If the key is not recognized ErrUnknownKey shall be returned.
+/*
+Verifier verifies a complete message against a signature and key.
+If the key is not recognized ErrUnknownKey shall be returned.
+*/
 type Verifier interface {
 	Verify(keyID string, data, sig []byte) (bool, error)
 }
@@ -99,8 +105,10 @@ type EnvelopeSigner struct {
 	providers []SignVerifier
 }
 
-// NewEnvelopeSigner creates an EnvelopeSigner that uses 1+ Signer
-// algorithms to sign the data.
+/*
+NewEnvelopeSigner creates an EnvelopeSigner that uses 1+ Signer
+algorithms to sign the data.
+*/
 func NewEnvelopeSigner(p ...SignVerifier) (*EnvelopeSigner, error) {
 	var providers []SignVerifier
 
@@ -119,8 +127,10 @@ func NewEnvelopeSigner(p ...SignVerifier) (*EnvelopeSigner, error) {
 	}, nil
 }
 
-// Sign signs a payload and payload type according to the SSL signing spec.
-// One signature will be added for each Signer in the EnvelopeSigner.
+/*
+Sign signs a payload and payload type according to the SSL signing spec.
+One signature will be added for each Signer in the EnvelopeSigner.
+*/
 func (es *EnvelopeSigner) Sign(payloadType string, body []byte) (*Envelope, error) {
 	var paeEnc []byte
 	var err error
@@ -155,9 +165,11 @@ func (es *EnvelopeSigner) Sign(payloadType string, body []byte) (*Envelope, erro
 	return &e, nil
 }
 
-// Verify decodes the payload and verifies the signature.
-// Any domain specific validation such as parsing the decoded body and
-// validating the payload type is left out to the caller.
+/*
+Verify decodes the payload and verifies the signature.
+Any domain specific validation such as parsing the decoded body and
+validating the payload type is left out to the caller.
+*/
 func (es *EnvelopeSigner) Verify(e *Envelope) (bool, error) {
 	if len(e.Signatures) == 0 {
 		return false, ErrNoSignature
@@ -207,8 +219,10 @@ func (es *EnvelopeSigner) Verify(e *Envelope) (bool, error) {
 	return verified, nil
 }
 
-// Both standard and url encoding are allowed:
-// https://github.com/secure-systems-lab/signing-spec/blob/master/envelope.md
+/*
+Both standard and url encoding are allowed:
+https://github.com/secure-systems-lab/signing-spec/blob/master/envelope.md
+*/
 func b64Decode(s string) ([]byte, error) {
 	b, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
