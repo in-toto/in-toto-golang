@@ -99,12 +99,15 @@ type Signer interface {
 
 /*
 Verifier verifies a complete message against a signature and key.
+If the message was hashed prior to signature generation, the verifier
+must perform the same steps.
 If the key is not recognized ErrUnknownKey shall be returned.
 */
 type Verifier interface {
 	Verify(keyID string, data, sig []byte) (bool, error)
 }
 
+// SignVerifer provides both the signing and verification interface.
 type SignVerifier interface {
 	Signer
 	Verifier
