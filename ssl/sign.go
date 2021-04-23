@@ -1,3 +1,7 @@
+/*
+Package ssl implements the Secure Systems Lab signing-spec (sometimes
+abbreviated SSL Siging spec.
+*/
 package ssl
 
 import (
