@@ -45,6 +45,7 @@ func RunInspections(layout Layout, runDir string) (map[string]Metablock, error) 
 
 		linkMb, err := InTotoRun(inspection.Name, runDir, paths, paths,
 			inspection.Run, Key{}, []string{"sha256"}, nil)
+
 		if err != nil {
 			return nil, err
 		}

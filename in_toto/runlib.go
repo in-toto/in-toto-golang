@@ -273,6 +273,7 @@ return value is an empty Metablock and the second return value is the error.
 */
 func InTotoRun(name string, runDir string, materialPaths []string, productPaths []string,
 	cmdArgs []string, key Key, hashAlgorithms []string, gitignorePatterns []string) (Metablock, error) {
+
 	var linkMb Metablock
 	materials, err := RecordArtifacts(materialPaths, hashAlgorithms, gitignorePatterns)
 	if err != nil {
