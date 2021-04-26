@@ -22,11 +22,13 @@ all files found in the current working directory as materials (before command
 execution) and products (after command execution).  A map with inspection names
 as keys and Metablocks containing the generated link metadata as values is
 returned.  The format is:
-  {
-    <inspection name> : Metablock,
-    <inspection name> : Metablock,
-    ...
-  }
+
+	{
+		<inspection name> : Metablock,
+		<inspection name> : Metablock,
+		...
+	}
+
 If executing the inspection command fails, or if the executed command has a
 non-zero exit code, the first return value is an empty Metablock map and the
 second return value is the error.
@@ -42,13 +44,14 @@ func RunInspections(layout Layout, runDir string) (map[string]Metablock, error) 
 		}
 
 		linkMb, err := InTotoRun(inspection.Name, runDir, paths, paths,
-			inspection.Run)
+			inspection.Run, Key{}, []string{"sha256"}, nil)
+
 		if err != nil {
 			return nil, err
 		}
 
 		retVal := linkMb.Signed.(Link).ByProducts["return-value"]
-		if retVal != 0 {
+		if retVal != float64(0) {
 			return nil, fmt.Errorf("Inspection command '%s' of inspection '%s'"+
 				" returned a non-zero value: %d", inspection.Run, inspection.Name,
 				retVal)
@@ -56,7 +59,9 @@ func RunInspections(layout Layout, runDir string) (map[string]Metablock, error) 
 
 		// Dump inspection link to cwd using the short link name format
 		linkName := fmt.Sprintf(LinkNameFormatShort, inspection.Name)
-		linkMb.Dump(linkName)
+		if err := linkMb.Dump(linkName); err != nil {
+			fmt.Printf("JSON serialization or writing failed: %s", err)
+		}
 
 		inspectionMetadata[inspection.Name] = linkMb
 	}
@@ -209,13 +214,13 @@ func VerifyArtifacts(items []interface{},
 		// For each item we have to run rule verification, once per artifact type.
 		// Here we prepare the corresponding data for each round.
 		verificationDataList := []map[string]interface{}{
-			map[string]interface{}{
+			{
 				"srcType":       "materials",
 				"rules":         expectedMaterials,
 				"artifacts":     materials,
 				"artifactPaths": materialPaths,
 			},
-			map[string]interface{}{
+			{
 				"srcType":       "products",
 				"rules":         expectedProducts,
 				"artifacts":     products,
@@ -315,11 +320,13 @@ and Products are equal across links for a given step.  This function may be
 used at a time during the overall verification, where link threshold's have
 been verified and subsequent verification only needs one exemplary link per
 step.  The function returns a map with one Metablock (link) per step:
-  {
-    <step name> : Metablock,
-    <step name> : Metablock,
-    ...
-  }
+
+	{
+		<step name> : Metablock,
+		<step name> : Metablock,
+		...
+	}
+
 If links corresponding to the same step report different Materials or different
 Products, the first return value is an empty Metablock map and the second
 return value is the error.
@@ -410,19 +417,21 @@ VerifyLinkSignatureThesholds verifies that for each step of the passed layout,
 there are at least Threshold links, validly signed by different authorized
 functionaries.  The returned map of link metadata per steps contains only
 links with valid signatures from distinct functionaries and has the format:
-  {
-    <step name> : {
-      <key id>: Metablock,
-      <key id>: Metablock,
-      ...
-    },
-    <step name> : {
-      <key id>: Metablock,
-      <key id>: Metablock,
-      ...
-    }
-    ...
-  }
+
+	{
+		<step name> : {
+		<key id>: Metablock,
+		<key id>: Metablock,
+		...
+		},
+		<step name> : {
+		<key id>: Metablock,
+		<key id>: Metablock,
+		...
+		}
+		...
+	}
+
 If for any step of the layout there are not enough links available, the first
 return value is an empty map of Metablock maps and the second return value is
 the error.
@@ -489,19 +498,21 @@ the links may be passed using linkDir.  Link file names are constructed,
 using LinkNameFormat together with the corresponding step name and authorized
 functionary key ids.  A map of link metadata is returned and has the following
 format:
-  {
-    <step name> : {
-      <key id>: Metablock,
-      <key id>: Metablock,
-      ...
-    },
-    <step name> : {
-      <key id>: Metablock,
-      <key id>: Metablock,
-      ...
-    }
-    ...
-  }
+
+	{
+		<step name> : {
+			<key id>: Metablock,
+			<key id>: Metablock,
+			...
+		},
+		<step name> : {
+		<key id>: Metablock,
+		<key id>: Metablock,
+		...
+		}
+		...
+	}
+
 If a link cannot be loaded at a constructed link name or is invalid, it is
 ignored. Only a preliminary threshold check is performed, that is, if there
 aren't at least Threshold links for any given step, the first return value
@@ -514,8 +525,8 @@ func LoadLinksForLayout(layout Layout, linkDir string) (
 	for _, step := range layout.Steps {
 		linksPerStep := make(map[string]Metablock)
 
-		for _, authorizedKeyId := range step.PubKeys {
-			linkName := fmt.Sprintf(LinkNameFormat, step.Name, authorizedKeyId)
+		for _, authorizedKeyID := range step.PubKeys {
+			linkName := fmt.Sprintf(LinkNameFormat, step.Name, authorizedKeyID)
 			linkPath := osPath.Join(linkDir, linkName)
 
 			var linkMb Metablock
@@ -523,7 +534,7 @@ func LoadLinksForLayout(layout Layout, linkDir string) (
 				continue
 			}
 
-			linksPerStep[authorizedKeyId] = linkMb
+			linksPerStep[authorizedKeyID] = linkMb
 		}
 
 		if len(linksPerStep) < step.Threshold {
@@ -548,7 +559,7 @@ func VerifyLayoutExpiration(layout Layout) error {
 	}
 	// Uses timezone of expires, i.e. UTC
 	if time.Until(expires) < 0 {
-		return fmt.Errorf("Layout has expired on '%s'.", expires)
+		return fmt.Errorf("layout has expired on '%s'", expires)
 	}
 	return nil
 }
@@ -563,7 +574,7 @@ passed keys, or a matching signature is invalid, an error is returned.
 func VerifyLayoutSignatures(layoutMb Metablock,
 	layoutKeys map[string]Key) error {
 	if len(layoutKeys) < 1 {
-		return fmt.Errorf("Layout verification requires at least one key.")
+		return fmt.Errorf("layout verification requires at least one key")
 	}
 
 	for _, key := range layoutKeys {
@@ -617,13 +628,13 @@ func VerifySublayouts(layout Layout,
 	stepsMetadataVerified map[string]map[string]Metablock,
 	superLayoutLinkPath string) (map[string]map[string]Metablock, error) {
 	for stepName, linkData := range stepsMetadataVerified {
-		for keyId, metadata := range linkData {
+		for keyID, metadata := range linkData {
 			if _, ok := metadata.Signed.(Layout); ok {
 				layoutKeys := make(map[string]Key)
-				layoutKeys[keyId] = layout.Keys[keyId]
+				layoutKeys[keyID] = layout.Keys[keyID]
 
 				sublayoutLinkDir := fmt.Sprintf(SublayoutLinkDirFormat,
-					stepName, keyId)
+					stepName, keyID)
 				sublayoutLinkPath := filepath.Join(superLayoutLinkPath,
 					sublayoutLinkDir)
 				summaryLink, err := InTotoVerify(metadata, layoutKeys,
@@ -631,7 +642,7 @@ func VerifySublayouts(layout Layout,
 				if err != nil {
 					return nil, err
 				}
-				linkData[keyId] = summaryLink
+				linkData[keyID] = summaryLink
 			}
 
 		}
@@ -803,7 +814,7 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 	}
 
 	// Verify artifact rules
-	if err = VerifyArtifacts(layout.StepsAsInterfaceSlice(),
+	if err = VerifyArtifacts(layout.stepsAsInterfaceSlice(),
 		stepsMetadataReduced); err != nil {
 		return summaryLink, err
 	}
@@ -819,7 +830,7 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		inspectionMetadata[k] = v
 	}
 
-	if err = VerifyArtifacts(layout.InspectAsInterfaceSlice(),
+	if err = VerifyArtifacts(layout.inspectAsInterfaceSlice(),
 		inspectionMetadata); err != nil {
 		return summaryLink, err
 	}
@@ -892,7 +903,7 @@ func InTotoVerifyWithDirectory(layoutMb Metablock, layoutKeys map[string]Key,
 	}
 
 	// Verify artifact rules
-	if err = VerifyArtifacts(layout.StepsAsInterfaceSlice(),
+	if err = VerifyArtifacts(layout.stepsAsInterfaceSlice(),
 		stepsMetadataReduced); err != nil {
 		return summaryLink, err
 	}
@@ -908,7 +919,7 @@ func InTotoVerifyWithDirectory(layoutMb Metablock, layoutKeys map[string]Key,
 		inspectionMetadata[k] = v
 	}
 
-	if err = VerifyArtifacts(layout.InspectAsInterfaceSlice(),
+	if err = VerifyArtifacts(layout.inspectAsInterfaceSlice(),
 		inspectionMetadata); err != nil {
 		return summaryLink, err
 	}

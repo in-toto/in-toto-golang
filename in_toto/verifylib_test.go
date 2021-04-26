@@ -12,9 +12,7 @@ import (
 )
 
 func TestInTotoVerifyPass(t *testing.T) {
-	// TODO: The test layout has a hardcoded expiration date. We need to
-	// implement signing and create the date and sign the layout on the fly.
-	layoutPath := "demo.layout.template"
+	layoutPath := "demo.layout"
 	pubKeyPath := "alice.pub"
 	linkDir := "."
 
@@ -24,12 +22,12 @@ func TestInTotoVerifyPass(t *testing.T) {
 	}
 
 	var pubKey Key
-	if err := pubKey.LoadPublicKey(pubKeyPath); err != nil {
+	if err := pubKey.LoadKey(pubKeyPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
 		t.Error(err)
 	}
 
 	var layouKeys = map[string]Key{
-		pubKey.KeyId: pubKey,
+		pubKey.KeyID: pubKey,
 	}
 
 	// No error should occur
@@ -41,7 +39,7 @@ func TestInTotoVerifyPass(t *testing.T) {
 
 func TestGetSummaryLink(t *testing.T) {
 	var demoLayout Metablock
-	if err := demoLayout.Load("demo.layout.template"); err != nil {
+	if err := demoLayout.Load("demo.layout"); err != nil {
 		t.Error(err)
 	}
 	var codeLink Metablock
@@ -99,12 +97,17 @@ func TestGetSummaryLink(t *testing.T) {
 func TestVerifySublayouts(t *testing.T) {
 	sublayoutName := "sub_layout"
 	var aliceKey Key
-	if err := aliceKey.LoadPublicKey("alice.pub"); err != nil {
+	if err := aliceKey.LoadKey("alice.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
 		t.Errorf("Unable to load Alice's public key")
 	}
 	sublayoutDirectory := fmt.Sprintf(SublayoutLinkDirFormat, sublayoutName,
-		aliceKey.KeyId)
-	defer os.RemoveAll(sublayoutDirectory)
+		aliceKey.KeyID)
+	defer func(sublayoutDirectory string) {
+		if err := os.RemoveAll(sublayoutDirectory); err != nil {
+			t.Errorf("Unable to remove directory %s: %s", sublayoutDirectory, err)
+		}
+	}(sublayoutDirectory)
+
 	if err := os.Mkdir(sublayoutDirectory, 0700); err != nil {
 		t.Errorf("Unable to create sublayout directory")
 	}
@@ -153,7 +156,9 @@ func TestVerifySublayouts(t *testing.T) {
 func TestRunInspections(t *testing.T) {
 	// Load layout template used as basis for all tests
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout"); err != nil {
+		t.Errorf("Unable to parse template file: %s", err)
+	}
 	layout := mb.Signed.(Layout)
 
 	// Test 1
@@ -429,7 +434,9 @@ func TestVerifyMatchRule(t *testing.T) {
 
 func TestReduceStepsMetadata(t *testing.T) {
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout"); err != nil {
+		t.Errorf("Unable to parse template file: %s", err)
+	}
 	layout := mb.Signed.(Layout)
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{Name: "foo"}}}
 
@@ -498,13 +505,17 @@ func TestReduceStepsMetadata(t *testing.T) {
 				" metadata")
 		}
 	}()
-	ReduceStepsMetadata(layout, nil)
+	if _, err := ReduceStepsMetadata(layout, nil); err != nil {
+		t.Errorf("Error while calling ReduceStepsMetadata: %s", err)
+	}
 	//NOTE: This test won't get any further because of panic
 }
 
 func TestVerifyStepCommandAlignment(t *testing.T) {
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout"); err != nil {
+		t.Errorf("Unable to load template file: %s", err)
+	}
 	layout := mb.Signed.(Layout)
 	layout.Steps = []Step{
 		{
@@ -535,25 +546,33 @@ func TestVerifyStepCommandAlignment(t *testing.T) {
 }
 
 func TestVerifyLinkSignatureThesholds(t *testing.T) {
-	keyId1 := "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498"
-	keyId2 := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
-	keyId3 := "abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca"
+	keyID1 := "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498"
+	keyID2 := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
+	keyID3 := "abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca"
 
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout"); err != nil {
+		t.Errorf("Unable to load template file: %s", err)
+	}
 	layout := mb.Signed.(Layout)
 
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{
 		Name: "foo"},
 		Threshold: 2,
-		PubKeys:   []string{keyId1, keyId2, keyId3}}}
+		PubKeys:   []string{keyID1, keyID2, keyID3}}}
 
 	var mbLink1 Metablock
-	mbLink1.Load("foo.2f89b927.link")
+	if err := mbLink1.Load("foo.2f89b927.link"); err != nil {
+		t.Errorf("Unable to load link file: %s", err)
+	}
 	var mbLink2 Metablock
-	mbLink2.Load("foo.776a00e2.link")
+	if err := mbLink2.Load("foo.776a00e2.link"); err != nil {
+		t.Errorf("Unable to load link file: %s", err)
+	}
 	var mbLinkBroken Metablock
-	mbLinkBroken.Load("foo.776a00e2.link")
+	if err := mbLinkBroken.Load("foo.776a00e2.link"); err != nil {
+		t.Errorf("Unable to load link file: %s", err)
+	}
 	mbLinkBroken.Signatures[0].Sig = "breaksignature"
 
 	// Test less then threshold distinct valid links errors:
@@ -565,9 +584,9 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 	stepsMetadata := []map[string]map[string]Metablock{
 		{"bar": nil},
 		{"foo": nil},
-		{"foo": {keyId1: mbLink1}},
-		{"foo": {keyId1: mbLink1, keyId2: mbLink1}},
-		{"foo": {keyId1: mbLink1, keyId2: mbLinkBroken}},
+		{"foo": {keyID1: mbLink1}},
+		{"foo": {keyID1: mbLink1, keyID2: mbLink1}},
+		{"foo": {keyID1: mbLink1, keyID2: mbLinkBroken}},
 	}
 	for i := 0; i < len(stepsMetadata); i++ {
 		result, err := VerifyLinkSignatureThesholds(layout, stepsMetadata[i])
@@ -581,8 +600,8 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 	// - Threshold 2, two valid links
 	// - Threshold 2, two valid links, one invalid link ignored
 	stepsMetadata = []map[string]map[string]Metablock{
-		{"foo": {keyId1: mbLink1, keyId2: mbLink2}},
-		{"foo": {keyId1: mbLink1, keyId2: mbLink2, keyId3: mbLinkBroken}},
+		{"foo": {keyID1: mbLink1, keyID2: mbLink2}},
+		{"foo": {keyID1: mbLink1, keyID2: mbLink2, keyID3: mbLinkBroken}},
 	}
 	for i := 0; i < len(stepsMetadata); i++ {
 		result, err := VerifyLinkSignatureThesholds(layout, stepsMetadata[i])
@@ -595,16 +614,18 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 }
 
 func TestLoadLinksForLayout(t *testing.T) {
-	keyId1 := "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498"
-	keyId2 := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
+	keyID1 := "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498"
+	keyID2 := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout"); err != nil {
+		t.Errorf("Unable to load template file: %s", err)
+	}
 	layout := mb.Signed.(Layout)
 
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{
 		Name: "foo"},
 		Threshold: 2,
-		PubKeys:   []string{keyId1, keyId2}}}
+		PubKeys:   []string{keyID1, keyID2}}}
 
 	// Test successfully load two links for layout (one step foo, threshold 2)
 	result, err := LoadLinksForLayout(layout, ".")
@@ -615,11 +636,11 @@ func TestLoadLinksForLayout(t *testing.T) {
 	}
 
 	// Test threshold error, can't find enough links for step
-	keyId3 := "abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca"
+	keyID3 := "abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca"
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{
 		Name: "foo"},
 		Threshold: 3,
-		PubKeys:   []string{keyId1, keyId2, keyId3}}}
+		PubKeys:   []string{keyID1, keyID2, keyID3}}}
 	result, err = LoadLinksForLayout(layout, ".")
 	if err == nil {
 		t.Errorf("VerifyLoadLinksForLayout returned (%s, %s), expected"+
@@ -629,7 +650,9 @@ func TestLoadLinksForLayout(t *testing.T) {
 
 func TestVerifyLayoutExpiration(t *testing.T) {
 	var mb Metablock
-	mb.Load("demo.layout.template")
+	if err := mb.Load("demo.layout"); err != nil {
+		t.Errorf("Unable to load template file: %s", err)
+	}
 	layout := mb.Signed.(Layout)
 
 	// Test layout expiration check failure:
@@ -657,14 +680,18 @@ func TestVerifyLayoutExpiration(t *testing.T) {
 
 func TestVerifyLayoutSignatures(t *testing.T) {
 	var mbLayout Metablock
-	mbLayout.Load("demo.layout.template")
+	if err := mbLayout.Load("demo.layout"); err != nil {
+		t.Errorf("Unable to load template file: %s", err)
+	}
 	var layoutKey Key
-	layoutKey.LoadPublicKey("alice.pub")
+	if err := layoutKey.LoadKey("alice.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
+		t.Errorf("Unable to load public key file: %s", err)
+	}
 
 	// Test layout signature verification errors:
 	// - Not verification keys (must be at least one)
 	// - No signature found for verification key
-	layoutKeysList := []map[string]Key{{}, {layoutKey.KeyId: Key{}}}
+	layoutKeysList := []map[string]Key{{}, {layoutKey.KeyID: Key{}}}
 	expectedErrors := []string{"at least one key", "No signature found for key"}
 
 	for i := 0; i < len(layoutKeysList); i++ {
@@ -676,7 +703,7 @@ func TestVerifyLayoutSignatures(t *testing.T) {
 	}
 
 	// Test successful layout signature verification
-	err := VerifyLayoutSignatures(mbLayout, map[string]Key{layoutKey.KeyId: layoutKey})
+	err := VerifyLayoutSignatures(mbLayout, map[string]Key{layoutKey.KeyID: layoutKey})
 	if err != nil {
 		t.Errorf("VerifyLayoutSignatures returned '%s', expected nil",
 			err)

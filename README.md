@@ -1,8 +1,8 @@
-# Go in-toto verification
-[![Build Status](https://travis-ci.com/in-toto/in-toto-golang.svg?branch=master)](https://travis-ci.com/in-toto/in-toto-golang) [![Coverage Status](https://coveralls.io/repos/github/in-toto/in-toto-golang/badge.svg)](https://coveralls.io/github/in-toto/in-toto-golang) [![Build status](https://ci.appveyor.com/api/projects/status/n45pmpso0t5b40vk?svg=true)](https://ci.appveyor.com/project/in-toto/in-toto-golang)
+# In-toto Go implementation
+[![build](https://github.com/in-toto/in-toto-golang/workflows/build/badge.svg)](https://github.com/in-toto/in-toto-golang/actions?query=workflow%3Abuild) [![Coverage Status](https://coveralls.io/repos/github/in-toto/in-toto-golang/badge.svg)](https://coveralls.io/github/in-toto/in-toto-golang) [![PkgGoDev](https://pkg.go.dev/badge/github.com/in-toto/in-toto-golang)](https://pkg.go.dev/github.com/in-toto/in-toto-golang) [![Go Report Card](https://goreportcard.com/badge/github.com/in-toto/in-toto-golang)](https://goreportcard.com/report/github.com/in-toto/in-toto-golang)
 
 
-Basic Go implementation of in-toto supply chain verification, based on the
+Go implementation of the 
 [in-toto Python reference implementation](https://github.com/in-toto/in-toto).
 
 ## Docs
@@ -27,14 +27,4 @@ production use.
 If any of these features are necessary for your use case please let us know and
 we will try to provide them as soon as possible!
 
-* [Signature schemes, other than `rsassa-pss-sha256`](https://github.com/in-toto/in-toto-golang/issues/27)
 * [GPG keys](https://github.com/in-toto/in-toto-golang/issues/26)
-* [Layout parameter substitution](https://github.com/in-toto/in-toto-golang/issues/29)
-* [in-toto-run functionality](https://github.com/in-toto/in-toto-golang/issues/30)
-  *Note: A basic `runlib` does exist, however it is only used to execute the
-  inspection commands in a layout and create the corresponding metadata. It
-  cannot be used to create signed evidence (link metadata) for steps in a
-  layout.*
-* [Hashing algorithms, other than `sha256` (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/31)
-* [Symbolic links (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/32)
-* [Exclude patterns (in artifact recording)](https://github.com/in-toto/in-toto-golang/issues/33)

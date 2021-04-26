@@ -1,27 +1,19 @@
 package in_toto
 
 import (
+	"crypto/ecdsa"
+	"crypto/rsa"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
-
-/*
-validateHexString is used to validate that a string passed to it contains
-only valid hexadecimal characters.
-*/
-func validateHexString(str string) error {
-	formatCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", str)
-	if !formatCheck {
-		return fmt.Errorf("'%s' is not a valid hex string", str)
-	}
-	return nil
-}
 
 /*
 KeyVal contains the actual values of a key, as opposed to key metadata such as
@@ -40,42 +32,243 @@ identifier, supported hash algorithms to create the identifier, the key type
 and the supported signature scheme, and the actual key value.
 */
 type Key struct {
-	KeyId               string   `json:"keyid"`
-	KeyIdHashAlgorithms []string `json:"keyid_hash_algorithms"`
+	KeyID               string   `json:"keyid"`
+	KeyIDHashAlgorithms []string `json:"keyid_hash_algorithms"`
 	KeyType             string   `json:"keytype"`
 	KeyVal              KeyVal   `json:"keyval"`
 	Scheme              string   `json:"scheme"`
 }
 
+// ErrEmptyKeyField will be thrown if a field in our Key struct is empty.
+var ErrEmptyKeyField = errors.New("empty field in key")
+
+// ErrInvalidHexString will be thrown, if a string doesn't match a hex string.
+var ErrInvalidHexString = errors.New("invalid hex string")
+
+// ErrSchemeKeyTypeMismatch will be thrown, if the given scheme and key type are not supported together.
+var ErrSchemeKeyTypeMismatch = errors.New("the scheme and key type are not supported together")
+
+// ErrUnsupportedKeyIDHashAlgorithms will be thrown, if the specified KeyIDHashAlgorithms is not supported.
+var ErrUnsupportedKeyIDHashAlgorithms = errors.New("the given keyID hash algorithm is not supported")
+
+// ErrKeyKeyTypeMismatch will be thrown, if the specified keyType does not match the key
+var ErrKeyKeyTypeMismatch = errors.New("the given key does not match its key type")
+
+// ErrNoPublicKey gets returned when the private key value is not empty.
+var ErrNoPublicKey = errors.New("the given key is not a public key")
+
+// ErrCurveSizeSchemeMismatch gets returned, when the scheme and curve size are incompatible
+// for example: curve size = "521" and scheme = "ecdsa-sha2-nistp224"
+var ErrCurveSizeSchemeMismatch = errors.New("the scheme does not match the curve size")
+
 /*
-validatePubKey is a general function to validate if a key is a valid public key.
+matchEcdsaScheme checks if the scheme suffix, matches the ecdsa key
+curve size. We do not need a full regex match here, because
+our validateKey functions are already checking for a valid scheme string.
 */
-func validatePubKey(key Key) error {
-	if err := validateHexString(key.KeyId); err != nil {
-		return fmt.Errorf("keyid: %s", err.Error())
-	}
-	if key.KeyVal.Private != "" {
-		return fmt.Errorf("in key '%s': private key found", key.KeyId)
-	}
-	if key.KeyVal.Public == "" {
-		return fmt.Errorf("in key '%s': public key cannot be empty", key.KeyId)
+func matchEcdsaScheme(curveSize int, scheme string) error {
+	if !strings.HasSuffix(scheme, strconv.Itoa(curveSize)) {
+		return ErrCurveSizeSchemeMismatch
 	}
 	return nil
 }
 
 /*
-validateRSAPubKey checks if a passed key is a valid RSA public key.
+validateHexString is used to validate that a string passed to it contains
+only valid hexadecimal characters.
 */
-func validateRSAPubKey(key Key) error {
-	if key.KeyType != "rsa" {
-		return fmt.Errorf("invalid KeyType for key '%s': should be 'rsa', got"+
-			" '%s'", key.KeyId, key.KeyType)
+func validateHexString(str string) error {
+	formatCheck, _ := regexp.MatchString("^[a-fA-F0-9]+$", str)
+	if !formatCheck {
+		return fmt.Errorf("%w: %s", ErrInvalidHexString, str)
 	}
-	if key.Scheme != "rsassa-pss-sha256" {
-		return fmt.Errorf("invalid scheme for key '%s': should be "+
-			"'rsassa-pss-sha256', got: '%s'", key.KeyId, key.Scheme)
+	return nil
+}
+
+/*
+validateKeyVal validates the KeyVal struct. In case of an ed25519 key,
+it will check for a hex string for private and public key. In any other
+case, validateKeyVal will try to decode the PEM block. If this succeeds,
+we have a valid PEM block in our KeyVal struct. On success it will return nil
+on failure it will return the corresponding error. This can be either
+an ErrInvalidHexString, an ErrNoPEMBlock or an ErrUnsupportedKeyType
+if the KeyType is unknown.
+*/
+func validateKeyVal(key Key) error {
+	switch key.KeyType {
+	case ed25519KeyType:
+		// We cannot use matchPublicKeyKeyType or matchPrivateKeyKeyType here,
+		// because we retrieve the key not from PEM. Hence we are dealing with
+		// plain ed25519 key bytes. These bytes can't be typechecked like in the
+		// matchKeyKeytype functions.
+		err := validateHexString(key.KeyVal.Public)
+		if err != nil {
+			return err
+		}
+		if key.KeyVal.Private != "" {
+			err := validateHexString(key.KeyVal.Private)
+			if err != nil {
+				return err
+			}
+		}
+	case rsaKeyType, ecdsaKeyType:
+		// We do not need the pemData here, so we can throw it away via '_'
+		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
+		if err != nil {
+			return err
+		}
+		err = matchPublicKeyKeyType(parsedKey, key.KeyType)
+		if err != nil {
+			return err
+		}
+		if key.KeyVal.Private != "" {
+			// We do not need the pemData here, so we can throw it away via '_'
+			_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
+			if err != nil {
+				return err
+			}
+			err = matchPrivateKeyKeyType(parsedKey, key.KeyType)
+			if err != nil {
+				return err
+			}
+		}
+	default:
+		return ErrUnsupportedKeyType
 	}
-	if err := validatePubKey(key); err != nil {
+	return nil
+}
+
+/*
+matchPublicKeyKeyType validates an interface if it can be asserted to a
+the RSA or ECDSA public key type. We can only check RSA and ECDSA this way,
+because we are storing them in PEM format. Ed25519 keys are stored as plain
+ed25519 keys encoded as hex strings, thus we have no metadata for them.
+This function will return nil on success. If the key type does not match
+it will return an ErrKeyKeyTypeMismatch.
+*/
+func matchPublicKeyKeyType(key interface{}, keyType string) error {
+	switch key.(type) {
+	case *rsa.PublicKey:
+		if keyType != rsaKeyType {
+			return ErrKeyKeyTypeMismatch
+		}
+	case *ecdsa.PublicKey:
+		if keyType != ecdsaKeyType {
+			return ErrKeyKeyTypeMismatch
+		}
+	default:
+		return ErrInvalidKey
+	}
+	return nil
+}
+
+/*
+matchPrivateKeyKeyType validates an interface if it can be asserted to a
+the RSA or ECDSA private key type. We can only check RSA and ECDSA this way,
+because we are storing them in PEM format. Ed25519 keys are stored as plain
+ed25519 keys encoded as hex strings, thus we have no metadata for them.
+This function will return nil on success. If the key type does not match
+it will return an ErrKeyKeyTypeMismatch.
+*/
+func matchPrivateKeyKeyType(key interface{}, keyType string) error {
+	// we can only check RSA and ECDSA this way, because we are storing them in PEM
+	// format. ed25519 keys are stored as plain ed25519 keys encoded as hex strings
+	// so we have no metadata for them.
+	switch key.(type) {
+	case *rsa.PrivateKey:
+		if keyType != rsaKeyType {
+			return ErrKeyKeyTypeMismatch
+		}
+	case *ecdsa.PrivateKey:
+		if keyType != ecdsaKeyType {
+			return ErrKeyKeyTypeMismatch
+		}
+	default:
+		return ErrInvalidKey
+	}
+	return nil
+}
+
+/*
+matchKeyTypeScheme checks if the specified scheme matches our specified
+keyType. If the keyType is not supported it will return an
+ErrUnsupportedKeyType. If the keyType and scheme do not match it will return
+an ErrSchemeKeyTypeMismatch. If the specified keyType and scheme are
+compatible matchKeyTypeScheme will return nil.
+*/
+func matchKeyTypeScheme(key Key) error {
+	switch key.KeyType {
+	case rsaKeyType:
+		for _, scheme := range getSupportedRSASchemes() {
+			if key.Scheme == scheme {
+				return nil
+			}
+		}
+	case ed25519KeyType:
+		for _, scheme := range getSupportedEd25519Schemes() {
+			if key.Scheme == scheme {
+				return nil
+			}
+		}
+	case ecdsaKeyType:
+		for _, scheme := range getSupportedEcdsaSchemes() {
+			if key.Scheme == scheme {
+				return nil
+			}
+		}
+	default:
+		return fmt.Errorf("%w: %s", ErrUnsupportedKeyType, key.KeyType)
+	}
+	return ErrSchemeKeyTypeMismatch
+}
+
+/*
+validateKey checks the outer key object (everything, except the KeyVal struct).
+It verifies the keyID for being a hex string and checks for empty fields.
+On success it will return nil, on error it will return the corresponding error.
+Either: ErrEmptyKeyField or ErrInvalidHexString.
+*/
+func validateKey(key Key) error {
+	err := validateHexString(key.KeyID)
+	if err != nil {
+		return err
+	}
+	// This probably can be done more elegant with reflection
+	// but we care about performance, do we?!
+	if key.KeyType == "" {
+		return fmt.Errorf("%w: keytype", ErrEmptyKeyField)
+	}
+	if key.KeyVal.Public == "" {
+		return fmt.Errorf("%w: keyval.public", ErrEmptyKeyField)
+	}
+	if key.Scheme == "" {
+		return fmt.Errorf("%w: scheme", ErrEmptyKeyField)
+	}
+	err = matchKeyTypeScheme(key)
+	if err != nil {
+		return err
+	}
+	// only check for supported KeyIDHashAlgorithms, if the variable has been set
+	if key.KeyIDHashAlgorithms != nil {
+		supportedKeyIDHashAlgorithms := getSupportedKeyIDHashAlgorithms()
+		if !supportedKeyIDHashAlgorithms.IsSubSet(NewSet(key.KeyIDHashAlgorithms...)) {
+			return fmt.Errorf("%w: %#v, supported are: %#v", ErrUnsupportedKeyIDHashAlgorithms, key.KeyIDHashAlgorithms, getSupportedKeyIDHashAlgorithms())
+		}
+	}
+	return nil
+}
+
+/*
+validatePublicKey is a wrapper around validateKey. It test if the private key
+value in the key is empty and then validates the key via calling validateKey.
+On success it will return nil, on error it will return an ErrNoPublicKey error.
+*/
+func validatePublicKey(key Key) error {
+	if key.KeyVal.Private != "" {
+		return ErrNoPublicKey
+	}
+	err := validateKey(key)
+	if err != nil {
 		return err
 	}
 	return nil
@@ -87,7 +280,7 @@ of the Key, which was used to create the signature and the signature data.  The
 used signature scheme is found in the corresponding Key.
 */
 type Signature struct {
-	KeyId string `json:"keyid"`
+	KeyID string `json:"keyid"`
 	Sig   string `json:"sig"`
 }
 
@@ -96,12 +289,11 @@ validateSignature is a function used to check if a passed signature is valid,
 by inspecting the key ID and the signature itself.
 */
 func validateSignature(signature Signature) error {
-	if err := validateHexString(signature.KeyId); err != nil {
-		return fmt.Errorf("keyid: %s", err.Error())
+	if err := validateHexString(signature.KeyID); err != nil {
+		return err
 	}
 	if err := validateHexString(signature.Sig); err != nil {
-		return fmt.Errorf("signature with keyid '%s': %s", signature.KeyId,
-			err.Error())
+		return err
 	}
 	return nil
 }
@@ -179,17 +371,24 @@ func validateLink(link Link) error {
 /*
 LinkNameFormat represents a format string used to create the filename for a
 signed Link (wrapped in a Metablock). It consists of the name of the link and
-the first 8 characters of the signing key id.  LinkNameFormatShort is for links
-that are not signed, e.g.:
-  fmt.Sprintf(LinkNameFormat, "package",
-      "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498")
-  // returns "package.2f89b9272.link"
-
-  fmt.Sprintf(LinkNameFormatShort, "unsigned")
-  // returns "unsigned.link"
+the first 8 characters of the signing key id. E.g.:
+	fmt.Sprintf(LinkNameFormat, "package",
+	"2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498")
+	// returns "package.2f89b9272.link"
 */
 const LinkNameFormat = "%s.%.8s.link"
+
+/*
+LinkNameFormatShort is for links that are not signed, e.g.:
+	fmt.Sprintf(LinkNameFormatShort, "unsigned")
+	// returns "unsigned.link"
+*/
 const LinkNameFormatShort = "%s.link"
+
+/*
+SublayoutLinkDirFormat represents the format of the name of the directory for
+sublayout links during the verification workflow.
+*/
 const SublayoutLinkDirFormat = "%s.%.8s"
 
 /*
@@ -300,10 +499,9 @@ func validateStep(step Step) error {
 		return fmt.Errorf("invalid Type value for step '%s': should be 'step'",
 			step.SupplyChainItem.Name)
 	}
-	for _, keyId := range step.PubKeys {
-		if err := validateHexString(keyId); err != nil {
-			return fmt.Errorf("in step '%s', keyid: %s",
-				step.SupplyChainItem.Name, err.Error())
+	for _, keyID := range step.PubKeys {
+		if err := validateHexString(keyID); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -338,14 +536,14 @@ type Layout struct {
 // We have to manually create the interface slice first, see
 // https://golang.org/doc/faq#convert_slice_of_interface
 // TODO: Is there a better way to do polymorphism for steps and inspections?
-func (l *Layout) StepsAsInterfaceSlice() []interface{} {
+func (l *Layout) stepsAsInterfaceSlice() []interface{} {
 	stepsI := make([]interface{}, len(l.Steps))
 	for i, v := range l.Steps {
 		stepsI[i] = v
 	}
 	return stepsI
 }
-func (l *Layout) InspectAsInterfaceSlice() []interface{} {
+func (l *Layout) inspectAsInterfaceSlice() []interface{} {
 	inspectionsI := make([]interface{}, len(l.Inspect))
 	for i, v := range l.Inspect {
 		inspectionsI[i] = v
@@ -367,11 +565,12 @@ func validateLayout(layout Layout) error {
 			" invalid or of incorrect format")
 	}
 
-	for keyId, key := range layout.Keys {
-		if key.KeyId != keyId {
+	for keyID, key := range layout.Keys {
+		if key.KeyID != keyID {
 			return fmt.Errorf("invalid key found")
 		}
-		if err := validateRSAPubKey(key); err != nil {
+		err := validatePublicKey(key)
+		if err != nil {
 			return err
 		}
 	}
@@ -380,9 +579,10 @@ func validateLayout(layout Layout) error {
 	for _, step := range layout.Steps {
 		if namesSeen[step.Name] {
 			return fmt.Errorf("non unique step or inspection name found")
-		} else {
-			namesSeen[step.Name] = true
 		}
+
+		namesSeen[step.Name] = true
+
 		if err := validateStep(step); err != nil {
 			return err
 		}
@@ -390,9 +590,9 @@ func validateLayout(layout Layout) error {
 	for _, inspection := range layout.Inspect {
 		if namesSeen[inspection.Name] {
 			return fmt.Errorf("non unique step or inspection name found")
-		} else {
-			namesSeen[inspection.Name] = true
 		}
+
+		namesSeen[inspection.Name] = true
 	}
 	return nil
 }
@@ -419,10 +619,10 @@ type Metablock struct {
 }
 
 /*
-checkRequiredJsonFields checks that the passed map (obj) has keys for each of
+checkRequiredJSONFields checks that the passed map (obj) has keys for each of
 the json tags in the passed struct type (typ), and returns an error otherwise.
 */
-func checkRequiredJsonFields(obj map[string]interface{},
+func checkRequiredJSONFields(obj map[string]interface{},
 	typ reflect.Type) error {
 
 	// Create list of json tags, e.g. `json:"_type"`
@@ -446,13 +646,17 @@ Load parses JSON formatted metadata at the passed path into the Metablock
 object on which it was called.  It returns an error if it cannot parse
 a valid JSON formatted Metablock that contains a Link or Layout.
 */
-func (mb *Metablock) Load(path string) error {
+func (mb *Metablock) Load(path string) (err error) {
 	// Open file and close before returning
 	jsonFile, err := os.Open(path)
-	defer jsonFile.Close()
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if closeErr := jsonFile.Close(); closeErr != nil {
+			err = closeErr
+		}
+	}()
 
 	// Read entire file
 	jsonBytes, err := ioutil.ReadAll(jsonFile)
@@ -490,7 +694,7 @@ func (mb *Metablock) Load(path string) error {
 
 	if signed["_type"] == "link" {
 		var link Link
-		if err := checkRequiredJsonFields(signed, reflect.TypeOf(link)); err != nil {
+		if err := checkRequiredJSONFields(signed, reflect.TypeOf(link)); err != nil {
 			return err
 		}
 
@@ -503,12 +707,11 @@ func (mb *Metablock) Load(path string) error {
 		if err := decoder.Decode(&link); err != nil {
 			return err
 		}
-
 		mb.Signed = link
 
 	} else if signed["_type"] == "layout" {
 		var layout Layout
-		if err := checkRequiredJsonFields(signed, reflect.TypeOf(layout)); err != nil {
+		if err := checkRequiredJSONFields(signed, reflect.TypeOf(layout)); err != nil {
 			return err
 		}
 
@@ -559,7 +762,7 @@ Signed field of the Metablock on which it was called.  If canonicalization
 fails the first return value is nil and the second return value is the error.
 */
 func (mb *Metablock) GetSignableRepresentation() ([]byte, error) {
-	return encodeCanonical(mb.Signed)
+	return EncodeCanonical(mb.Signed)
 }
 
 /*
@@ -572,14 +775,14 @@ is invalid.
 func (mb *Metablock) VerifySignature(key Key) error {
 	var sig Signature
 	for _, s := range mb.Signatures {
-		if s.KeyId == key.KeyId {
+		if s.KeyID == key.KeyID {
 			sig = s
 			break
 		}
 	}
 
 	if sig == (Signature{}) {
-		return fmt.Errorf("No signature found for key '%s'", key.KeyId)
+		return fmt.Errorf("No signature found for key '%s'", key.KeyID)
 	}
 
 	dataCanonical, err := mb.GetSignableRepresentation()
@@ -594,10 +797,10 @@ func (mb *Metablock) VerifySignature(key Key) error {
 }
 
 /*
-validateMetablock ensures that a passed Metablock object is valid. It indirectly
+ValidateMetablock ensures that a passed Metablock object is valid. It indirectly
 validates the Link or Layout that the Metablock object contains.
 */
-func validateMetablock(mb Metablock) error {
+func ValidateMetablock(mb Metablock) error {
 	switch mbSignedType := mb.Signed.(type) {
 	case Layout:
 		if err := validateLayout(mb.Signed.(Layout)); err != nil {
@@ -613,8 +816,30 @@ func validateMetablock(mb Metablock) error {
 	}
 
 	if err := validateSliceOfSignatures(mb.Signatures); err != nil {
-		return fmt.Errorf("validateSignature: %s", err)
+		return err
 	}
 
+	return nil
+}
+
+/*
+Sign creates a signature over the signed portion of the metablock using the Key
+object provided. It then appends the resulting signature to the signatures
+field as provided. It returns an error if the Signed object cannot be
+canonicalized, or if the key is invalid or not supported.
+*/
+func (mb *Metablock) Sign(key Key) error {
+
+	dataCanonical, err := mb.GetSignableRepresentation()
+	if err != nil {
+		return err
+	}
+
+	newSignature, err := GenerateSignature(dataCanonical, key)
+	if err != nil {
+		return err
+	}
+
+	mb.Signatures = append(mb.Signatures, newSignature)
 	return nil
 }

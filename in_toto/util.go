@@ -129,3 +129,21 @@ func InterfaceKeyStrings(m map[string]interface{}) []string {
 	}
 	return res
 }
+
+/*
+IsSubSet checks if the parameter subset is a
+subset of the superset s.
+*/
+func (s Set) IsSubSet(subset Set) bool {
+	if len(subset) > len(s) {
+		return false
+	}
+	for key := range subset {
+		if s.Has(key) {
+			continue
+		} else {
+			return false
+		}
+	}
+	return true
+}
