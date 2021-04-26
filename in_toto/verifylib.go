@@ -33,12 +33,12 @@ If executing the inspection command fails, or if the executed command has a
 non-zero exit code, the first return value is an empty Metablock map and the
 second return value is the error.
 */
-func RunInspections(layout Layout) (map[string]Metablock, error) {
+func RunInspections(layout Layout, runDir string) (map[string]Metablock, error) {
 	inspectionMetadata := make(map[string]Metablock)
 
 	for _, inspection := range layout.Inspect {
 
-		linkMb, err := InTotoRun(inspection.Name, []string{"."}, []string{"."},
+		linkMb, err := InTotoRun(inspection.Name, runDir, []string{"."}, []string{"."},
 			inspection.Run, Key{}, []string{"sha256"}, nil)
 		if err != nil {
 			return nil, err
@@ -59,7 +59,124 @@ func RunInspections(layout Layout) (map[string]Metablock, error) {
 
 		inspectionMetadata[inspection.Name] = linkMb
 	}
-	return inspectionMetadata, nil
+	inspectionMetadata, err := RunInspections(layout, "")
+	if err != nil {
+		return summaryLink, err
+	}
+
+	// Add steps metadata to inspection metadata, because inspection artifact
+	// rules may also refer to artifacts reported by step links
+	for k, v := range stepsMetadataReduced {
+		inspectionMetadata[k] = v
+	}
+
+	if err = VerifyArtifacts(layout.InspectAsInterfaceSlice(),
+		inspectionMetadata); err != nil {
+		return summaryLink, err
+	}
+
+	summaryLink, err = GetSummaryLink(layout, stepsMetadataReduced, stepName)
+	if err != nil {
+		return summaryLink, err
+	}
+
+	return summaryLink, nil
+
+}
+
+inspectionMetadata, err := RunInspections(layout, "")
+ 	if err != nil {
+ 		return summaryLink, err
+ 	}
+
+ 	// Add steps metadata to inspection metadata, because inspection artifact
+ 	// rules may also refer to artifacts reported by step links
+ 	for k, v := range stepsMetadataReduced {
+ 		inspectionMetadata[k] = v
+ 	}
+
+ 	if err = VerifyArtifacts(layout.InspectAsInterfaceSlice(),
+ 		inspectionMetadata); err != nil {
+ 		return summaryLink, err
+ 	}
+
+ 	summaryLink, err = GetSummaryLink(layout, stepsMetadataReduced, stepName)
+ 	if err != nil {
+ 		return summaryLink, err
+ 	}
+
+ 	return summaryLink, nil
+ }
+
+ func InTotoVerifyWithDirectory(layoutMb Metablock, layoutKeys map[string]Key,
+ 	linkDir string, runDir string, stepName string, parameterDictionary map[string]string) (
+ 	Metablock, error) {
+
+ 	var summaryLink Metablock
+ 	var err error
+
+ 	// Verify root signatures
+ 	if err := VerifyLayoutSignatures(layoutMb, layoutKeys); err != nil {
+ 		return summaryLink, err
+ 	}
+
+ 	// Extract the layout from its Metablock container (for further processing)
+ 	layout := layoutMb.Signed.(Layout)
+
+ 	// Verify layout expiration
+ 	if err := VerifyLayoutExpiration(layout); err != nil {
+ 		return summaryLink, err
+ 	}
+
+ 	// Substitute parameters in layout
+ 	layout, err = SubstituteParameters(layout, parameterDictionary)
+ 	if err != nil {
+ 		return summaryLink, err
+ 	}
+
+ 	// Load links for layout
+ 	stepsMetadata, err := LoadLinksForLayout(layout, linkDir)
+ 	if err != nil {
+ 		return summaryLink, err
+ 	}
+
+ 	// Verify link signatures
+ 	stepsMetadataVerified, err := VerifyLinkSignatureThesholds(layout,
+ 		stepsMetadata)
+ 	if err != nil {
+ 		return summaryLink, err
+ 	}
+
+ 	// Verify and resolve sublayouts
+ 	stepsSublayoutVerified, err := VerifySublayouts(layout,
+ 		stepsMetadataVerified, linkDir)
+ 	if err != nil {
+ 		return summaryLink, err
+ 	}
+
+ 	// Verify command alignment (WARNING only)
+ 	VerifyStepCommandAlignment(layout, stepsSublayoutVerified)
+
+ 	// Given that signature thresholds have been checked above and the rest of
+ 	// the relevant link properties, i.e. materials and products, have to be
+ 	// exactly equal, we can reduce the map of steps metadata. However, we error
+ 	// if the relevant properties are not equal among links of a step.
+ 	stepsMetadataReduced, err := ReduceStepsMetadata(layout,
+ 		stepsSublayoutVerified)
+ 	if err != nil {
+ 		return summaryLink, err
+ 	}
+
+ 	// Verify artifact rules
+ 	if err = VerifyArtifacts(layout.StepsAsInterfaceSlice(),
+ 		stepsMetadataReduced); err != nil {
+ 		return summaryLink, err
+ 	}
+
+ 	inspectionMetadata, err := RunInspections(layout, runDir)
+	 if err != nil {
+		return summaryLink, err
+	}
 }
 
 // verifyMatchRule is a helper function to process artifact rules of
