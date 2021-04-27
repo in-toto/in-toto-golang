@@ -211,7 +211,7 @@ func TestNilSign(t *testing.T) {
 
 	var ns nilsigner
 	signer, _ := NewEnvelopeSigner(ns)
-	got, err := signer.Sign(payloadType, []byte(payload))
+	got, err := signer.SignPayload(payloadType, []byte(payload))
 	assert.Nil(t, err, "sign failed")
 	assert.Equal(t, &want, got, "bad signature")
 }
@@ -219,7 +219,7 @@ func TestNilSign(t *testing.T) {
 func TestSignError(t *testing.T) {
 	var es errsigner
 	signer, _ := NewEnvelopeSigner(es)
-	got, err := signer.Sign("t", []byte("d"))
+	got, err := signer.SignPayload("t", []byte("d"))
 	assert.Nil(t, got, "expected nil")
 	assert.NotNil(t, err, "error expected")
 	assert.Equal(t, "signing error", err.Error(), "wrong error")
@@ -320,7 +320,7 @@ func TestEcdsaSign(t *testing.T) {
 	}
 
 	signer, _ := NewEnvelopeSigner(ecdsa)
-	env, err := signer.Sign(payloadType, []byte(payload))
+	env, err := signer.SignPayload(payloadType, []byte(payload))
 	assert.Nil(t, err, "unexecpted error")
 	assert.Equal(t, &want, env, "Wrong envelope generated")
 
@@ -370,7 +370,7 @@ func TestVerifyOneProvider(t *testing.T) {
 
 	var ns nilsigner
 	signer, _ := NewEnvelopeSigner(ns)
-	env, err := signer.Sign(payloadType, []byte(payload))
+	env, err := signer.SignPayload(payloadType, []byte(payload))
 	assert.Nil(t, err, "sign failed")
 
 	ok, err := signer.Verify(env)
@@ -385,7 +385,7 @@ func TestVerifyMultipleProvider(t *testing.T) {
 	var ns nilsigner
 	var null nullsigner
 	signer, _ := NewEnvelopeSigner(ns, null)
-	env, err := signer.Sign(payloadType, []byte(payload))
+	env, err := signer.SignPayload(payloadType, []byte(payload))
 	assert.Nil(t, err, "sign failed")
 
 	ok, err := signer.Verify(env)
@@ -399,7 +399,7 @@ func TestVerifyErr(t *testing.T) {
 
 	var errv errverifier
 	signer, _ := NewEnvelopeSigner(errv)
-	env, err := signer.Sign(payloadType, []byte(payload))
+	env, err := signer.SignPayload(payloadType, []byte(payload))
 	assert.Nil(t, err, "sign failed")
 
 	ok, err := signer.Verify(env)
@@ -413,7 +413,7 @@ func TestBadVerifier(t *testing.T) {
 
 	var badv badverifier
 	signer, _ := NewEnvelopeSigner(badv)
-	env, err := signer.Sign(payloadType, []byte(payload))
+	env, err := signer.SignPayload(payloadType, []byte(payload))
 	assert.Nil(t, err, "sign failed")
 
 	ok, err := signer.Verify(env)
@@ -518,7 +518,7 @@ func TestVerifyOneFail(t *testing.T) {
 		verifyRes: false,
 	}
 	signer, _ := NewEnvelopeSigner(s1, s2)
-	env, err := signer.Sign(payloadType, []byte(payload))
+	env, err := signer.SignPayload(payloadType, []byte(payload))
 	assert.Nil(t, err, "sign failed")
 
 	ok, err := signer.Verify(env)

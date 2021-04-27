@@ -32,8 +32,11 @@ type Envelope struct {
 
 /*
 Signature represents a generic in-toto signature that contains the identifier
-of the Key, which was used to create the signature and the signature data.  The
-used signature scheme is found in the corresponding Key.
+of the key which was used to create the signature.
+The used signature scheme has to be agreed upon by the signer and verifer
+out of band.
+The signature is a base64 encoding of the raw bytes from the signature
+algorithm.
 */
 type Signature struct {
 	KeyID string `json:"keyid"`
@@ -49,9 +52,9 @@ func Pae(data [][]byte) ([]byte, error) {
 	var l = len(data)
 	var err error
 
-	// Negative values sets highest bit two 1 with 2 complements encoding
-	// high bit must be 0 for interoperability with languages that lacks
-	// unsigned integer types.
+	// Negative value sets the highest bit to 1.
+	// With two complements encoding, high bit must be set to 0 for
+	// interoperability with languages that lack unsigned integer types.
 	if !verifyPaeLength(int64(l)) {
 		return nil, fmt.Errorf("length must be less than 2^63")
 	}
@@ -91,12 +94,16 @@ func verifyPaeLength(l int64) bool {
 }
 
 /*
-Signer is an abstract signing algorithm.
-The full message is provided as the parameter. Any hashing or similar
-must not be performed by the caller, it is the signer implementor's
-responsibility.
-The returned Signature shall contain the base64 encoding of the
-binary signature and the Key id used (if applicable).
+Signer defines the interface for an abstract signing algorithm.
+The Signer interface is used to inject signature algorithm implementations
+into the EnevelopeSigner. This decoupling allows for any signing algorithm
+and key management system can be used.
+The full message is provided as the parameter. If the signature algorithm
+depends on hashing of the message prior to signature calculation, the
+implementor of this interface must perform such hashing.
+The function must return raw bytes representing the calculated signature
+using the current algorithm, and the key used (if applicable).
+For an example see EcdsaSigner in sign_test.go.
 */
 type Signer interface {
 	Sign(data []byte) ([]byte, string, error)
@@ -146,18 +153,18 @@ func NewEnvelopeSigner(p ...SignVerifier) (*EnvelopeSigner, error) {
 }
 
 /*
-Sign signs a payload and payload type according to the SSL signing spec.
+SignPayload signs a payload and payload type according to the SSL signing spec.
+Returned is an envelope as defined here:
+https://github.com/secure-systems-lab/signing-spec/blob/master/envelope.md
 One signature will be added for each Signer in the EnvelopeSigner.
 */
-func (es *EnvelopeSigner) Sign(payloadType string, body []byte) (*Envelope, error) {
-	var paeEnc []byte
-	var err error
+func (es *EnvelopeSigner) SignPayload(payloadType string, body []byte) (*Envelope, error) {
 	var e = Envelope{
 		Payload:     base64.StdEncoding.EncodeToString(body),
 		PayloadType: payloadType,
 	}
 
-	paeEnc, err = Pae([][]byte{
+	paeEnc, err := Pae([][]byte{
 		[]byte(payloadType),
 		body,
 	})
@@ -166,10 +173,7 @@ func (es *EnvelopeSigner) Sign(payloadType string, body []byte) (*Envelope, erro
 	}
 
 	for _, signer := range es.providers {
-		var sig []byte
-		var keyID string
-
-		sig, keyID, err = signer.Sign(paeEnc)
+		sig, keyID, err := signer.Sign(paeEnc)
 		if err != nil {
 			return nil, err
 		}
@@ -207,10 +211,8 @@ func (es *EnvelopeSigner) Verify(e *Envelope) (bool, error) {
 		return false, err
 	}
 
-	// It is enough if a single signature can be validated.
-	// But if we find an occurrence of a signature not correct,
-	// the verifictaion step fails regardless if at least one of the
-	// signatures was correct.
+	// If *any* signature is found to be incorrect, the entire verification
+	// step fails even if *some* signatures are correct.
 	verified := false
 	for _, s := range e.Signatures {
 		sig, err := b64Decode(s.Sig)
@@ -218,9 +220,8 @@ func (es *EnvelopeSigner) Verify(e *Envelope) (bool, error) {
 			return false, err
 		}
 
-		// Loop over each providers. If we find a provider that recognizes
-		// the key, the value is used as the result. No more providers will
-		// be called.
+		// Loop over the providers. If a provider recognizes the key, we exit
+		// the loop and use the result.
 		for _, v := range es.providers {
 			ok, err := v.Verify(s.KeyID, paeEnc, sig)
 			if err != nil {
