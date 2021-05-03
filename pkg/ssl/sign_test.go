@@ -61,20 +61,6 @@ func TestPae(t *testing.T) {
 	})
 }
 
-func TestPaeLength(t *testing.T) {
-	t.Run("valid values", func(t *testing.T) {
-		assert.True(t, verifyPaeLength(0), "0 shall be ok")
-		assert.True(t, verifyPaeLength(1), "1 shall be ok")
-		assert.True(t, verifyPaeLength(50), "50 shall be ok")
-		assert.True(t, verifyPaeLength(1000), "1000 shall be ok")
-		assert.True(t, verifyPaeLength(1<<63-1), "2^63-1 shall be ok")
-	})
-	t.Run("invalid values", func(t *testing.T) {
-		assert.False(t, verifyPaeLength(-1), "-1 is not ok")
-		assert.False(t, verifyPaeLength(-100), "-100 is not ok")
-	})
-}
-
 type nilsigner int
 
 func (n nilsigner) Sign(data []byte) ([]byte, string, error) {
