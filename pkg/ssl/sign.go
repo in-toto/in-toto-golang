@@ -9,15 +9,18 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
-	"fmt"
+	"errors"
 )
 
 // ErrUnknownKey indicates that the implementation does not recognize the
 // key.
-var ErrUnknownKey = fmt.Errorf("unknown key")
+var ErrUnknownKey = errors.New("unknown key")
 
 // ErrNoSignature indicates that an envelope did not contain any signatures.
-var ErrNoSignature = fmt.Errorf("no signature found")
+var ErrNoSignature = errors.New("no signature found")
+
+// ErrNoSigners indicates that no signer was provided.
+var ErrNoSigners = errors.New("no signers provided")
 
 /*
 Envelope captures an envelope as described by the Secure Systems Lab
@@ -44,10 +47,10 @@ type Signature struct {
 }
 
 /*
-Pae implementes PASETO Pre-Authentic Encoding
+PAE implementes PASETO Pre-Authentic Encoding
 https://github.com/paragonie/paseto/blob/master/docs/01-Protocol-Versions/Common.md#authentication-padding
 */
-func Pae(data [][]byte) ([]byte, error) {
+func PAE(data [][]byte) ([]byte, error) {
 	var buf = bytes.Buffer{}
 	var l = len(data)
 	var err error
@@ -122,7 +125,7 @@ func NewEnvelopeSigner(p ...SignVerifier) (*EnvelopeSigner, error) {
 	}
 
 	if len(providers) == 0 {
-		return nil, fmt.Errorf("no signers provided")
+		return nil, ErrNoSigners
 	}
 
 	return &EnvelopeSigner{
@@ -142,7 +145,7 @@ func (es *EnvelopeSigner) SignPayload(payloadType string, body []byte) (*Envelop
 		PayloadType: payloadType,
 	}
 
-	paeEnc, err := Pae([][]byte{
+	paeEnc, err := PAE([][]byte{
 		[]byte(payloadType),
 		body,
 	})
@@ -181,7 +184,7 @@ func (es *EnvelopeSigner) Verify(e *Envelope) (bool, error) {
 		return false, err
 	}
 	// Generate PAE(payloadtype, serialized body)
-	paeEnc, err := Pae([][]byte{
+	paeEnc, err := PAE([][]byte{
 		[]byte(e.PayloadType),
 		body,
 	})

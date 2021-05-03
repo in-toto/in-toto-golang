@@ -1523,8 +1523,7 @@ func (n nilsigner) Sign(data []byte) ([]byte, string, error) {
 func (n nilsigner) Verify(keyID string, data, sig []byte) (bool, error) {
 
 	if keyID == "nil" {
-		var same = len(data) == len(sig)
-		if !same {
+		if len(data) != len(sig) {
 			return false, nil
 		}
 
@@ -1539,15 +1538,15 @@ func (n nilsigner) Verify(keyID string, data, sig []byte) (bool, error) {
 	return false, ssl.ErrUnknownKey
 }
 
-func TestSslSigner(t *testing.T) {
+func TestSSLSigner(t *testing.T) {
 	t.Run("No signers provided", func(t *testing.T) {
-		s, err := NewSslSigner([]ssl.SignVerifier{}...)
+		s, err := NewSSLSigner([]ssl.SignVerifier{}...)
 		assert.Nil(t, s, "unexpected signer returned")
 		assert.NotNil(t, err, "error expected")
 	})
 
 	t.Run("Sign verify ok", func(t *testing.T) {
-		s, err := NewSslSigner(nilsigner(0))
+		s, err := NewSSLSigner(nilsigner(0))
 		assert.Nil(t, err, "unexpected error")
 		e, err := s.SignPayload([]byte("test data"))
 		assert.NotNil(t, e, "envelope expected")
@@ -1558,7 +1557,7 @@ func TestSslSigner(t *testing.T) {
 	})
 
 	t.Run("Sign verify bad payload", func(t *testing.T) {
-		s, err := NewSslSigner(nilsigner(0))
+		s, err := NewSSLSigner(nilsigner(0))
 		assert.Nil(t, err, "unexpected error")
 		e, err := s.SignPayload([]byte("test data"))
 		assert.NotNil(t, e, "envelope expected")

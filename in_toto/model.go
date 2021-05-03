@@ -67,7 +67,7 @@ var ErrNoPublicKey = errors.New("the given key is not a public key")
 var ErrCurveSizeSchemeMismatch = errors.New("the scheme does not match the curve size")
 
 // ErrInvalidPayloadType indicates that the envelope used an unkown payload type
-var ErrInvalidPayloadType = fmt.Errorf("unknown payload type")
+var ErrInvalidPayloadType = errors.New("unknown payload type")
 
 /*
 matchEcdsaScheme checks if the scheme suffix, matches the ecdsa key
@@ -853,32 +853,32 @@ func (mb *Metablock) Sign(key Key) error {
 }
 
 /*
-SslSigner provides signature generation and validation based on the SSL
+SSLSigner provides signature generation and validation based on the SSL
 Signing Spec: https://github.com/secure-systems-lab/signing-spec
 as describe by: https://github.com/MarkLodato/ITE/tree/media-type/ITE/5
 It wraps the generic SSL envelope signer and enforces the correct payload
 type both during signature generation and validation.
 */
-type SslSigner struct {
+type SSLSigner struct {
 	signer *ssl.EnvelopeSigner
 }
 
-func NewSslSigner(p ...ssl.SignVerifier) (*SslSigner, error) {
+func NewSSLSigner(p ...ssl.SignVerifier) (*SSLSigner, error) {
 	es, err := ssl.NewEnvelopeSigner(p...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &SslSigner{
+	return &SSLSigner{
 		signer: es,
 	}, nil
 }
 
-func (s *SslSigner) SignPayload(body []byte) (*ssl.Envelope, error) {
+func (s *SSLSigner) SignPayload(body []byte) (*ssl.Envelope, error) {
 	return s.signer.SignPayload(PayloadType, body)
 }
 
-func (s *SslSigner) Verify(e *ssl.Envelope) (bool, error) {
+func (s *SSLSigner) Verify(e *ssl.Envelope) (bool, error) {
 	if e.PayloadType != PayloadType {
 		return false, ErrInvalidPayloadType
 	}

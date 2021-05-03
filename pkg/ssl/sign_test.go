@@ -13,32 +13,32 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPae(t *testing.T) {
+func TestPAE(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
 		var want = make([]byte, 8)
 
-		got, err := Pae(nil)
+		got, err := PAE(nil)
 		assert.Nil(t, err, "Unexpectted error")
 		assert.Equal(t, want, got, "Wrong encoding")
 	})
 	t.Run("Empty", func(t *testing.T) {
 		var want = make([]byte, 8)
 
-		got, err := Pae([][]byte{})
+		got, err := PAE([][]byte{})
 		assert.Nil(t, err, "Unexpectted error")
 		assert.Equal(t, want, got, "Wrong encoding")
 	})
 	t.Run("['']", func(t *testing.T) {
 		var want = []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 
-		got, err := Pae([][]byte{[]byte("")})
+		got, err := PAE([][]byte{[]byte("")})
 		assert.Nil(t, err, "Unexpectted error")
 		assert.Equal(t, want, got, "Wrong encoding")
 	})
 	t.Run("['test']", func(t *testing.T) {
 		var want = []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x74, 0x65, 0x73, 0x74}
 
-		got, err := Pae([][]byte{[]byte("test")})
+		got, err := PAE([][]byte{[]byte("test")})
 		assert.Nil(t, err, "Unexpectted error")
 		assert.Equal(t, want, got, "Wrong encoding")
 	})
@@ -54,7 +54,7 @@ func TestPae(t *testing.T) {
 			0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64,
 		}
 
-		got, err := Pae([][]byte{[]byte("http://example.com/HelloWorld"),
+		got, err := PAE([][]byte{[]byte("http://example.com/HelloWorld"),
 			[]byte("hello world")})
 		assert.Nil(t, err, "Unexpectted error")
 		assert.Equal(t, want, got, "Wrong encoding")
@@ -163,14 +163,14 @@ func TestNoSigners(t *testing.T) {
 		signer, err := NewEnvelopeSigner(nil)
 		assert.Nil(t, signer, "unexpected signer")
 		assert.NotNil(t, err, "error expected")
-		assert.Equal(t, "no signers provided", err.Error(), "wrong error")
+		assert.Equal(t, ErrNoSigners, err, "wrong error")
 	})
 
 	t.Run("empty slice", func(t *testing.T) {
 		signer, err := NewEnvelopeSigner([]SignVerifier{}...)
 		assert.Nil(t, signer, "unexpected signer")
 		assert.NotNil(t, err, "error expected")
-		assert.Equal(t, "no signers provided", err.Error(), "wrong error")
+		assert.Equal(t, ErrNoSigners, err, "wrong error")
 	})
 }
 
@@ -179,7 +179,7 @@ func TestNilSign(t *testing.T) {
 	var payloadType = "http://example.com/HelloWorld"
 	var payload = "hello world"
 
-	pae, err := Pae([][]byte{
+	pae, err := PAE([][]byte{
 		[]byte(payloadType),
 		[]byte(payload),
 	})
