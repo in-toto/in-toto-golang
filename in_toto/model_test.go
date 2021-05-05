@@ -1524,13 +1524,14 @@ func TestDecodeProvenanceStatement(t *testing.T) {
 	// subject and materials trimmed.
 	var data = `
 {
+  "_type": "https://in-toto.io/Statement/v0.1",
   "subject": [
     { "name": "curl-7.72.0.tar.bz2",
       "digest": { "sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef" }},
     { "name": "curl-7.72.0.tar.gz",
       "digest": { "sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2" }}
   ],
-  "predicateType": "https://in-toto.io/Provenance/v1",
+  "predicateType": "https://in-toto.io/Provenance/v0.1",
   "predicate": {
     "builder": { "id": "https://github.com/Attestations/GitHubHostedActions@v1" },
     "recipe": {
@@ -1539,17 +1540,17 @@ func TestDecodeProvenanceStatement(t *testing.T) {
       "entryPoint": "build.yaml:maketgz"
     },
     "metadata": {
-      "buildStartedOn": "2020-08-19T08:38:00Z"
+      "buildStartedOn": "2020-08-19T08:38:00Z",
+      "completeness": {
+          "environment": true
+      }
     },
     "materials": [
       {
         "uri": "git+https://github.com/curl/curl-docker@master",
-        "digest": { "sha1": "d6525c840a62b398424a78d792f457477135d0cf" },
-        "mediaType": "application/vnd.git.commit",
-        "tags": ["source"]
+        "digest": { "sha1": "d6525c840a62b398424a78d792f457477135d0cf" }
       }, {
-        "uri": "github_hosted_vm:ubuntu-18.04:20210123.1",
-        "tags": ["base-image"]
+        "uri": "github_hosted_vm:ubuntu-18.04:20210123.1"
       }
     ]
   }
@@ -1559,7 +1560,8 @@ func TestDecodeProvenanceStatement(t *testing.T) {
 	var testTime = time.Unix(1597826280, 0)
 	var want = ProvenanceStatement{
 		StatementHeader: StatementHeader{
-			PredicateType: PredicateProvenanceV1,
+			Type:          StatementInTotoV01,
+			PredicateType: PredicateProvenanceV01,
 			Subject: []Subject{
 				Subject{
 					Name: "curl-7.72.0.tar.bz2",
@@ -1585,8 +1587,10 @@ func TestDecodeProvenanceStatement(t *testing.T) {
 				EntryPoint:        "build.yaml:maketgz",
 			},
 			Metadata: ProvenanceMetadata{
-				BuildStartedOn:    &testTime,
-				MaterialsComplete: false,
+				BuildStartedOn: &testTime,
+				Completeness: ProvenanceComplete{
+					Environment: true,
+				},
 			},
 			Materials: []ProvenanceMaterial{
 				ProvenanceMaterial{
@@ -1594,12 +1598,9 @@ func TestDecodeProvenanceStatement(t *testing.T) {
 					Digest: DigestSet{
 						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
 					},
-					MediaType: "application/vnd.git.commit",
-					Tags:      []string{"source"},
 				},
 				ProvenanceMaterial{
-					URI:  "github_hosted_vm:ubuntu-18.04:20210123.1",
-					Tags: []string{"base-image"},
+					URI: "github_hosted_vm:ubuntu-18.04:20210123.1",
 				},
 			},
 		},
@@ -1624,7 +1625,8 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 	var testTime = time.Unix(1597826280, 0)
 	var p = ProvenanceStatement{
 		StatementHeader: StatementHeader{
-			PredicateType: PredicateProvenanceV1,
+			Type:          StatementInTotoV01,
+			PredicateType: PredicateProvenanceV01,
 			Subject: []Subject{
 				Subject{
 					Name: "curl-7.72.0.tar.bz2",
@@ -1650,8 +1652,13 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 				EntryPoint:        "build.yaml:maketgz",
 			},
 			Metadata: ProvenanceMetadata{
-				BuildStartedOn:    &testTime,
-				MaterialsComplete: false,
+				BuildStartedOn:  &testTime,
+				BuildFinishedOn: &testTime,
+				Completeness: ProvenanceComplete{
+					Arguments:   true,
+					Environment: false,
+					Materials:   true,
+				},
 			},
 			Materials: []ProvenanceMaterial{
 				ProvenanceMaterial{
@@ -1659,12 +1666,9 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 					Digest: DigestSet{
 						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
 					},
-					MediaType: "application/vnd.git.commit",
-					Tags:      []string{"source"},
 				},
 				ProvenanceMaterial{
-					URI:  "github_hosted_vm:ubuntu-18.04:20210123.1",
-					Tags: []string{"base-image"},
+					URI: "github_hosted_vm:ubuntu-18.04:20210123.1",
 				},
 				ProvenanceMaterial{
 					URI: "git+https://github.com/curl/",
@@ -1672,7 +1676,7 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 			},
 		},
 	}
-	var want = `{"predicateType":"https://in-toto.io/Provenance/v1","subject":[{"name":"curl-7.72.0.tar.bz2","digest":{"sha256":"ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef"}},{"name":"curl-7.72.0.tar.gz","digest":{"sha256":"d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2"}}],"predicate":{"builder":{"id":"https://github.com/Attestations/GitHubHostedActions@v1"},"recipe":{"type":"https://github.com/Attestations/GitHubActionsWorkflow@v1","definedInMaterial":0,"entryPoint":"build.yaml:maketgz"},"metadata":{"buildStartedOn":"2020-08-19T08:38:00Z","materialsComplete":false},"materials":[{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"},"mediaType":"application/vnd.git.commit","tags":["source"]},{"uri":"github_hosted_vm:ubuntu-18.04:20210123.1","mediaType":"","tags":["base-image"]},{"uri":"git+https://github.com/curl/","mediaType":""}]}}`
+	var want = `{"_type":"https://in-toto.io/Statement/v0.1","predicateType":"https://in-toto.io/Provenance/v0.1","subject":[{"name":"curl-7.72.0.tar.bz2","digest":{"sha256":"ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef"}},{"name":"curl-7.72.0.tar.gz","digest":{"sha256":"d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2"}}],"predicate":{"builder":{"id":"https://github.com/Attestations/GitHubHostedActions@v1"},"recipe":{"type":"https://github.com/Attestations/GitHubActionsWorkflow@v1","definedInMaterial":0,"entryPoint":"build.yaml:maketgz"},"metadata":{"buildStartedOn":"2020-08-19T08:38:00Z","buildFinishedOn":"2020-08-19T08:38:00Z","completeness":{"arguments":true,"environment":false,"materials":true},"reproducible":false},"materials":[{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"}},{"uri":"github_hosted_vm:ubuntu-18.04:20210123.1"},{"uri":"git+https://github.com/curl/"}]}}`
 
 	b, err := json.Marshal(&p)
 	assert.Nil(t, err, "Error during JSON marshal")
@@ -1683,9 +1687,12 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 // not marshalled
 func TestMetadataNoTime(t *testing.T) {
 	var md = ProvenanceMetadata{
-		MaterialsComplete: true,
+		Completeness: ProvenanceComplete{
+			Arguments: true,
+		},
+		Reproducible: true,
 	}
-	var want = `{"materialsComplete":true}`
+	var want = `{"completeness":{"arguments":true,"environment":false,"materials":false},"reproducible":true}`
 	var got ProvenanceMetadata
 	b, err := json.Marshal(&md)
 
