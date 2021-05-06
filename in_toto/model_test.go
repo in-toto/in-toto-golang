@@ -9,6 +9,10 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/in-toto/in-toto-golang/pkg/ssl"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMatchEcdsaScheme(t *testing.T) {
@@ -1508,4 +1512,62 @@ func TestValidatePublicKey(t *testing.T) {
 			t.Errorf("%s returned unexpected error %s, we should got: %s", table.name, err, table.err)
 		}
 	}
+}
+
+type nilsigner int
+
+func (n nilsigner) Sign(data []byte) ([]byte, string, error) {
+	return data, "nil", nil
+}
+
+func (n nilsigner) Verify(keyID string, data, sig []byte) (bool, error) {
+
+	if keyID == "nil" {
+		if len(data) != len(sig) {
+			return false, nil
+		}
+
+		for i := range data {
+			if data[i] != sig[i] {
+				return false, nil
+			}
+		}
+
+		return true, nil
+	}
+	return false, ssl.ErrUnknownKey
+}
+
+func TestSSLSigner(t *testing.T) {
+	t.Run("No signers provided", func(t *testing.T) {
+		s, err := NewSSLSigner([]ssl.SignVerifier{}...)
+		assert.Nil(t, s, "unexpected signer returned")
+		assert.NotNil(t, err, "error expected")
+	})
+
+	t.Run("Sign verify ok", func(t *testing.T) {
+		s, err := NewSSLSigner(nilsigner(0))
+		assert.Nil(t, err, "unexpected error")
+		e, err := s.SignPayload([]byte("test data"))
+		assert.NotNil(t, e, "envelope expected")
+		assert.Nil(t, err, "unexpected error when creating signature")
+		ok, err := s.Verify(e)
+		assert.True(t, ok, "verify signature failed")
+		assert.Nil(t, err, "unexpected error when validating signature")
+	})
+
+	t.Run("Sign verify bad payload", func(t *testing.T) {
+		s, err := NewSSLSigner(nilsigner(0))
+		assert.Nil(t, err, "unexpected error")
+		e, err := s.SignPayload([]byte("test data"))
+		assert.NotNil(t, e, "envelope expected")
+		assert.Nil(t, err, "unexpected error when creating signature")
+
+		// Change payload type
+		e.PayloadType = "application/json; charset=utf-8"
+
+		ok, err := s.Verify(e)
+		assert.False(t, ok, "verify signature should fail")
+		assert.Equal(t, ErrInvalidPayloadType, err, "wrong error returned")
+	})
 }
