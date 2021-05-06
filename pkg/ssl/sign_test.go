@@ -70,8 +70,7 @@ func (n nilsigner) Sign(data []byte) ([]byte, string, error) {
 func (n nilsigner) Verify(keyID string, data, sig []byte) (bool, error) {
 
 	if keyID == "nil" {
-		var same = len(data) == len(sig)
-		if !same {
+		if len(data) != len(sig) {
 			return false, nil
 		}
 
@@ -97,8 +96,7 @@ func (n nullsigner) Verify(keyID string, data, sig []byte) (bool, error) {
 		return false, ErrUnknownKey
 	}
 
-	var same = len(data) == len(sig)
-	if !same {
+	if len(data) != len(sig) {
 		return false, nil
 	}
 
@@ -144,8 +142,7 @@ func (n badverifier) Verify(keyID string, data, sig []byte) (bool, error) {
 		return false, ErrUnknownKey
 	}
 
-	var same = len(data) == len(sig)
-	if !same {
+	if len(data) != len(sig) {
 		return false, nil
 	}
 
