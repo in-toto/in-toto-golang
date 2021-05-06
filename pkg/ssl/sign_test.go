@@ -18,28 +18,28 @@ func TestPAE(t *testing.T) {
 		var want = make([]byte, 8)
 
 		got, err := PAE(nil)
-		assert.Nil(t, err, "Unexpectted error")
+		assert.Nil(t, err, "Unexpected error")
 		assert.Equal(t, want, got, "Wrong encoding")
 	})
 	t.Run("Empty", func(t *testing.T) {
 		var want = make([]byte, 8)
 
 		got, err := PAE([][]byte{})
-		assert.Nil(t, err, "Unexpectted error")
+		assert.Nil(t, err, "Unexpected error")
 		assert.Equal(t, want, got, "Wrong encoding")
 	})
 	t.Run("['']", func(t *testing.T) {
 		var want = []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 
 		got, err := PAE([][]byte{[]byte("")})
-		assert.Nil(t, err, "Unexpectted error")
+		assert.Nil(t, err, "Unexpected error")
 		assert.Equal(t, want, got, "Wrong encoding")
 	})
 	t.Run("['test']", func(t *testing.T) {
 		var want = []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x74, 0x65, 0x73, 0x74}
 
 		got, err := PAE([][]byte{[]byte("test")})
-		assert.Nil(t, err, "Unexpectted error")
+		assert.Nil(t, err, "Unexpected error")
 		assert.Equal(t, want, got, "Wrong encoding")
 	})
 	t.Run("Hello world", func(t *testing.T) {
@@ -56,7 +56,7 @@ func TestPAE(t *testing.T) {
 
 		got, err := PAE([][]byte{[]byte("http://example.com/HelloWorld"),
 			[]byte("hello world")})
-		assert.Nil(t, err, "Unexpectted error")
+		assert.Nil(t, err, "Unexpected error")
 		assert.Equal(t, want, got, "Wrong encoding")
 	})
 }
@@ -307,7 +307,7 @@ func TestEcdsaSign(t *testing.T) {
 
 	signer, _ := NewEnvelopeSigner(ecdsa)
 	env, err := signer.SignPayload(payloadType, []byte(payload))
-	assert.Nil(t, err, "unexecpted error")
+	assert.Nil(t, err, "unexpected error")
 	assert.Equal(t, &want, env, "Wrong envelope generated")
 
 	// Now verify
