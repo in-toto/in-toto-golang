@@ -447,7 +447,6 @@ func TestInTotoRun(t *testing.T) {
 		}, []string{"sha256"}},
 	}
 
-
 	for _, table := range tablesInvalid {
 		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil)
 		if err == nil {
