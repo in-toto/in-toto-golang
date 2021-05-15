@@ -843,6 +843,10 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 	return summaryLink, nil
 }
 
+/*
+InTotoVerifyWithDirectory provides the same functionality as IntotoVerify, but
+adds the possibility to select a local directory from where the inspections are run.
+*/
 func InTotoVerifyWithDirectory(layoutMb Metablock, layoutKeys map[string]Key,
 	linkDir string, runDir string, stepName string, parameterDictionary map[string]string) (
 	Metablock, error) {
