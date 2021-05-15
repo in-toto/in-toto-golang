@@ -6,7 +6,9 @@ See https://github.com/in-toto/docs/blob/master/in-toto-spec.md
 package in_toto
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	osPath "path"
 	"path/filepath"
 	"reflect"
@@ -14,6 +16,9 @@ import (
 	"strings"
 	"time"
 )
+
+// ErrInspectionRunDirIsSymlink gets thrown if the runDir is a symlink
+var ErrInspectionRunDirIsSymlink = errors.New("runDir is a symlink. This is a security risk")
 
 /*
 RunInspections iteratively executes the command in the Run field of all
@@ -853,6 +858,24 @@ func InTotoVerifyWithDirectory(layoutMb Metablock, layoutKeys map[string]Key,
 
 	var summaryLink Metablock
 	var err error
+
+	// runDir sanity checks
+	// check if path exists
+	info, err := os.Stat(runDir)
+	if err != nil {
+		return Metablock{}, err
+	}
+
+	// check if runDir is a symlink
+	if info.Mode()&os.ModeSymlink == os.ModeSymlink {
+		return Metablock{}, ErrInspectionRunDirIsSymlink
+	}
+
+	// check if runDir is writable and a directory
+	err = isWritable(runDir)
+	if err != nil {
+		return Metablock{}, err
+	}
 
 	// Verify root signatures
 	if err := VerifyLayoutSignatures(layoutMb, layoutKeys); err != nil {
