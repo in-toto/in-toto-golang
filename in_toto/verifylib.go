@@ -8,6 +8,7 @@ package in_toto
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	osPath "path"
 	"path/filepath"
@@ -873,6 +874,24 @@ func InTotoVerifyWithDirectory(layoutMb Metablock, layoutKeys map[string]Key,
 
 	// check if runDir is writable and a directory
 	err = isWritable(runDir)
+	if err != nil {
+		return Metablock{}, err
+	}
+
+	// check if runDir is empty (we do not want to overwrite files)
+	// We abuse File.Readdirnames for this action.
+	f, err := os.Open(runDir)
+	if err != nil {
+		return Metablock{}, err
+	}
+	// We use Readdirnames(1) for performance reasons, one child node
+	// is enough to proof that the directory is not empty
+	_, err = f.Readdirnames(1)
+	// if io.EOF gets returned as error the directory is empty
+	if err == io.EOF {
+		return Metablock{}, err
+	}
+	err = f.Close()
 	if err != nil {
 		return Metablock{}, err
 	}
