@@ -1,3 +1,5 @@
+// +build linux darwin !windows
+
 package in_toto
 
 import "golang.org/x/sys/unix"
