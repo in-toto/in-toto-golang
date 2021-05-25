@@ -90,16 +90,6 @@ type Signer interface {
 	Sign(data []byte) ([]byte, string, error)
 }
 
-/*
-Verifier verifies a complete message against a signature and key.
-If the message was hashed prior to signature generation, the verifier
-must perform the same steps.
-If the key is not recognized ErrUnknownKey shall be returned.
-*/
-type Verifier interface {
-	Verify(keyID string, data, sig []byte) (bool, error)
-}
-
 // SignVerifer provides both the signing and verification interface.
 type SignVerifier interface {
 	Signer
@@ -109,6 +99,7 @@ type SignVerifier interface {
 // EnvelopeSigner creates signed Envelopes.
 type EnvelopeSigner struct {
 	providers []SignVerifier
+	ev        EnvelopeVerifier
 }
 
 /*
@@ -128,8 +119,16 @@ func NewEnvelopeSigner(p ...SignVerifier) (*EnvelopeSigner, error) {
 		return nil, ErrNoSigners
 	}
 
+	evps := []Verifier{}
+	for _, p := range providers {
+		evps = append(evps, p.(Verifier))
+	}
+
 	return &EnvelopeSigner{
 		providers: providers,
+		ev: EnvelopeVerifier{
+			providers: evps,
+		},
 	}, nil
 }
 
@@ -174,54 +173,7 @@ Any domain specific validation such as parsing the decoded body and
 validating the payload type is left out to the caller.
 */
 func (es *EnvelopeSigner) Verify(e *Envelope) (bool, error) {
-	if len(e.Signatures) == 0 {
-		return false, ErrNoSignature
-	}
-
-	// Decode payload (i.e serialized body)
-	body, err := b64Decode(e.Payload)
-	if err != nil {
-		return false, err
-	}
-	// Generate PAE(payloadtype, serialized body)
-	paeEnc, err := PAE([][]byte{
-		[]byte(e.PayloadType),
-		body,
-	})
-	if err != nil {
-		return false, err
-	}
-
-	// If *any* signature is found to be incorrect, the entire verification
-	// step fails even if *some* signatures are correct.
-	verified := false
-	for _, s := range e.Signatures {
-		sig, err := b64Decode(s.Sig)
-		if err != nil {
-			return false, err
-		}
-
-		// Loop over the providers. If a provider recognizes the key, we exit
-		// the loop and use the result.
-		for _, v := range es.providers {
-			ok, err := v.Verify(s.KeyID, paeEnc, sig)
-			if err != nil {
-				if err == ErrUnknownKey {
-					continue
-				}
-				return false, err
-			}
-
-			if !ok {
-				return false, nil
-			}
-
-			verified = true
-			break
-		}
-	}
-
-	return verified, nil
+	return es.ev.Verify(e)
 }
 
 /*
