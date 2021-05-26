@@ -20,7 +20,7 @@ and navigate to `localhost:8080/pkg/github.com/in-toto/in-toto-golang/in_toto/`
 A very simple example, just to help you starting:
 
 ```go
-package main
+**package main
 
 import (
 	toto "github.com/in-toto/in-toto-golang/in_toto"
@@ -31,6 +31,31 @@ func main() {
 		Signed: toto.Layout{
 			Type: "layout",
 			Expires:  "2020-02-31T18:03:43Z",
+		},
+	}
+
+	var key toto.Key
+
+	key.LoadKey("keys/alice", "rsassa-pss-sha256", []string{"sha256", "sha512"})
+
+	metablock.Sign(key)
+
+	metablock.Dump("output.layout")
+}**package main
+
+import (
+	"time"
+	toto "github.com/in-toto/in-toto-golang/in_toto"
+)
+
+func main() {
+	t := time.Now()
+	t = t.Add(30 * 24 * time.Hour)
+
+	var metablock = toto.Metablock{
+		Signed: toto.Layout{
+			Type: "layout",
+			Expires:  t.Format("2006-01-02T15:04:05Z"),
 		},
 	}
 
