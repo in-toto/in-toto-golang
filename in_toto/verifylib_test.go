@@ -177,7 +177,7 @@ func TestRunInspections(t *testing.T) {
 
 	// Make a list of files in current dir (all must be recorded as artifacts)
 	availableFiles, _ := filepath.Glob("*")
-	result, err := RunInspections(layout)
+	result, err := RunInspections(layout, "")
 
 	// Error must be nil
 	if err != nil {
@@ -223,7 +223,7 @@ func TestRunInspections(t *testing.T) {
 		},
 	}
 
-	result, err = RunInspections(layout)
+	result, err = RunInspections(layout, "")
 	if result != nil || err == nil {
 		t.Errorf("RunInspections returned '(%s, %s)', expected"+
 			" '(nil, *exec.Error)'", result, err)
@@ -237,7 +237,7 @@ func TestRunInspections(t *testing.T) {
 			Run:             []string{"sh", "-c", "false"},
 		},
 	}
-	result, err = RunInspections(layout)
+	result, err = RunInspections(layout, "")
 	if result != nil || err == nil {
 		t.Errorf("RunInspections returned '(%s, %s)', expected"+
 			" '(nil, *exec.Error)'", result, err)
@@ -797,5 +797,31 @@ func TestSubstituteParamaters(t *testing.T) {
 	_, err = SubstituteParameters(layout, parameterDictionary)
 	if err.Error() != "invalid format for parameter" {
 		t.Errorf("invalid parameter format not detected")
+	}
+}
+
+func TestInTotoVerifyWithDirectory(t *testing.T) {
+	layoutPath := "demo.layout"
+	pubKeyPath := "alice.pub"
+	linkDir := "."
+
+	var layoutMb Metablock
+	if err := layoutMb.Load(layoutPath); err != nil {
+		t.Error(err)
+	}
+
+	var pubKey Key
+	if err := pubKey.LoadKey(pubKeyPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
+		t.Error(err)
+	}
+
+	var layouKeys = map[string]Key{
+		pubKey.KeyID: pubKey,
+	}
+
+	// No error should occur
+	if _, err := InTotoVerifyWithDirectory(layoutMb, layouKeys, linkDir, ".", "",
+		make(map[string]string)); err != nil {
+		t.Error(err)
 	}
 }

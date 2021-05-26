@@ -343,7 +343,7 @@ func TestRunCommand(t *testing.T) {
 		{"return-value": float64(0), "stdout": "", "stderr": "err"},
 	}
 	for i := 0; i < len(parameters); i++ {
-		result, err := RunCommand(parameters[i])
+		result, err := RunCommand(parameters[i], "")
 		if !reflect.DeepEqual(result, expected[i]) || err != nil {
 			t.Errorf("RunCommand returned '(%s, %s)', expected '(%s, nil)'",
 				result, err, expected[i])
@@ -351,7 +351,7 @@ func TestRunCommand(t *testing.T) {
 	}
 
 	// Fail run command
-	result, err := RunCommand([]string{"command-does-not-exist"})
+	result, err := RunCommand([]string{"command-does-not-exist"}, "")
 	if result != nil || err == nil {
 		t.Errorf("RunCommand returned '(%s, %s)', expected '(nil, *exec.Error)'",
 			result, err)
@@ -404,7 +404,7 @@ func TestInTotoRun(t *testing.T) {
 	}
 
 	for _, table := range tablesCorrect {
-		result, err := InTotoRun(linkName, table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil)
+		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil)
 		if !reflect.DeepEqual(result, table.result) {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result)
 		} else {
@@ -448,7 +448,7 @@ func TestInTotoRun(t *testing.T) {
 	}
 
 	for _, table := range tablesInvalid {
-		result, err := InTotoRun(linkName, table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil)
+		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil)
 		if err == nil {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected error",
 				result, err)

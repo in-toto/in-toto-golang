@@ -1,6 +1,8 @@
 package in_toto
 
 import (
+	"io/ioutil"
+	"os"
 	"reflect"
 	"sort"
 	"testing"
@@ -109,5 +111,31 @@ func TestSubsetCheck(t *testing.T) {
 		if table.result != result {
 			t.Errorf("result mismatch for: %#v, %#v, got: %t, should have got: %t", table.subset, table.superset, result, table.result)
 		}
+	}
+}
+
+func TestIsWritable(t *testing.T) {
+	notWritable, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Error(err)
+	}
+	writable, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = os.Chmod(notWritable, os.FileMode(0000))
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = isWritable(notWritable)
+	if err == nil {
+		t.Errorf("%s should be not writable, but is writable", notWritable)
+	}
+
+	err = isWritable(writable)
+	if err != nil {
+		t.Errorf("%s should be writable, but it is not writable", writable)
 	}
 }
