@@ -15,6 +15,43 @@ godoc -http :8080
 
 and navigate to `localhost:8080/pkg/github.com/in-toto/in-toto-golang/in_toto/`
 
+## Example
+
+A very simple example, just to help you starting:
+
+```go
+package main
+
+import (
+	"time"
+	toto "github.com/in-toto/in-toto-golang/in_toto"
+)
+
+func main() {
+	t := time.Now()
+	t = t.Add(30 * 24 * time.Hour)
+
+	var keys = make(map[string]toto.Key)
+
+	var metablock = toto.Metablock{
+		Signed: toto.Layout{
+			Type: "layout",
+			Expires:  t.Format("2006-01-02T15:04:05Z"),
+			Steps: []toto.Step{},
+			Inspect: []toto.Inspection{},
+			Keys:  keys,
+		},
+	}
+
+	var key toto.Key
+
+	key.LoadKey("keys/alice", "rsassa-pss-sha256", []string{"sha256", "sha512"})
+
+	metablock.Sign(key)
+
+	metablock.Dump("root.layout")
+}
+```
 
 ## Not (yet) supported
 
