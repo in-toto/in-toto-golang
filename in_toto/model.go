@@ -66,6 +66,20 @@ var ErrNoPublicKey = errors.New("the given key is not a public key")
 // for example: curve size = "521" and scheme = "ecdsa-sha2-nistp224"
 var ErrCurveSizeSchemeMismatch = errors.New("the scheme does not match the curve size")
 
+const (
+	// StatementInTotoV01 is the statement type for the generalized link format
+	// containing statements. This is constant for all predicate types.
+	StatementInTotoV01 = "https://in-toto.io/Statement/v0.1"
+	// PredicateSPDX represents a SBOM using the SPDX standard.
+	// The SPDX mandates 'spdxVersion' field, so predicate type can omit
+	// version.
+	PredicateSPDX = "https://spdx.dev/Document"
+	// PredicateLinkV1 represents an in-toto 0.9 link.
+	PredicateLinkV1 = "https://in-toto.io/Link/v1"
+	// PredicateProvenanceV01 represents a build provenance for an artifact.
+	PredicateProvenanceV01 = "https://in-toto.io/Provenance/v0.1"
+)
+
 // ErrInvalidPayloadType indicates that the envelope used an unkown payload type
 var ErrInvalidPayloadType = errors.New("unknown payload type")
 
@@ -850,6 +864,109 @@ func (mb *Metablock) Sign(key Key) error {
 
 	mb.Signatures = append(mb.Signatures, newSignature)
 	return nil
+}
+
+/*
+DigestSet contains a set of digests. It is represented as a map from
+algorithm name to lowercase hex-encoded value.
+*/
+type DigestSet map[string]string
+
+// Subject describes the set of software artifacts the statement applies to.
+type Subject struct {
+	Name   string    `json:"name"`
+	Digest DigestSet `json:"digest"`
+}
+
+// StatementHeader defines the common fields for all statements
+type StatementHeader struct {
+	Type          string    `json:"_type"`
+	PredicateType string    `json:"predicateType"`
+	Subject       []Subject `json:"subject"`
+}
+
+/*
+Statement binds the attestation to a particular subject and identifies the
+of the predicate. This struct represents a generic statement.
+*/
+type Statement struct {
+	StatementHeader
+	// Predicate contains type speficic metadata.
+	Predicate interface{} `json:"predicate"`
+}
+
+// ProvenanceBuilder idenfifies the entity that executed the build steps.
+type ProvenanceBuilder struct {
+	ID string `json:"id"`
+}
+
+// ProvenanceRecipe describes the actions performed by the builder.
+type ProvenanceRecipe struct {
+	Type string `json:"type"`
+	// DefinedInMaterial can be sent as the null pointer to indicate that
+	// the value is not present.
+	DefinedInMaterial *int        `json:"definedInMaterial,omitempty"`
+	EntryPoint        string      `json:"entryPoint"`
+	Arguments         interface{} `json:"arguments,omitempty"`
+	Environment       interface{} `json:"environment,omitempty"`
+}
+
+// ProvenanceComplete indicates wheter the claims in build/recipe are complete.
+// For in depth information refer to the specifictaion:
+// https://github.com/in-toto/attestation/blob/v0.1.0/spec/predicates/provenance.md
+type ProvenanceComplete struct {
+	Arguments   bool `json:"arguments"`
+	Environment bool `json:"environment"`
+	Materials   bool `json:"materials"`
+}
+
+// ProvenanceMetadata contains metadata for the built artifact.
+type ProvenanceMetadata struct {
+	// Use pointer to make sure that the abscense of a time is not
+	// encoded as the Epoch time.
+	BuildStartedOn  *time.Time         `json:"buildStartedOn,omitempty"`
+	BuildFinishedOn *time.Time         `json:"buildFinishedOn,omitempty"`
+	Completeness    ProvenanceComplete `json:"completeness"`
+	Reproducible    bool               `json:"reproducible"`
+}
+
+// ProvenanceMaterial defines the materials used to build an artifact.
+type ProvenanceMaterial struct {
+	URI    string    `json:"uri"`
+	Digest DigestSet `json:"digest,omitempty"`
+}
+
+// ProvenancePredicate is the provenance predicate definition.
+type ProvenancePredicate struct {
+	Builder   ProvenanceBuilder    `json:"builder"`
+	Recipe    ProvenanceRecipe     `json:"recipe"`
+	Metadata  ProvenanceMetadata   `json:"metadata"`
+	Materials []ProvenanceMaterial `json:"materials,omitempty"`
+}
+
+// ProvenanceStatement is the definition for an entire provenance statement.
+type ProvenanceStatement struct {
+	StatementHeader
+	Predicate ProvenancePredicate `json:"predicate"`
+}
+
+// LinkStatement is the definition for an entire link statement.
+type LinkStatement struct {
+	StatementHeader
+	Predicate Link `json:"predicate"`
+}
+
+/*
+SPDXStatement is the definition for an entire SPDX statement.
+Currently not implemented. Some tooling exists here:
+https://github.com/spdx/tools-golang, but this software is still in
+early state.
+This struct is the same as the generic Statement struct but is added for
+completeness
+*/
+type SPDXStatement struct {
+	StatementHeader
+	Predicate interface{} `json:"predicate"`
 }
 
 /*
