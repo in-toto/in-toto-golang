@@ -172,7 +172,7 @@ Verify decodes the payload and verifies the signature.
 Any domain specific validation such as parsing the decoded body and
 validating the payload type is left out to the caller.
 */
-func (es *EnvelopeSigner) Verify(e *Envelope) (bool, error) {
+func (es *EnvelopeSigner) Verify(e *Envelope) error {
 	return es.ev.Verify(e)
 }
 

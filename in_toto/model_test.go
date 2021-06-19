@@ -17,6 +17,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var errLength = errors.New("invalid length")
+var errVerify = errors.New("invalid signature")
+
 func init() {
 	// Make sure all strings formatted are in tz Zulu
 	os.Setenv("TZ", "UTC")
@@ -1823,22 +1826,21 @@ func (n nilsigner) Sign(data []byte) ([]byte, string, error) {
 	return data, "nil", nil
 }
 
-func (n nilsigner) Verify(keyID string, data, sig []byte) (bool, error) {
+func (n nilsigner) Verify(keyID string, data, sig []byte) error {
 
 	if keyID == "nil" {
 		if len(data) != len(sig) {
-			return false, nil
+			return errLength
 		}
 
 		for i := range data {
 			if data[i] != sig[i] {
-				return false, nil
+				return errVerify
 			}
 		}
-
-		return true, nil
+		return nil
 	}
-	return false, ssl.ErrUnknownKey
+	return ssl.ErrUnknownKey
 }
 
 func TestSSLSigner(t *testing.T) {
@@ -1854,8 +1856,7 @@ func TestSSLSigner(t *testing.T) {
 		e, err := s.SignPayload([]byte("test data"))
 		assert.NotNil(t, e, "envelope expected")
 		assert.Nil(t, err, "unexpected error when creating signature")
-		ok, err := s.Verify(e)
-		assert.True(t, ok, "verify signature failed")
+		err = s.Verify(e)
 		assert.Nil(t, err, "unexpected error when validating signature")
 	})
 
@@ -1869,8 +1870,7 @@ func TestSSLSigner(t *testing.T) {
 		// Change payload type
 		e.PayloadType = "application/json; charset=utf-8"
 
-		ok, err := s.Verify(e)
-		assert.False(t, ok, "verify signature should fail")
+		err = s.Verify(e)
 		assert.Equal(t, ErrInvalidPayloadType, err, "wrong error returned")
 	})
 }

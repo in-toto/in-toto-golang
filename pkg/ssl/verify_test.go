@@ -11,11 +11,11 @@ type mockVerifier struct {
 	returnErr error
 }
 
-func (m *mockVerifier) Verify(keyID string, data, sig []byte) (bool, error) {
+func (m *mockVerifier) Verify(keyID string, data, sig []byte) error {
 	if m.returnErr != nil {
-		return false, m.returnErr
+		return m.returnErr
 	}
-	return true, nil
+	return nil
 }
 
 // Test against the example in the protocol specification:
@@ -36,17 +36,15 @@ func TestVerify(t *testing.T) {
 	}
 
 	ev := NewEnvelopeVerifier(&mockVerifier{})
-	ok, err := ev.Verify(&e)
+	err := ev.Verify(&e)
 
 	// Now verify
-	assert.True(t, ok, "verify failed")
 	assert.Nil(t, err, "unexpected error")
 
 	// Now try an error
 	ev = NewEnvelopeVerifier(&mockVerifier{returnErr: errors.New("uh oh")})
-	ok, err = ev.Verify(&e)
+	err = ev.Verify(&e)
 
 	// Now verify
-	assert.False(t, ok, "verify succeeded incorrectly")
 	assert.Error(t, err)
 }
