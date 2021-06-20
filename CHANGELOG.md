@@ -12,7 +12,7 @@ Changes:
 * support for specifying a local directory when running inspections
 * switch from golang.org/x/crypto/ed25519 to crypto/ed25519
 
-Thanks to our contributors: Aditya Sirish, Christian Rebischke, cindykimxp, Dan Lorenc, Fredrik Skogman, Lukas Puehringer, Omer Levi Hevroni, Radu M, Santiago Torres, Scott Buckel, seb-bah, Vaibhav Lodha
+Thanks to our contributors: Aditya Sirish, Christian Rebischke, Cindy Kim, Dan Lorenc, Fredrik Skogman, Lukas Puehringer, Omer Levi Hevroni, Radu M, Santiago Torres, Scott Buckel, seb-bah, Vaibhav Lodha
 
 ## v0.1.0
 
@@ -25,4 +25,4 @@ Changes:
 * support for in-toto-verify
 * support for in-toto-run
 
-Thanks to our contributors: Aditya Sirish, ayush159, Christian Rebischke, Dan Lorenc, Lukas Puehringer, Santiago Torres, Vaibhav Lodha
+Thanks to our contributors: Aditya Sirish, Ayush Sethi, Christian Rebischke, Dan Lorenc, Lukas Puehringer, Santiago Torres, Vaibhav Lodha
