@@ -17,49 +17,16 @@ import (
 var errLength = errors.New("invalid length")
 
 func TestPAE(t *testing.T) {
-	t.Run("Nil", func(t *testing.T) {
-		var want = make([]byte, 8)
-
-		got, err := PAE(nil)
-		assert.Nil(t, err, "Unexpected error")
-		assert.Equal(t, want, got, "Wrong encoding")
-	})
 	t.Run("Empty", func(t *testing.T) {
-		var want = make([]byte, 8)
+		var want = []byte("DSSEv1 0  0 ")
 
-		got, err := PAE([][]byte{})
-		assert.Nil(t, err, "Unexpected error")
-		assert.Equal(t, want, got, "Wrong encoding")
-	})
-	t.Run("['']", func(t *testing.T) {
-		var want = []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-
-		got, err := PAE([][]byte{[]byte("")})
-		assert.Nil(t, err, "Unexpected error")
-		assert.Equal(t, want, got, "Wrong encoding")
-	})
-	t.Run("['test']", func(t *testing.T) {
-		var want = []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x74, 0x65, 0x73, 0x74}
-
-		got, err := PAE([][]byte{[]byte("test")})
-		assert.Nil(t, err, "Unexpected error")
+		got := PAE("", "")
 		assert.Equal(t, want, got, "Wrong encoding")
 	})
 	t.Run("Hello world", func(t *testing.T) {
-		var want = []byte{
-			0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x1d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x68, 0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f, 0x65,
-			0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63,
-			0x6f, 0x6d, 0x2f, 0x48, 0x65, 0x6c, 0x6c, 0x6f,
-			0x57, 0x6f, 0x72, 0x6c, 0x64, 0x0b, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x65, 0x6c,
-			0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64,
-		}
+		var want = []byte("DSSEv1 29 http://example.com/HelloWorld 11 hello world")
 
-		got, err := PAE([][]byte{[]byte("http://example.com/HelloWorld"),
-			[]byte("hello world")})
-		assert.Nil(t, err, "Unexpected error")
+		got := PAE("http://example.com/HelloWorld", "hello world")
 		assert.Equal(t, want, got, "Wrong encoding")
 	})
 }
@@ -179,11 +146,7 @@ func TestNilSign(t *testing.T) {
 	var payloadType = "http://example.com/HelloWorld"
 	var payload = "hello world"
 
-	pae, err := PAE([][]byte{
-		[]byte(payloadType),
-		[]byte(payload),
-	})
-	assert.Nil(t, err, "pae failed")
+	pae := PAE(payloadType, payload)
 	want := Envelope{
 		Payload:     base64.StdEncoding.EncodeToString([]byte(payload)),
 		PayloadType: payloadType,
@@ -303,7 +266,7 @@ func TestEcdsaSign(t *testing.T) {
 		Signatures: []Signature{
 			Signature{
 				KeyID: keyID,
-				Sig:   "Cc3RkvYsLhlaFVd+d6FPx4ZClhqW4ZT0rnCYAfv6/ckoGdwT7g/blWNpOBuL/tZhRiVFaglOGTU8GEjm4aEaNA==",
+				Sig:   "A3JqsQGtVsJ2O2xqrI5IcnXip5GToJ3F+FnZ+O88SjtR6rDAajabZKciJTfUiHqJPcIAriEGAHTVeCUjW2JIZA==",
 			},
 		},
 	}
