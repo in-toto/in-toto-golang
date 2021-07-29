@@ -940,7 +940,7 @@ type ProvenanceMaterial struct {
 type ProvenancePredicate struct {
 	Builder   ProvenanceBuilder    `json:"builder"`
 	Recipe    ProvenanceRecipe     `json:"recipe"`
-	Metadata  ProvenanceMetadata   `json:"metadata"`
+	Metadata  *ProvenanceMetadata  `json:"metadata,omitempty"`
 	Materials []ProvenanceMaterial `json:"materials,omitempty"`
 }
 

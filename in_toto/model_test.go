@@ -1591,7 +1591,7 @@ func TestDecodeProvenanceStatement(t *testing.T) {
 				DefinedInMaterial: new(int),
 				EntryPoint:        "build.yaml:maketgz",
 			},
-			Metadata: ProvenanceMetadata{
+			Metadata: &ProvenanceMetadata{
 				BuildStartedOn: &testTime,
 				Completeness: ProvenanceComplete{
 					Environment: true,
@@ -1656,7 +1656,7 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 				DefinedInMaterial: new(int),
 				EntryPoint:        "build.yaml:maketgz",
 			},
-			Metadata: ProvenanceMetadata{
+			Metadata: &ProvenanceMetadata{
 				BuildStartedOn:  &testTime,
 				BuildFinishedOn: &testTime,
 				Completeness: ProvenanceComplete{
