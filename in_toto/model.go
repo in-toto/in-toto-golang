@@ -76,8 +76,8 @@ const (
 	PredicateSPDX = "https://spdx.dev/Document"
 	// PredicateLinkV1 represents an in-toto 0.9 link.
 	PredicateLinkV1 = "https://in-toto.io/Link/v1"
-	// PredicateProvenanceV01 represents a build provenance for an artifact.
-	PredicateProvenanceV01 = "https://in-toto.io/Provenance/v0.1"
+	// PredicateSLSAProvenanceV01 represents a build provenance for an artifact.
+	PredicateSLSAProvenanceV01 = "https://slsa.dev/provenance/v0.1"
 )
 
 // ErrInvalidPayloadType indicates that the envelope used an unkown payload type

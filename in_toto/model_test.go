@@ -1536,7 +1536,7 @@ func TestDecodeProvenanceStatement(t *testing.T) {
     { "name": "curl-7.72.0.tar.gz",
       "digest": { "sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2" }}
   ],
-  "predicateType": "https://in-toto.io/Provenance/v0.1",
+  "predicateType": "https://slsa.dev/provenance/v0.1",
   "predicate": {
     "builder": { "id": "https://github.com/Attestations/GitHubHostedActions@v1" },
     "recipe": {
@@ -1566,7 +1566,7 @@ func TestDecodeProvenanceStatement(t *testing.T) {
 	var want = ProvenanceStatement{
 		StatementHeader: StatementHeader{
 			Type:          StatementInTotoV01,
-			PredicateType: PredicateProvenanceV01,
+			PredicateType: PredicateSLSAProvenanceV01,
 			Subject: []Subject{
 				Subject{
 					Name: "curl-7.72.0.tar.bz2",
@@ -1631,7 +1631,7 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 	var p = ProvenanceStatement{
 		StatementHeader: StatementHeader{
 			Type:          StatementInTotoV01,
-			PredicateType: PredicateProvenanceV01,
+			PredicateType: PredicateSLSAProvenanceV01,
 			Subject: []Subject{
 				Subject{
 					Name: "curl-7.72.0.tar.bz2",
@@ -1681,7 +1681,7 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 			},
 		},
 	}
-	var want = `{"_type":"https://in-toto.io/Statement/v0.1","predicateType":"https://in-toto.io/Provenance/v0.1","subject":[{"name":"curl-7.72.0.tar.bz2","digest":{"sha256":"ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef"}},{"name":"curl-7.72.0.tar.gz","digest":{"sha256":"d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2"}}],"predicate":{"builder":{"id":"https://github.com/Attestations/GitHubHostedActions@v1"},"recipe":{"type":"https://github.com/Attestations/GitHubActionsWorkflow@v1","definedInMaterial":0,"entryPoint":"build.yaml:maketgz"},"metadata":{"buildStartedOn":"2020-08-19T08:38:00Z","buildFinishedOn":"2020-08-19T08:38:00Z","completeness":{"arguments":true,"environment":false,"materials":true},"reproducible":false},"materials":[{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"}},{"uri":"github_hosted_vm:ubuntu-18.04:20210123.1"},{"uri":"git+https://github.com/curl/"}]}}`
+	var want = `{"_type":"https://in-toto.io/Statement/v0.1","predicateType":"https://slsa.dev/provenance/v0.1","subject":[{"name":"curl-7.72.0.tar.bz2","digest":{"sha256":"ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef"}},{"name":"curl-7.72.0.tar.gz","digest":{"sha256":"d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2"}}],"predicate":{"builder":{"id":"https://github.com/Attestations/GitHubHostedActions@v1"},"recipe":{"type":"https://github.com/Attestations/GitHubActionsWorkflow@v1","definedInMaterial":0,"entryPoint":"build.yaml:maketgz"},"metadata":{"buildStartedOn":"2020-08-19T08:38:00Z","buildFinishedOn":"2020-08-19T08:38:00Z","completeness":{"arguments":true,"environment":false,"materials":true},"reproducible":false},"materials":[{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"}},{"uri":"github_hosted_vm:ubuntu-18.04:20210123.1"},{"uri":"git+https://github.com/curl/"}]}}`
 
 	b, err := json.Marshal(&p)
 	assert.Nil(t, err, "Error during JSON marshal")
