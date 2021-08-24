@@ -29,8 +29,8 @@ func TestEncodeCanonical(t *testing.T) {
 		},
 	}
 	expectedResult := []string{
-		`{"keyid":"","keyid_hash_algorithms":null,"keytype":"","keyval":{"private":"","public":""},"scheme":""}`,
-		`{"keyid":"id","keyid_hash_algorithms":["hash"],"keytype":"type","keyval":{"private":"priv","public":"pub"},"scheme":"scheme"}`,
+		`{"keyid":"","keyid_hash_algorithms":null,"keytype":"","keyval":{"certificate":"","private":"","public":""},"scheme":""}`,
+		`{"keyid":"id","keyid_hash_algorithms":["hash"],"keytype":"type","keyval":{"certificate":"","private":"priv","public":"pub"},"scheme":"scheme"}`,
 		`{"false":false,"int":3,"int2":42,"nil":null,"string":"\\\"","true":true}`,
 		"",
 	}

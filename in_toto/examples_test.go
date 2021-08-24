@@ -41,7 +41,7 @@ func ExampleInTotoVerify() {
 		fmt.Printf("Invalid metadata found: %s", err)
 	}
 	if _, err := InTotoVerify(layoutMb, layoutKeys, LinkDirectory, "",
-		make(map[string]string)); err != nil {
+		make(map[string]string), [][]byte{}); err != nil {
 		fmt.Printf("In-toto verification failed: %s", err)
 	} else {
 		fmt.Println("In-toto verification succeeded!")

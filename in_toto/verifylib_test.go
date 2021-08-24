@@ -1,6 +1,7 @@
 package in_toto
 
 import (
+	"crypto/x509"
 	"fmt"
 	"os"
 	"path"
@@ -32,7 +33,7 @@ func TestInTotoVerifyPass(t *testing.T) {
 
 	// No error should occur
 	if _, err := InTotoVerify(layoutMb, layouKeys, linkDir, "",
-		make(map[string]string)); err != nil {
+		make(map[string]string), [][]byte{}); err != nil {
 		t.Error(err)
 	}
 }
@@ -43,11 +44,11 @@ func TestGetSummaryLink(t *testing.T) {
 		t.Error(err)
 	}
 	var codeLink Metablock
-	if err := codeLink.Load("write-code.776a00e2.link"); err != nil {
+	if err := codeLink.Load("write-code.785f486a.link"); err != nil {
 		t.Error(err)
 	}
 	var packageLink Metablock
-	if err := packageLink.Load("package.2f89b927.link"); err != nil {
+	if err := packageLink.Load("package.2e68b8ae.link"); err != nil {
 		t.Error(err)
 	}
 	demoLink := make(map[string]Metablock)
@@ -111,12 +112,12 @@ func TestVerifySublayouts(t *testing.T) {
 	if err := os.Mkdir(sublayoutDirectory, 0700); err != nil {
 		t.Errorf("Unable to create sublayout directory")
 	}
-	writeCodePath := path.Join(sublayoutDirectory, "write-code.776a00e2.link")
-	if err := os.Link("write-code.776a00e2.link", writeCodePath); err != nil {
+	writeCodePath := path.Join(sublayoutDirectory, "write-code.785f486a.link")
+	if err := os.Link("write-code.785f486a.link", writeCodePath); err != nil {
 		t.Errorf("Unable to link write-code metadata.")
 	}
-	packagePath := path.Join(sublayoutDirectory, "package.2f89b927.link")
-	if err := os.Link("package.2f89b927.link", packagePath); err != nil {
+	packagePath := path.Join(sublayoutDirectory, "package.2e68b8ae.link")
+	if err := os.Link("package.2e68b8ae.link", packagePath); err != nil {
 		t.Errorf("Unable to link package metadata")
 	}
 
@@ -125,23 +126,26 @@ func TestVerifySublayouts(t *testing.T) {
 		t.Errorf("Unable to load super layout")
 	}
 
-	stepsMetadata := make(map[string]map[string]Metablock)
-	var err error
-	if stepsMetadata, err = LoadLinksForLayout(superLayoutMb.Signed.(Layout),
-		"."); err != nil {
+	stepsMetadata, err := LoadLinksForLayout(superLayoutMb.Signed.(Layout), ".")
+	if err != nil {
 		t.Errorf("Unable to load link metadata for super layout")
 	}
 
-	stepsMetadataVerified := make(map[string]map[string]Metablock)
-	if stepsMetadataVerified, err = VerifyLinkSignatureThesholds(
-		superLayoutMb.Signed.(Layout), stepsMetadata); err != nil {
-		t.Errorf("Unable to verify link threshold values")
+	rootCertPool, intermediateCertPool, err := LoadLayoutCertificates(superLayoutMb.Signed.(Layout), [][]byte{})
+	if err != nil {
+		t.Errorf("Unable to load layout certificates")
+	}
+
+	stepsMetadataVerified, err := VerifyLinkSignatureThesholds(
+		superLayoutMb.Signed.(Layout), stepsMetadata, rootCertPool, intermediateCertPool)
+	if err != nil {
+		t.Errorf("Unable to verify link threshold values: %v", err)
 	}
 
 	result, err := VerifySublayouts(superLayoutMb.Signed.(Layout),
-		stepsMetadataVerified, ".")
+		stepsMetadataVerified, ".", [][]byte{})
 	if err != nil {
-		t.Errorf("Unable to verify sublayouts")
+		t.Errorf("Unable to verify sublayouts: %v", err)
 	}
 
 	for _, stepData := range result {
@@ -546,8 +550,8 @@ func TestVerifyStepCommandAlignment(t *testing.T) {
 }
 
 func TestVerifyLinkSignatureThesholds(t *testing.T) {
-	keyID1 := "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498"
-	keyID2 := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
+	keyID1 := "2e68b8ae1b921406e9422e5f06280c5c4cb86b20c360a7ca2205b742950edae6"
+	keyID2 := "785f486a6e828e62f0348dfbe817b06a66e4640cc8c8e467f3eefe645557705b"
 	keyID3 := "abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca"
 
 	var mb Metablock
@@ -562,15 +566,15 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 		PubKeys:   []string{keyID1, keyID2, keyID3}}}
 
 	var mbLink1 Metablock
-	if err := mbLink1.Load("foo.2f89b927.link"); err != nil {
+	if err := mbLink1.Load("foo.2e68b8ae.link"); err != nil {
 		t.Errorf("Unable to load link file: %s", err)
 	}
 	var mbLink2 Metablock
-	if err := mbLink2.Load("foo.776a00e2.link"); err != nil {
+	if err := mbLink2.Load("foo.785f486a.link"); err != nil {
 		t.Errorf("Unable to load link file: %s", err)
 	}
 	var mbLinkBroken Metablock
-	if err := mbLinkBroken.Load("foo.776a00e2.link"); err != nil {
+	if err := mbLinkBroken.Load("foo.785f486a.link"); err != nil {
 		t.Errorf("Unable to load link file: %s", err)
 	}
 	mbLinkBroken.Signatures[0].Sig = "breaksignature"
@@ -589,7 +593,7 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 		{"foo": {keyID1: mbLink1, keyID2: mbLinkBroken}},
 	}
 	for i := 0; i < len(stepsMetadata); i++ {
-		result, err := VerifyLinkSignatureThesholds(layout, stepsMetadata[i])
+		result, err := VerifyLinkSignatureThesholds(layout, stepsMetadata[i], x509.NewCertPool(), x509.NewCertPool())
 		if err == nil {
 			t.Errorf("VerifyLinkSignatureThesholds returned (%s, %s), expected"+
 				" 'not enough distinct valid links' error.", result, err)
@@ -604,7 +608,7 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 		{"foo": {keyID1: mbLink1, keyID2: mbLink2, keyID3: mbLinkBroken}},
 	}
 	for i := 0; i < len(stepsMetadata); i++ {
-		result, err := VerifyLinkSignatureThesholds(layout, stepsMetadata[i])
+		result, err := VerifyLinkSignatureThesholds(layout, stepsMetadata[i], x509.NewCertPool(), x509.NewCertPool())
 		validLinks, ok := result["foo"]
 		if !ok || len(validLinks) != 2 {
 			t.Errorf("VerifyLinkSignatureThesholds returned (%s, %s), expected"+
@@ -614,8 +618,8 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 }
 
 func TestLoadLinksForLayout(t *testing.T) {
-	keyID1 := "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498"
-	keyID2 := "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
+	keyID1 := "2e68b8ae1b921406e9422e5f06280c5c4cb86b20c360a7ca2205b742950edae6"
+	keyID2 := "785f486a6e828e62f0348dfbe817b06a66e4640cc8c8e467f3eefe645557705b"
 	var mb Metablock
 	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Unable to load template file: %s", err)
@@ -692,7 +696,7 @@ func TestVerifyLayoutSignatures(t *testing.T) {
 	// - Not verification keys (must be at least one)
 	// - No signature found for verification key
 	layoutKeysList := []map[string]Key{{}, {layoutKey.KeyID: Key{}}}
-	expectedErrors := []string{"at least one key", "No signature found for key"}
+	expectedErrors := []string{"at least one key", "no signature found for key"}
 
 	for i := 0; i < len(layoutKeysList); i++ {
 		err := VerifyLayoutSignatures(mbLayout, layoutKeysList[i])
@@ -821,7 +825,7 @@ func TestInTotoVerifyWithDirectory(t *testing.T) {
 
 	// No error should occur
 	if _, err := InTotoVerifyWithDirectory(layoutMb, layouKeys, linkDir, ".", "",
-		make(map[string]string)); err != nil {
+		make(map[string]string), [][]byte{}); err != nil {
 		t.Error(err)
 	}
 }

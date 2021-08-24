@@ -16,17 +16,17 @@ func TestLoadKey(t *testing.T) {
 		hashAlgorithms []string
 		expectedKeyID  string
 	}{
-		{"rsa public key", "alice.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}, "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b588f3e9cc48b35"},
-		{"rsa private key", "dan", "rsassa-pss-sha256", []string{"sha256", "sha512"}, "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401"},
-		{"rsa public key", "dan.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}, "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401"},
-		{"ed25519 private key", "carol", "ed25519", []string{"sha256", "sha512"}, "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6"},
-		{"ed25519 public key", "carol.pub", "ed25519", []string{"sha256", "sha512"}, "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6"},
-		{"ecdsa private key (P521)", "frank", "ecdsa-sha2-nistp521", []string{"sha256", "sha512"}, "434cf7c5b168f6ea4c7e6e67afa74a02625310530f1664f761637bdc7ad8f8df"},
-		{"ecdsa public key (P521)", "frank.pub", "ecdsa-sha2-nistp521", []string{"sha256", "sha512"}, "434cf7c5b168f6ea4c7e6e67afa74a02625310530f1664f761637bdc7ad8f8df"},
-		{"ecdsa private key (P384)", "grace", "ecdsa-sha2-nistp384", []string{"sha256", "sha512"}, "a5522ebccd492f64e6ec0bbcb5eb782708f6e26709a3712e64fff108b98e5142"},
-		{"ecdsa public key (P384)", "grace.pub", "ecdsa-sha2-nistp384", []string{"sha256", "sha512"}, "a5522ebccd492f64e6ec0bbcb5eb782708f6e26709a3712e64fff108b98e5142"},
-		{"ecdsa private key (P224)", "heidi", "ecdsa-sha2-nistp224", []string{"sha256", "sha512"}, "fae849ef9247cc7d19ebd33ab63b5d18a31357508fd82d8ad2aad6fdcc584bd7"},
-		{"ecdsa public key (P224)", "heidi.pub", "ecdsa-sha2-nistp224", []string{"sha256", "sha512"}, "fae849ef9247cc7d19ebd33ab63b5d18a31357508fd82d8ad2aad6fdcc584bd7"},
+		{"rsa public key", "alice.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}, "d7b728368798278c6bbd43e57b9ff9794be73c24edc574fdaae67efcbc34e23a"},
+		{"rsa private key", "dan", "rsassa-pss-sha256", []string{"sha256", "sha512"}, "7223226fff4de04198b71f5e4ed6897d77d5e2ee928ef609d0e3efeca9f3dd9b"},
+		{"rsa public key", "dan.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}, "7223226fff4de04198b71f5e4ed6897d77d5e2ee928ef609d0e3efeca9f3dd9b"},
+		{"ed25519 private key", "carol", "ed25519", []string{"sha256", "sha512"}, "41d55e82a05090d8129880e38b9b82acb9cef4990b3594030bb674d61ec89c38"},
+		{"ed25519 public key", "carol.pub", "ed25519", []string{"sha256", "sha512"}, "41d55e82a05090d8129880e38b9b82acb9cef4990b3594030bb674d61ec89c38"},
+		{"ecdsa private key (P521)", "frank", "ecdsa-sha2-nistp521", []string{"sha256", "sha512"}, "31090a6ae8a7f9e028e0384802ac1318fd0897e9913d0f54c3f99e1316347bd7"},
+		{"ecdsa public key (P521)", "frank.pub", "ecdsa-sha2-nistp521", []string{"sha256", "sha512"}, "31090a6ae8a7f9e028e0384802ac1318fd0897e9913d0f54c3f99e1316347bd7"},
+		{"ecdsa private key (P384)", "grace", "ecdsa-sha2-nistp384", []string{"sha256", "sha512"}, "2e43a67f17b0064fecf5d3ec56f04a4372c6d36361ca8089196a3e646494f1e8"},
+		{"ecdsa public key (P384)", "grace.pub", "ecdsa-sha2-nistp384", []string{"sha256", "sha512"}, "2e43a67f17b0064fecf5d3ec56f04a4372c6d36361ca8089196a3e646494f1e8"},
+		{"ecdsa private key (P224)", "heidi", "ecdsa-sha2-nistp224", []string{"sha256", "sha512"}, "e60d9cfdf5ad4db9f270c3f06611b2a0bd318f29fef62626ccc286c5f8ff6fd1"},
+		{"ecdsa public key (P224)", "heidi.pub", "ecdsa-sha2-nistp224", []string{"sha256", "sha512"}, "e60d9cfdf5ad4db9f270c3f06611b2a0bd318f29fef62626ccc286c5f8ff6fd1"},
 	}
 	for _, table := range validTables {
 		var key Key

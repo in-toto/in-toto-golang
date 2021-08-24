@@ -3,6 +3,7 @@ package in_toto
 import (
 	"crypto/ecdsa"
 	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,8 +25,9 @@ and private keys in PEM format stored as strings.  For public keys the Private
 field may be an empty string.
 */
 type KeyVal struct {
-	Private string `json:"private"`
-	Public  string `json:"public"`
+	Private     string `json:"private"`
+	Public      string `json:"public"`
+	Certificate string `json:"certificate"`
 }
 
 /*
@@ -302,8 +304,21 @@ of the Key, which was used to create the signature and the signature data.  The
 used signature scheme is found in the corresponding Key.
 */
 type Signature struct {
-	KeyID string `json:"keyid"`
-	Sig   string `json:"sig"`
+	KeyID       string `json:"keyid"`
+	Sig         string `json:"sig"`
+	Certificate string `json:"cert"`
+}
+
+// GetCertificate returns the parsed x509 certificate attached to the signature,
+// if it exists.
+func (sig Signature) GetCertificate() (Key, error) {
+	key := Key{}
+	if len(sig.Certificate) == 0 {
+		return key, errors.New("Signature has empty Certificate")
+	}
+
+	err := key.LoadKeyReaderDefaults(strings.NewReader(sig.Certificate))
+	return key, err
 }
 
 /*
@@ -399,6 +414,7 @@ the first 8 characters of the signing key id. E.g.:
 	// returns "package.2f89b9272.link"
 */
 const LinkNameFormat = "%s.%.8s.link"
+const PreliminaryLinkNameFormat = ".%s.%.8s.link-unfinished"
 
 /*
 LinkNameFormatShort is for links that are not signed, e.g.:
@@ -406,6 +422,7 @@ LinkNameFormatShort is for links that are not signed, e.g.:
 	// returns "unsigned.link"
 */
 const LinkNameFormatShort = "%s.link"
+const LinkGlobFormat = "%s.????????.link"
 
 /*
 SublayoutLinkDirFormat represents the format of the name of the directory for
@@ -502,11 +519,43 @@ by the step are constrained by the artifact rules in the step's
 ExpectedMaterials and ExpectedProducts fields.
 */
 type Step struct {
-	Type            string   `json:"_type"`
-	PubKeys         []string `json:"pubkeys"`
-	ExpectedCommand []string `json:"expected_command"`
-	Threshold       int      `json:"threshold"`
+	Type                   string                  `json:"_type"`
+	PubKeys                []string                `json:"pubkeys"`
+	CertificateConstraints []CertificateConstraint `json:"cert_constraints"`
+	ExpectedCommand        []string                `json:"expected_command"`
+	Threshold              int                     `json:"threshold"`
 	SupplyChainItem
+}
+
+// CheckCertConstraints returns true if the provided certificate matches at least one
+// of the constraints for this step.
+func (s Step) CheckCertConstraints(key Key, rootCAIDs []string, rootCertPool, intermediateCertPool *x509.CertPool) error {
+	if len(s.CertificateConstraints) == 0 {
+		return fmt.Errorf("No constraints found")
+	}
+
+	_, possibleCert, err := decodeAndParse([]byte(key.KeyVal.Certificate))
+	if err != nil {
+		return err
+	}
+
+	cert, ok := possibleCert.(*x509.Certificate)
+	if !ok {
+		return fmt.Errorf("Not a valid certificate")
+	}
+
+	for _, constraint := range s.CertificateConstraints {
+		err = constraint.Check(cert, rootCAIDs, rootCertPool, intermediateCertPool)
+		if err == nil {
+			return nil
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	// this should not be reachable since there is at least one constraint, and the for loop only saw err != nil
+	return fmt.Errorf("Unknown certificate constraint error")
 }
 
 /*
@@ -545,12 +594,14 @@ contained in a generic Metablock object, which provides functionality for
 signing and signature verification, and reading from and writing to disk.
 */
 type Layout struct {
-	Type    string         `json:"_type"`
-	Steps   []Step         `json:"steps"`
-	Inspect []Inspection   `json:"inspect"`
-	Keys    map[string]Key `json:"keys"`
-	Expires string         `json:"expires"`
-	Readme  string         `json:"readme"`
+	Type            string         `json:"_type"`
+	Steps           []Step         `json:"steps"`
+	Inspect         []Inspection   `json:"inspect"`
+	Keys            map[string]Key `json:"keys"`
+	RootCas         map[string]Key `json:"rootcas"`
+	IntermediateCas map[string]Key `json:"intermediatecas"`
+	Expires         string         `json:"expires"`
+	Readme          string         `json:"readme"`
 }
 
 // Go does not allow to pass `[]T` (slice with certain type) to a function
@@ -573,6 +624,29 @@ func (l *Layout) inspectAsInterfaceSlice() []interface{} {
 	return inspectionsI
 }
 
+// RootCAIDs returns a slice of all of the Root CA IDs
+func (l *Layout) RootCAIDs() []string {
+	rootCAIDs := make([]string, 0, len(l.RootCas))
+	for rootCAID := range l.RootCas {
+		rootCAIDs = append(rootCAIDs, rootCAID)
+	}
+	return rootCAIDs
+}
+
+func validateLayoutKeys(keys map[string]Key) error {
+	for keyID, key := range keys {
+		if key.KeyID != keyID {
+			return fmt.Errorf("invalid key found")
+		}
+		err := validatePublicKey(key)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 /*
 validateLayout is a function used to ensure that a passed item of type Layout
 matches the necessary format.
@@ -587,14 +661,16 @@ func validateLayout(layout Layout) error {
 			" invalid or of incorrect format")
 	}
 
-	for keyID, key := range layout.Keys {
-		if key.KeyID != keyID {
-			return fmt.Errorf("invalid key found")
-		}
-		err := validatePublicKey(key)
-		if err != nil {
-			return err
-		}
+	if err := validateLayoutKeys(layout.Keys); err != nil {
+		return err
+	}
+
+	if err := validateLayoutKeys(layout.RootCas); err != nil {
+		return err
+	}
+
+	if err := validateLayoutKeys(layout.IntermediateCas); err != nil {
+		return err
 	}
 
 	var namesSeen = make(map[string]bool)
@@ -668,17 +744,13 @@ Load parses JSON formatted metadata at the passed path into the Metablock
 object on which it was called.  It returns an error if it cannot parse
 a valid JSON formatted Metablock that contains a Link or Layout.
 */
-func (mb *Metablock) Load(path string) (err error) {
+func (mb *Metablock) Load(path string) error {
 	// Open file and close before returning
 	jsonFile, err := os.Open(path)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if closeErr := jsonFile.Close(); closeErr != nil {
-			err = closeErr
-		}
-	}()
+	defer jsonFile.Close()
 
 	// Read entire file
 	jsonBytes, err := ioutil.ReadAll(jsonFile)
@@ -698,7 +770,7 @@ func (mb *Metablock) Load(path string) (err error) {
 	// one of them has a `null` value, which would lead to a nil pointer
 	// dereference in Unmarshal below.
 	if rawMb["signed"] == nil || rawMb["signatures"] == nil {
-		return fmt.Errorf("In-toto metadata requires 'signed' and" +
+		return fmt.Errorf("in-toto metadata requires 'signed' and" +
 			" 'signatures' parts")
 	}
 
@@ -750,11 +822,11 @@ func (mb *Metablock) Load(path string) (err error) {
 		mb.Signed = layout
 
 	} else {
-		return fmt.Errorf("The '_type' field of the 'signed' part of in-toto" +
+		return fmt.Errorf("the '_type' field of the 'signed' part of in-toto" +
 			" metadata must be one of 'link' or 'layout'")
 	}
 
-	return nil
+	return jsonFile.Close()
 }
 
 /*
@@ -795,16 +867,9 @@ the passed Key, the object in Signed cannot be canonicalized, or the Signature
 is invalid.
 */
 func (mb *Metablock) VerifySignature(key Key) error {
-	var sig Signature
-	for _, s := range mb.Signatures {
-		if s.KeyID == key.KeyID {
-			sig = s
-			break
-		}
-	}
-
-	if sig == (Signature{}) {
-		return fmt.Errorf("No signature found for key '%s'", key.KeyID)
+	sig, err := mb.GetSignatureForKeyID(key.KeyID)
+	if err != nil {
+		return err
 	}
 
 	dataCanonical, err := mb.GetSignableRepresentation()
@@ -816,6 +881,17 @@ func (mb *Metablock) VerifySignature(key Key) error {
 		return err
 	}
 	return nil
+}
+
+// GetSignatureForKeyID returns the signature that was created by the provided keyID, if it exists.
+func (mb *Metablock) GetSignatureForKeyID(keyID string) (Signature, error) {
+	for _, s := range mb.Signatures {
+		if s.KeyID == keyID {
+			return s, nil
+		}
+	}
+
+	return Signature{}, fmt.Errorf("no signature found for key '%s'", keyID)
 }
 
 /*

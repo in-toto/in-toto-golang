@@ -1,0 +1,22 @@
+{
+  "signed": {
+    "_type": "link",
+    "name": "write-code",
+    "materials": {},
+    "products": {
+      "foo.py": {
+        "sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549"
+      }
+    },
+    "byproducts": {},
+    "command": [],
+    "environment": {}
+  },
+  "signatures": [
+    {
+      "keyid": "785f486a6e828e62f0348dfbe817b06a66e4640cc8c8e467f3eefe645557705b",
+      "sig": "7ee5b841509869a58dcf62461e42ccf6461b77b1e4a1e26b7a07bb96b222734b05d0f8243796a5778f37c82fd57cf4f68c59fa5bc167332ce8e4835144410437c380329d021f8a730cf6a5eecd2e6666a8623e701f12c569fd88c360eb4b71ec8387c6f121f37e9aff73826fd4dddc13a827af681c9ffa65f80208682d79cce6901cfecb941d4e4b5ece40ba9ace85a487f7e95a533d3c7837f9871acc943ec90e06ad094972790ecf34c70eb010e5831ab5984afed87165e6d556a53dae9b3acd8d273d19b7319923742bb92ddb96f9672cd482ca34895d06bd6c46bb236a98db42fe736d4501a9627b07aa568bc9a9347cc8c99375af7fd811401330b78dcd",
+      "cert": ""
+    }
+  ]
+}

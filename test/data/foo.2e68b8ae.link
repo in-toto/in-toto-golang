@@ -1,0 +1,17 @@
+{
+ "signatures": [
+  {
+   "keyid": "2e68b8ae1b921406e9422e5f06280c5c4cb86b20c360a7ca2205b742950edae6",
+   "sig": "3374de827dc5e2b65b7f08bb0dff8488a8229199ca4139c6100b947cefa9d184e8380876a28e89b7fa9118c0fb57414f5ae3899e351ad45c823bbcc0ab720681535ed136b877bf1fd257a1070bdf4908ae93180cc8e7d2d527c651b6dbd657e99ebc35a0b66ae88af676d3edc96ba4b9a181a6aefdf014f7a24dd3a2ab490247d70d402cb1acc187015ecc40ddb225df029ea6e18fb58bf6528a9a742a67d3186a7f420c2154c2ab8854f2adbf833121e90bd8f00e85287468174eceebd8c7e7da8c8e75ddd056fa5610f38846a1f6b44798361d02bf6af3896a7f6efdedf0e5627080a71f25131ce044636755fb2c1177838d1c6d3c1eaea40d4a633d290c4c"
+  }
+ ],
+ "signed": {
+  "_type": "link",
+  "byproducts": {},
+  "command": [],
+  "environment": {},
+  "materials": {},
+  "name": "foo",
+  "products": {}
+ }
+}
