@@ -324,6 +324,12 @@ func InTotoRun(name string, runDir string, materialPaths []string, productPaths 
 	return linkMb, nil
 }
 
+/*
+InTotoRecordStart begins the creation of a link metablock file in two steps,
+in order to provide evidence for supply chain steps that cannot be carries out
+by a single command.  InTotoRecordStart collects the hashes of the materials
+before any commands are run, signs the unfinished link, and returns the link.
+*/
 func InTotoRecordStart(name string, materialPaths []string, key Key, hashAlgorithms, gitignorePatterns []string, lStripPaths []string) (Metablock, error) {
 	var linkMb Metablock
 	materials, err := RecordArtifacts(materialPaths, hashAlgorithms, gitignorePatterns, lStripPaths)
@@ -350,6 +356,13 @@ func InTotoRecordStart(name string, materialPaths []string, key Key, hashAlgorit
 	return linkMb, nil
 }
 
+/*
+InTotoRecordStop ends the creation of a metatadata link file created by
+InTotoRecordStart. InTotoRecordStop takes in a signed unfinished link metablock
+created by InTotoRecordStart and records the hashes of any products creted by
+commands run between InTotoRecordStart and InTotoRecordStop.  The resultant
+finished link metablock is then signed by the provided key and returned.
+*/
 func InTotoRecordStop(prelimLinkMb Metablock, productPaths []string, key Key, hashAlgorithms, gitignorePatterns []string, lStripPaths []string) (Metablock, error) {
 	var linkMb Metablock
 	if err := prelimLinkMb.VerifySignature(key); err != nil {
