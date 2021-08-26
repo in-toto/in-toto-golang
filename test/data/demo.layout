@@ -1,141 +1,188 @@
 {
- "signatures": [
-  {
-   "keyid": "d7b728368798278c6bbd43e57b9ff9794be73c24edc574fdaae67efcbc34e23a",
-   "sig": "965b90f6e12dc11b45117d860ad32f2bb0c6efa6c15d105e925dea6f395c9a3d69cf962a0b772dba827eafaa8da0dff09b774022345766c3b8a912acd85a6ecab42d3d3be4f4a8f7a095db38472ff927aa471e356179ee8bd826f860052b17d2ab3679ec7ef145ff3adfab7e615d7e118818d5c8b3b0641011cd8279c921b3d407c9b8f17f135e57f51f3263286ee1cff352ef8a6738b2ca96759e9745edb41b7f76f4945b52417581a9f2df620f85e748afc1bae04937e97bc3e7001ed76162f22788742cfd2038a7e42da89530b9ea699dada54f52b889dae41dca0f1af0098db2e96107236d4cc1197040f0f0409deed4617e493e45e8b2cc9850468cbb36",
-    "cert": ""
-  }
- ],
- "signed": {
-  "_type": "layout",
-  "expires": "2030-11-18T16:06:36Z",
-  "inspect": [
-   {
-    "_type": "inspection",
-    "expected_materials": [
-     [
-      "MATCH",
-      "foo.tar.gz",
-      "WITH",
-      "PRODUCTS",
-      "FROM",
-      "package"
-     ],
-     [
-      "DISALLOW",
-      "foo.tar.gz"
-     ]
+  "signed": {
+    "_type": "layout",
+    "steps": [
+      {
+        "_type": "step",
+        "pubkeys": [
+          "785f486a6e828e62f0348dfbe817b06a66e4640cc8c8e467f3eefe645557705b"
+        ],
+        "cert_constraints": [
+          {
+            "common_name": "write-code.example.com",
+            "dns_names": [],
+            "emails": [],
+            "organizations": [
+              "example"
+            ],
+            "roots": [
+              "fcfaf42497c6360aadc0f76e5684ddff5ef3d4f6ce76e267519d1b31fa1d7c6d"
+            ],
+            "uris": [
+              "spiffe://example.com/write-code"
+            ]
+          }
+        ],
+        "expected_command": [],
+        "threshold": 1,
+        "name": "write-code",
+        "expected_materials": [],
+        "expected_products": [
+          [
+            "ALLOW",
+            "foo.py"
+          ]
+        ]
+      },
+      {
+        "_type": "step",
+        "pubkeys": [
+          "2e68b8ae1b921406e9422e5f06280c5c4cb86b20c360a7ca2205b742950edae6"
+        ],
+        "cert_constraints": [],
+        "expected_command": [
+          "tar",
+          "zcvf",
+          "foo.tar.gz",
+          "foo.py"
+        ],
+        "threshold": 1,
+        "name": "package",
+        "expected_materials": [
+          [
+            "MATCH",
+            "foo.py",
+            "WITH",
+            "PRODUCTS",
+            "FROM",
+            "write-code"
+          ],
+          [
+            "DISALLOW",
+            "*"
+          ]
+        ],
+        "expected_products": [
+          [
+            "ALLOW",
+            "foo.tar.gz"
+          ],
+          [
+            "ALLOW",
+            "foo.py"
+          ]
+        ]
+      }
     ],
-    "expected_products": [
-     [
-      "MATCH",
-      "foo.py",
-      "WITH",
-      "PRODUCTS",
-      "FROM",
-      "write-code"
-     ],
-     [
-      "DISALLOW",
-      "foo.py"
-     ]
+    "inspect": [
+      {
+        "_type": "inspection",
+        "run": [
+          "tar",
+          "xfz",
+          "foo.tar.gz"
+        ],
+        "name": "untar",
+        "expected_materials": [
+          [
+            "MATCH",
+            "foo.tar.gz",
+            "WITH",
+            "PRODUCTS",
+            "FROM",
+            "package"
+          ],
+          [
+            "DISALLOW",
+            "foo.tar.gz"
+          ]
+        ],
+        "expected_products": [
+          [
+            "MATCH",
+            "foo.py",
+            "WITH",
+            "PRODUCTS",
+            "FROM",
+            "write-code"
+          ],
+          [
+            "DISALLOW",
+            "foo.py"
+          ]
+        ]
+      }
     ],
-    "name": "untar",
-    "run": [
-     "tar",
-     "xfz",
-     "foo.tar.gz"
-    ]
-   }
-  ],
-  "intermediatecas": {},
-  "keys": {
-   "2e68b8ae1b921406e9422e5f06280c5c4cb86b20c360a7ca2205b742950edae6": {
-    "keyid": "2e68b8ae1b921406e9422e5f06280c5c4cb86b20c360a7ca2205b742950edae6",
-    "keyid_hash_algorithms": [
-     "sha256",
-     "sha512"
-    ],
-    "keytype": "rsa",
-    "keyval": {
-     "private": "",
-     "public": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwfxhivjl0inkB6mtXCTV\nP8NTy+hvcbUhko2M8B/ia3QkoJzcyXzJopFcwsT8yf4o8Ga0LhaHJyMt9UyMviJ7\ndph7JbPcGEJC7o+9ubVc6pkJ3JU5GJHn+br1gSWvIzS/IF4Em8ubQwBBhRR0v3q+\n18h3LQYbuSZsztp3WDPkug+3zlxIJJdfdHy1tSC4jWMg5rTvO/UdiL8MXShudtga\nk9jJxL2bHN6yt1GnDu995Lsuop96ZgLG+0UWyeG/Lt49Xx7Mgaj+WILBzvI7yC8l\nLOunah+jcYS7UBs5YcY2z3DyrgTUxW6xzh23OBJab/5nWl+b8zQVfeYVr/hAri1G\nHwIDAQAB\n-----END PUBLIC KEY-----"
+    "keys": {
+      "2e68b8ae1b921406e9422e5f06280c5c4cb86b20c360a7ca2205b742950edae6": {
+        "keyid": "2e68b8ae1b921406e9422e5f06280c5c4cb86b20c360a7ca2205b742950edae6",
+        "keyid_hash_algorithms": [
+          "sha256",
+          "sha512"
+        ],
+        "keytype": "rsa",
+        "keyval": {
+          "private": "",
+          "public": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwfxhivjl0inkB6mtXCTV\nP8NTy+hvcbUhko2M8B/ia3QkoJzcyXzJopFcwsT8yf4o8Ga0LhaHJyMt9UyMviJ7\ndph7JbPcGEJC7o+9ubVc6pkJ3JU5GJHn+br1gSWvIzS/IF4Em8ubQwBBhRR0v3q+\n18h3LQYbuSZsztp3WDPkug+3zlxIJJdfdHy1tSC4jWMg5rTvO/UdiL8MXShudtga\nk9jJxL2bHN6yt1GnDu995Lsuop96ZgLG+0UWyeG/Lt49Xx7Mgaj+WILBzvI7yC8l\nLOunah+jcYS7UBs5YcY2z3DyrgTUxW6xzh23OBJab/5nWl+b8zQVfeYVr/hAri1G\nHwIDAQAB\n-----END PUBLIC KEY-----",
+          "certificate": ""
+        },
+        "scheme": "rsassa-pss-sha256"
+      },
+      "785f486a6e828e62f0348dfbe817b06a66e4640cc8c8e467f3eefe645557705b": {
+        "keyid": "785f486a6e828e62f0348dfbe817b06a66e4640cc8c8e467f3eefe645557705b",
+        "keyid_hash_algorithms": [
+          "sha256",
+          "sha512"
+        ],
+        "keytype": "rsa",
+        "keyval": {
+          "private": "",
+          "public": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzkhbsudOZPbjVhWLLYLM\nYDD6XkxlGRWMWtVjNwX2Nv2DY/0x4h8Un/Y8vtNrwTzG3LSWIglx1IWmTIT1KGcC\nsEvpWeUSs8Y/v88Q3YdLrIhVUVLRV5XJc/2FVyh5FnevbhE98ZpnpJsfm3hzQpzS\nSvKYQFijbgrXRYh38s6Yps4SRxuD18N6YJRo48BmYJn7/H6h0V5hjZZxN7MXNY3/\nB+4eiJa0nLwJuQOrMU1jX6SOdVUcyuBTD7YDubztMqfD2u9FAasCzBO4GSOHAFFW\nmaEey9WZPDroxVRMrkrbn5tvacPiZilA1E0Vy6GgtHjXD6W4KO4bKHntVNFfBM7+\ndQIDAQAB\n-----END PUBLIC KEY-----",
+          "certificate": ""
+        },
+        "scheme": "rsassa-pss-sha256"
+      }
     },
-    "scheme": "rsassa-pss-sha256"
-   },
-   "785f486a6e828e62f0348dfbe817b06a66e4640cc8c8e467f3eefe645557705b": {
-    "keyid": "785f486a6e828e62f0348dfbe817b06a66e4640cc8c8e467f3eefe645557705b",
-    "keyid_hash_algorithms": [
-     "sha256",
-     "sha512"
-    ],
-    "keytype": "rsa",
-    "keyval": {
-     "private": "",
-     "public": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzkhbsudOZPbjVhWLLYLM\nYDD6XkxlGRWMWtVjNwX2Nv2DY/0x4h8Un/Y8vtNrwTzG3LSWIglx1IWmTIT1KGcC\nsEvpWeUSs8Y/v88Q3YdLrIhVUVLRV5XJc/2FVyh5FnevbhE98ZpnpJsfm3hzQpzS\nSvKYQFijbgrXRYh38s6Yps4SRxuD18N6YJRo48BmYJn7/H6h0V5hjZZxN7MXNY3/\nB+4eiJa0nLwJuQOrMU1jX6SOdVUcyuBTD7YDubztMqfD2u9FAasCzBO4GSOHAFFW\nmaEey9WZPDroxVRMrkrbn5tvacPiZilA1E0Vy6GgtHjXD6W4KO4bKHntVNFfBM7+\ndQIDAQAB\n-----END PUBLIC KEY-----"
+    "rootcas": {
+      "fcfaf42497c6360aadc0f76e5684ddff5ef3d4f6ce76e267519d1b31fa1d7c6d": {
+        "keyid": "fcfaf42497c6360aadc0f76e5684ddff5ef3d4f6ce76e267519d1b31fa1d7c6d",
+        "keyid_hash_algorithms": [
+          "sha256",
+          "sha512"
+        ],
+        "keytype": "rsa",
+        "keyval": {
+          "private": "",
+          "public": "",
+          "certificate": "-----BEGIN CERTIFICATE-----\nMIIDqjCCApKgAwIBAgIUKgcKs8083mZfuuGlwMPJkyAAwG4wDQYJKoZIhvcNAQEN\nBQAwKzEQMA4GA1UECgwHZXhhbXBsZTEXMBUGA1UECwwOZXhhbXBsZUNOPXJvb3Qw\nHhcNMjEwODI2MTc1MzMxWhcNMzEwODI0MTc1MzMxWjArMRAwDgYDVQQKDAdleGFt\ncGxlMRcwFQYDVQQLDA5leGFtcGxlQ049cm9vdDCCASIwDQYJKoZIhvcNAQEBBQAD\nggEPADCCAQoCggEBAOAzN0ErrwwKocuQWaBEJ2qp0CD6SV+pueXeP2tnxEfc9mZW\nZklhgMNIEZ9EZ+u366+i+Ek4l0Ru+s8H+jX6zcnIVrkYur1p3YSXMI1MRsrRvanw\nO+KeKVTe4vnfXoFksJN+BB6zYB9KhnfiYIfMIWrL3OFXftCTSIhcN80LaKrcedCg\nHdaNxV9214XQfl+tztMQ5cSgR/EHHdpfwQUhOgZfrv5DzsIpw+u2aNFDEcf1o3RD\nbv6/3ht6+iWXJ9P3sOg8zixfdH7DnYJuj/9VJIZGJDqbhm5YJ1m0k092+gyqk6uk\n1jB57y2U2vxu4H1tEjOrSx4KIhspocoFPqDj+OkCAwEAAaOBxTCBwjAdBgNVHQ4E\nFgQUi1CYdR7EnzzItdGayAQYSkO8ZlwwZgYDVR0jBF8wXYAUi1CYdR7EnzzItdGa\nyAQYSkO8ZlyhL6QtMCsxEDAOBgNVBAoMB2V4YW1wbGUxFzAVBgNVBAsMDmV4YW1w\nbGVDTj1yb290ghQqBwqzzTzeZl+64aXAw8mTIADAbjAPBgNVHRMBAf8EBTADAQH/\nMA4GA1UdDwEB/wQEAwIBBjAYBgNVHREEETAPhg1zcGlmZmU6Ly9yb290MA0GCSqG\nSIb3DQEBDQUAA4IBAQBV7IEgZljKvQdA+SFcFCoW9p5uiDE787aX/iz5Echeeq4E\nBvVdywEiYTDjGpk0+lfU1MdndrU+ykE5JSCWYKiSZCwWUdW7aGkZFR0hjH85s5zV\nARVro9QPTKJZlEXfswh6090xtn4gn/A6Bkded0frMpbcAAfgqyY6CNxLCuHnR6fi\n0660dHvy8CtDcIPSl+INgPj8on5Ih6rgRT08CO42HOCw1yTGK6hvOFX3YAsFHh+d\nnjUScSJretBiF0rUX1w8BSK0WOmRXKt0ZycqoecEPqJULJjnu7641/5qd9z41xV3\njgDXhJm7tP5lo2q4/j/VyHqn6BuUiGHQdbh1AMXR\n-----END CERTIFICATE-----\n"
+        },
+        "scheme": "rsassa-pss-sha256"
+      }
     },
-    "scheme": "rsassa-pss-sha256"
-   }
+    "intermediatecas": {
+      "752edcbb660c13da78aab06d25fd1644be058b2de83e0ae9c1ce2e6fb35ae6d1": {
+        "keyid": "752edcbb660c13da78aab06d25fd1644be058b2de83e0ae9c1ce2e6fb35ae6d1",
+        "keyid_hash_algorithms": [
+          "sha256",
+          "sha512"
+        ],
+        "keytype": "rsa",
+        "keyval": {
+          "private": "",
+          "public": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5Gk5fhhgrSZ1FqOMl4bp\n/SJ+jA5OR9U2lNAMX0vRZ8pvdVWq2nQ3I66TV8vXHycyjcOuWOnZ9M10k8yuCam5\n+59WnkCcyEtO6BfyAtVIP8jpLHb/pZT5i8a9WbtFcmq5A95grnwlJYHnk5oedfpx\nZ/WaWd/YCWHKQwWIEQkaGigNjvcgb6cChS5usxRGxakBXgBcDh3O2wT3IfIdA42b\nDGJztQaSqIBpftsDxat5AOITbGG5GneuJdYSW2qqam3VE1iDYD3ZH2e+cJewLqXr\n6cButlzk1hl0/x+srmwyC9NnRnaqTEnsITuxiX0qoEUl3k72Z5nNXerxiUrk/UAW\nywIDAQAB\n-----END PUBLIC KEY-----",
+          "certificate": "-----BEGIN CERTIFICATE-----\nMIIDuDCCAqCgAwIBAgIUVO35u1XxdJTWbeBqseSBuuVNbGkwDQYJKoZIhvcNAQEL\nBQAwKzEQMA4GA1UECgwHZXhhbXBsZTEXMBUGA1UECwwOZXhhbXBsZUNOPXJvb3Qw\nHhcNMjEwODI2MTc1MzMxWhcNMzEwODI0MTc1MzMxWjAyMRAwDgYDVQQKDAdleGFt\ncGxlMR4wHAYDVQQLDBVleGFtcGxlQ049ZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQDkaTl+GGCtJnUWo4yXhun9In6MDk5H1TaU0Axf\nS9Fnym91VaradDcjrpNXy9cfJzKNw65Y6dn0zXSTzK4Jqbn7n1aeQJzIS07oF/IC\n1Ug/yOksdv+llPmLxr1Zu0VyarkD3mCufCUlgeeTmh51+nFn9ZpZ39gJYcpDBYgR\nCRoaKA2O9yBvpwKFLm6zFEbFqQFeAFwOHc7bBPch8h0DjZsMYnO1BpKogGl+2wPF\nq3kA4hNsYbkad64l1hJbaqpqbdUTWINgPdkfZ75wl7AupevpwG62XOTWGXT/H6yu\nbDIL02dGdqpMSewhO7GJfSqgRSXeTvZnmc1d6vGJSuT9QBbLAgMBAAGjgcwwgckw\nHQYDVR0OBBYEFC+7VN6BIEfhfBGRJxw7bVL6ZUe+MGYGA1UdIwRfMF2AFItQmHUe\nxJ88yLXRmsgEGEpDvGZcoS+kLTArMRAwDgYDVQQKDAdleGFtcGxlMRcwFQYDVQQL\nDA5leGFtcGxlQ049cm9vdIIUKgcKs8083mZfuuGlwMPJkyAAwG4wDwYDVR0TAQH/\nBAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwHwYDVR0RBBgwFoYUc3BpZmZlOi8vZXhh\nbXBsZS5jb20wDQYJKoZIhvcNAQELBQADggEBADsk24Cr7iDOyNQfP3coZZ9sy3ys\ntl5ntSL4NAOoL8Xouk0VjPY0egMGHxaeUxam7XBumHay6Q3ihry5Rc/aBcrNXxAc\n1F5SbhjD+AsMWeJ8Vrl9ipT1AlI5nHSEnhZ8FaUZEu/WzUfx9Ku7oP0zZHwF6t5P\nKvdOgAblLzZ37ndkxBeEaOWoOsW3rXM7WfAVrfWHgEF2E+ApVOk2eW4aMPC2odE3\n1Kyce+JQHV8fblpO0+mvEeodPNTVRcAFieliWKuYccl7FkOzR/VuYhnaa+rPY9Yi\nsNI7sgLLEPMPrvDjNmLggvYnRlifm0KAypIQ6O2sLAk6/mJRhfJxRm5eKuQ=\n-----END CERTIFICATE-----\n"
+        },
+        "scheme": "rsassa-pss-sha256"
+      }
+    },
+    "expires": "2030-11-18T16:06:36Z",
+    "readme": ""
   },
-  "readme": "",
-  "rootcas": {},
-  "steps": [
-   {
-    "_type": "step",
-    "cert_constraints": [],
-    "expected_command": [],
-    "expected_materials": [],
-    "expected_products": [
-     [
-      "ALLOW",
-      "foo.py"
-     ]
-    ],
-    "name": "write-code",
-    "pubkeys": [
-     "785f486a6e828e62f0348dfbe817b06a66e4640cc8c8e467f3eefe645557705b"
-    ],
-    "threshold": 1
-   },
-   {
-    "_type": "step",
-    "cert_constraints": [],
-    "expected_command": [
-     "tar",
-     "zcvf",
-     "foo.tar.gz",
-     "foo.py"
-    ],
-    "expected_materials": [
-     [
-      "MATCH",
-      "foo.py",
-      "WITH",
-      "PRODUCTS",
-      "FROM",
-      "write-code"
-     ],
-     [
-      "DISALLOW",
-      "*"
-     ]
-    ],
-    "expected_products": [
-     [
-      "ALLOW",
-      "foo.tar.gz"
-     ],
-     [
-      "ALLOW",
-      "foo.py"
-     ]
-    ],
-    "name": "package",
-    "pubkeys": [
-     "2e68b8ae1b921406e9422e5f06280c5c4cb86b20c360a7ca2205b742950edae6"
-    ],
-    "threshold": 1
-   }
+  "signatures": [
+    {
+      "keyid": "d7b728368798278c6bbd43e57b9ff9794be73c24edc574fdaae67efcbc34e23a",
+      "sig": "4a6b367dc644d374a3e9440406c61f8065dc7fd91e38af6bd7e847ae3d8d0949a67a99409dab61b15f7d951cf5a81f025f992cd4cb7371bf30585c2fb5762b416f158a01467752b3a7d5e67e7e9b66ccf817d17452919c04d9f6506c71a349c733885d4f7639618a86e337a3743701115f3978fa0a14a8bc9988c7e9ba3cd48afe520ac73cfc56b0769bd347f289b05d88af4c6a9262c08ec40f2fe886ac11b86dd284e6d87725dcaa23a51278d396f6c3bb48868f3910f921749e01e96354d2b29c9a9deb53e9ab650cb886ac6a53f0ab5eab2ee5ad30d93a4adc9fdf69bfbaa8741d0d703a88b644daac740a7743925678f206d3430b375c9aaa7a6f601eed",
+      "cert": ""
+    }
   ]
- }
 }

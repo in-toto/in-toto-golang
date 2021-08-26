@@ -262,8 +262,8 @@ func validateKey(key Key) error {
 	if key.KeyType == "" {
 		return fmt.Errorf("%w: keytype", ErrEmptyKeyField)
 	}
-	if key.KeyVal.Public == "" {
-		return fmt.Errorf("%w: keyval.public", ErrEmptyKeyField)
+	if key.KeyVal.Public == "" && key.KeyVal.Certificate == "" {
+		return fmt.Errorf("%w: keyval.public and keyval.certificate cannot both be blank", ErrEmptyKeyField)
 	}
 	if key.Scheme == "" {
 		return fmt.Errorf("%w: scheme", ErrEmptyKeyField)
