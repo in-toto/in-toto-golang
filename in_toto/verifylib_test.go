@@ -1,7 +1,9 @@
 package in_toto
 
 import (
+	"bytes"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"fmt"
 	"os"
 	"path"
@@ -10,6 +12,9 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestInTotoVerifyPass(t *testing.T) {
@@ -828,4 +833,54 @@ func TestInTotoVerifyWithDirectory(t *testing.T) {
 		make(map[string]string), [][]byte{}); err != nil {
 		t.Error(err)
 	}
+}
+
+func TestLoadLayoutCertificates(t *testing.T) {
+	certTemplate := &x509.Certificate{
+		Subject: pkix.Name{
+			CommonName:   "step1.example.com",
+			Organization: []string{"example"},
+		},
+	}
+
+	_, intermediate, root, err := createTestCert(certTemplate, x509.Ed25519, time.Hour)
+	assert.Nil(t, err, "unexpected error when creating test cert")
+	rootKey := Key{}
+	err = rootKey.LoadKeyReader(bytes.NewReader(generatePEMBlock(root.Raw, "CERTIFICATE")), "ed25519", []string{"sha512"})
+	assert.Nil(t, err, "unexpected error loading Key for root")
+	intermediateKey := Key{}
+	intermediatePem := generatePEMBlock(intermediate.Raw, "CERTIFICATE")
+	err = intermediateKey.LoadKeyReader(bytes.NewReader(intermediatePem), "ed25519", []string{"sha512"})
+	assert.Nil(t, err, "unexpected error loading Key for intermediate")
+	testLayout := Layout{
+		RootCas: map[string]Key{
+			rootKey.KeyID: rootKey,
+		},
+		IntermediateCas: map[string]Key{
+			intermediateKey.KeyID: intermediateKey,
+		},
+	}
+
+	_, _, err = LoadLayoutCertificates(testLayout, [][]byte{intermediatePem})
+	assert.Nil(t, err, "unexpected error loading layout's certificates")
+
+	// Test with an invalid root in the layout and valid intermediate
+	invalidRootKey := rootKey
+	invalidRootKey.KeyVal.Certificate = "123123123"
+	testLayout.RootCas[rootKey.KeyID] = invalidRootKey
+	_, _, err = LoadLayoutCertificates(testLayout, [][]byte{intermediatePem})
+	assert.NotNil(t, err, "expected error with invalid root key")
+
+	// Test with a valid root but invalid intermediate in the layout
+	testLayout.RootCas[rootKey.KeyID] = rootKey
+	invalidIntermediateKey := intermediateKey
+	invalidIntermediateKey.KeyVal.Certificate = "123123123"
+	testLayout.IntermediateCas[intermediateKey.KeyID] = invalidIntermediateKey
+	_, _, err = LoadLayoutCertificates(testLayout, [][]byte{})
+	assert.NotNil(t, err, "expected error with invalid intermediate key")
+
+	// Now test failure with an invalid extra intermediate
+	testLayout.IntermediateCas[intermediateKey.KeyID] = intermediateKey
+	_, _, err = LoadLayoutCertificates(testLayout, [][]byte{[]byte("123123123")})
+	assert.NotNil(t, err, "expected error with invalid extra intermediates")
 }

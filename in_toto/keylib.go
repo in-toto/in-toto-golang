@@ -368,7 +368,7 @@ func getDefaultKeyScheme(key interface{}) (scheme string, keyIDHashAlgorithms []
 	switch key.(type) {
 	case *rsa.PublicKey, *rsa.PrivateKey:
 		scheme = rsassapsssha256Scheme
-	case *ed25519.PrivateKey, *ed25519.PublicKey:
+	case ed25519.PrivateKey, ed25519.PublicKey:
 		scheme = ed25519Scheme
 	case *ecdsa.PrivateKey, *ecdsa.PublicKey:
 		scheme = ecdsaSha2nistp256

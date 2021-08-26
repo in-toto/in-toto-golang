@@ -1,6 +1,9 @@
 package in_toto
 
 import (
+	"bytes"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -1862,4 +1865,85 @@ func TestSSLSigner(t *testing.T) {
 		err = s.Verify(e)
 		assert.Equal(t, ErrInvalidPayloadType, err, "wrong error returned")
 	})
+}
+
+func TestSignatureGetCertificate(t *testing.T) {
+	sig := Signature{}
+	_, err := sig.GetCertificate()
+	assert.NotNil(t, err, "expected empty signature error")
+
+	certTemplate := &x509.Certificate{
+		Subject: pkix.Name{
+			CommonName:   "step1.example.com",
+			Organization: []string{"example"},
+		},
+	}
+
+	cert, _, _, err := createTestCert(certTemplate, x509.Ed25519, time.Hour)
+	assert.Nil(t, err, "unexpected error when creating test certificate")
+	sig.Certificate = string(generatePEMBlock(cert.Raw, "CERTIFICATE"))
+	_, err = sig.GetCertificate()
+	assert.Nil(t, err, "unexpected error getting certificate from signature")
+}
+
+func TestStepCheckCertConstraints(t *testing.T) {
+	step := Step{}
+	key := Key{}
+	rootPool := x509.NewCertPool()
+	intermediatePool := x509.NewCertPool()
+	// Test failure if the step has no constraints
+	err := step.CheckCertConstraints(key, []string{}, rootPool, intermediatePool)
+	assert.NotNil(t, err, "expected error")
+
+	certTemplate := &x509.Certificate{
+		Subject: pkix.Name{
+			CommonName:   "step1.example.com",
+			Organization: []string{"example"},
+		},
+	}
+
+	leaf, intermediate, root, err := createTestCert(certTemplate, x509.Ed25519, time.Hour)
+	assert.Nil(t, err, "unexpected error creating test certificates")
+	rootPool.AddCert(root)
+	intermediatePool.AddCert(intermediate)
+	step.CertificateConstraints = []CertificateConstraint{
+		{
+			CommonName:    certTemplate.Subject.CommonName,
+			Organizations: certTemplate.Subject.Organization,
+			Emails:        certTemplate.EmailAddresses,
+			DNSNames:      certTemplate.DNSNames,
+			URIs:          []string{},
+			Roots:         []string{"*"},
+		},
+	}
+
+	err = key.LoadKeyReaderDefaults(bytes.NewReader(generatePEMBlock(leaf.Raw, "CERTIFICATE")))
+	rootCAIDs := []string{key.KeyID}
+	assert.Nil(t, err, "unexpected error when loading Key")
+
+	// Test to ensure we fail if the key has no certificate
+	err = step.CheckCertConstraints(Key{}, rootCAIDs, rootPool, intermediatePool)
+	assert.NotNil(t, err, "expected error when using key with no certificate")
+
+	// Test to ensure our test constraint passes
+	err = step.CheckCertConstraints(key, rootCAIDs, rootPool, intermediatePool)
+	assert.Nil(t, err, "unexpected error when checking constraints")
+
+	// Test to ensure we get an error when our certificate doesn't match a constraint
+	step.CertificateConstraints[0].CommonName = "bad common name"
+	err = step.CheckCertConstraints(key, rootCAIDs, rootPool, intermediatePool)
+	assert.NotNil(t, err, "expected error when checking constraint without match")
+}
+
+func TestRootCAIDs(t *testing.T) {
+	layout := Layout{
+		RootCas: map[string]Key{
+			"123123": Key{},
+			"456456": Key{},
+		},
+	}
+
+	expectedCAIDs := []string{"123123", "456456"}
+	rootCAIDs := layout.RootCAIDs()
+	assert.ElementsMatch(t, expectedCAIDs, rootCAIDs, "expected root ca ids don't match")
 }

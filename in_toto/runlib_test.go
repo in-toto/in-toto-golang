@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRecordArtifact(t *testing.T) {
@@ -280,12 +282,12 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("Could not write tmpfile: %s", err)
 	}
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
-		"tmpdir/tmpfile"}, []string{"sha256"}, nil, nil)
+		"tmpdir/tmpfile"}, []string{"sha256"}, nil, []string{"tmpdir/"})
 	expected := map[string]interface{}{
 		"foo.tar.gz": map[string]interface{}{
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 		},
-		"tmpdir/tmpfile": map[string]interface{}{
+		"tmpfile": map[string]interface{}{
 			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
 		},
 	}
@@ -453,5 +455,76 @@ func TestInTotoRun(t *testing.T) {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected error",
 				result, err)
 		}
+	}
+}
+
+func TestInTotoRecord(t *testing.T) {
+	// Successfully run InTotoRecordStart
+	linkName := "Name"
+
+	var validKey Key
+	if err := validKey.LoadKey("carol", "ed25519", []string{"sha256", "sha512"}); err != nil {
+		t.Error(err)
+	}
+
+	tablesCorrect := []struct {
+		materialPaths  []string
+		productPaths   []string
+		key            Key
+		hashAlgorithms []string
+		startResult    Metablock
+		stopResult     Metablock
+	}{
+		{[]string{"alice.pub"}, []string{"foo.tar.gz"}, validKey, []string{"sha256"}, Metablock{
+			Signed: Link{
+				Name: linkName,
+				Type: "link",
+				Materials: map[string]interface{}{
+					"alice.pub": map[string]interface{}{
+						"sha256": "f051e8b561835b7b2aa7791db7bc72f2613411b0b7d428a0ac33d45b8c518039",
+					},
+				},
+				Products:    map[string]interface{}{},
+				ByProducts:  map[string]interface{}{},
+				Command:     []string{},
+				Environment: map[string]interface{}{},
+			},
+			Signatures: []Signature{{
+				KeyID: "41d55e82a05090d8129880e38b9b82acb9cef4990b3594030bb674d61ec89c38",
+				Sig:   "f02db2e08d065840f266df850eaef7cfb5364bbe1808708945eb45373f4757cfe70c86f7ad5e4d5f746d41489410e0407921b4480788cfae5a7d695e3aa62f06",
+			}},
+		}, Metablock{
+			Signed: Link{
+				Name: linkName,
+				Type: "link",
+				Materials: map[string]interface{}{
+					"alice.pub": map[string]interface{}{
+						"sha256": "f051e8b561835b7b2aa7791db7bc72f2613411b0b7d428a0ac33d45b8c518039",
+					},
+				},
+				Products: map[string]interface{}{
+					"foo.tar.gz": map[string]interface{}{
+						"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+					},
+				},
+				ByProducts:  map[string]interface{}{},
+				Command:     []string{},
+				Environment: map[string]interface{}{},
+			},
+			Signatures: []Signature{{
+				KeyID: "41d55e82a05090d8129880e38b9b82acb9cef4990b3594030bb674d61ec89c38",
+				Sig:   "f4a2d468965d595b4d29615fb2083ef7ac22a948e1530925612d73ba580ce9765d93db7b7ed1b9755d96f13a6a1e858c64693c2f7adcb311afb28cb57fbadc0c",
+			}},
+		},
+		},
+	}
+
+	for _, table := range tablesCorrect {
+		result, err := InTotoRecordStart(linkName, table.materialPaths, table.key, table.hashAlgorithms, nil, nil)
+		assert.Nil(t, err, "unexpected error while running record start")
+		assert.Equal(t, table.startResult, result, "result from record start did not match expected result")
+		stopResult, err := InTotoRecordStop(result, table.productPaths, table.key, table.hashAlgorithms, nil, nil)
+		assert.Nil(t, err, "unexpected error while running record stop")
+		assert.Equal(t, table.stopResult, stopResult, "result from record stop did not match expected result")
 	}
 }

@@ -1,9 +1,12 @@
 package in_toto
 
 import (
+	"crypto/x509"
 	"errors"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // TestLoadKey makes sure, that our LoadKey function loads keys correctly
@@ -27,6 +30,7 @@ func TestLoadKey(t *testing.T) {
 		{"ecdsa public key (P384)", "grace.pub", "ecdsa-sha2-nistp384", []string{"sha256", "sha512"}, "2e43a67f17b0064fecf5d3ec56f04a4372c6d36361ca8089196a3e646494f1e8"},
 		{"ecdsa private key (P224)", "heidi", "ecdsa-sha2-nistp224", []string{"sha256", "sha512"}, "e60d9cfdf5ad4db9f270c3f06611b2a0bd318f29fef62626ccc286c5f8ff6fd1"},
 		{"ecdsa public key (P224)", "heidi.pub", "ecdsa-sha2-nistp224", []string{"sha256", "sha512"}, "e60d9cfdf5ad4db9f270c3f06611b2a0bd318f29fef62626ccc286c5f8ff6fd1"},
+		{"rsa public key from certificate", "example.com.write-code.cert.pem", "rsassa-pss-sha256", []string{"sha256", "sha512"}, "77367c76505915d0536e59de5643350b7b0cee489caf2a90b404a430be80d053"},
 	}
 	for _, table := range validTables {
 		var key Key
@@ -36,6 +40,43 @@ func TestLoadKey(t *testing.T) {
 		}
 		if table.expectedKeyID != key.KeyID {
 			t.Errorf("keyID for %s %s does not match expected keyID: %s. Got keyID: %s", table.name, table.path, table.expectedKeyID, key.KeyID)
+		}
+	}
+}
+
+// TestLoadKeyDefaults makes sure our function loads keys correctly
+// with the expected default schemes
+func TestLoadKeyDefaults(t *testing.T) {
+	validTables := []struct {
+		name           string
+		path           string
+		expectedKeyID  string
+		expectedScheme string
+	}{
+		{"rsa public key", "alice.pub", "d7b728368798278c6bbd43e57b9ff9794be73c24edc574fdaae67efcbc34e23a", rsassapsssha256Scheme},
+		{"rsa private key", "dan", "7223226fff4de04198b71f5e4ed6897d77d5e2ee928ef609d0e3efeca9f3dd9b", rsassapsssha256Scheme},
+		{"rsa public key", "dan.pub", "7223226fff4de04198b71f5e4ed6897d77d5e2ee928ef609d0e3efeca9f3dd9b", rsassapsssha256Scheme},
+		{"ed25519 private key", "carol", "41d55e82a05090d8129880e38b9b82acb9cef4990b3594030bb674d61ec89c38", ed25519Scheme},
+		{"ed25519 public key", "carol.pub", "41d55e82a05090d8129880e38b9b82acb9cef4990b3594030bb674d61ec89c38", ed25519Scheme},
+		{"ecdsa private key (P521)", "frank", "fa4f1e140524c5c8f3b6097864e1e394409e0897dadf403d6637c45a174780d4", ecdsaSha2nistp256},
+		{"ecdsa public key (P521)", "frank.pub", "fa4f1e140524c5c8f3b6097864e1e394409e0897dadf403d6637c45a174780d4", ecdsaSha2nistp256},
+		{"ecdsa private key (P384)", "grace", "b079553155b0bc7216d6d500c71f7669fbfa93e6cb953f1c08e8853c87483927", ecdsaSha2nistp256},
+		{"ecdsa public key (P384)", "grace.pub", "b079553155b0bc7216d6d500c71f7669fbfa93e6cb953f1c08e8853c87483927", ecdsaSha2nistp256},
+		{"ecdsa private key (P224)", "heidi", "e08e48ea4bc13f8ca4e9eee97647c2bb5fa9a11a3082c167d2cf7dfed74e0269", ecdsaSha2nistp256},
+		{"ecdsa public key (P224)", "heidi.pub", "e08e48ea4bc13f8ca4e9eee97647c2bb5fa9a11a3082c167d2cf7dfed74e0269", ecdsaSha2nistp256},
+		{"rsa public key from certificate", "example.com.write-code.cert.pem", "77367c76505915d0536e59de5643350b7b0cee489caf2a90b404a430be80d053", rsassapsssha256Scheme},
+	}
+	for _, table := range validTables {
+		var key Key
+		err := key.LoadKeyDefaults(table.path)
+		if err != nil {
+			t.Errorf("failed key.LoadKeyDefaults() for %s %s. Error: %s", table.name, table.path, err)
+		}
+		if table.expectedKeyID != key.KeyID {
+			t.Errorf("keyID for %s %s does not match expected keyID: %s. Got keyID: %s", table.name, table.path, table.expectedKeyID, key.KeyID)
+		}
+		if table.expectedScheme != key.Scheme {
+			t.Errorf("scheme for %s %s does not match expected scheme: %s. Got scheme %s", table.name, table.path, table.expectedScheme, key.Scheme)
 		}
 	}
 }
@@ -116,6 +157,31 @@ func TestLoadKeyErrors(t *testing.T) {
 		err := key.LoadKey(table.path, table.scheme, table.hashAlgorithms)
 		if !errors.Is(err, table.err) {
 			t.Errorf("failed LoadKey() for %s %s, got error: %s. Should have: %s", table.name, table.path, err, table.err)
+		}
+	}
+}
+
+// TestLoadKeyDefaultsErrors tests the LoadKeyDefaults functions for the most popular errors:
+//
+//	* os.ErrNotExist (triggered, when the file does not exist)
+//	* ErrNoPEMBlock (for example if the passed file is not a PEM block)
+//  * ErrFailedPEMParsing (for example if we pass an EC key, instead a key in PKCS8 format)
+func TestLoadKeyDefaultsErrors(t *testing.T) {
+	invalidTables := []struct {
+		name string
+		path string
+		err  error
+	}{
+		{"not existing file", "inToToRocks", os.ErrNotExist},
+		{"existing, but invalid file", "demo.layout", ErrNoPEMBlock},
+		{"EC private key file", "erin", ErrFailedPEMParsing},
+	}
+
+	for _, table := range invalidTables {
+		var key Key
+		err := key.LoadKeyDefaults(table.path)
+		if !errors.Is(err, table.err) {
+			t.Errorf("failed LoadKeyDefaults() for %s %s, got error: %s. Should have: %s", table.name, table.path, err, table.err)
 		}
 	}
 }
@@ -537,4 +603,38 @@ func TestVerifySignatureErrors(t *testing.T) {
 			t.Errorf("test '%s' failed, should got error: '%s', but received: '%s'", table.name, table.expectedError, err)
 		}
 	}
+}
+
+func TestVerifyCertificateTrust(t *testing.T) {
+	var rootKey, intermediateKey, leafKey Key
+	err := rootKey.LoadKeyDefaults("root.cert.pem")
+	assert.Nil(t, err, "unexpected error loading root")
+	err = intermediateKey.LoadKeyDefaults("example.com.intermediate.cert.pem")
+	assert.Nil(t, err, "unexpected error loading intermediate")
+	err = leafKey.LoadKeyDefaults("example.com.write-code.cert.pem")
+	assert.Nil(t, err, "unexpected error loading leaf")
+
+	rootPool := x509.NewCertPool()
+	ok := rootPool.AppendCertsFromPEM([]byte(rootKey.KeyVal.Certificate))
+	assert.True(t, ok, "unexpected error adding cert to root pool")
+	intermediatePool := x509.NewCertPool()
+	ok = intermediatePool.AppendCertsFromPEM([]byte(intermediateKey.KeyVal.Certificate))
+	assert.True(t, ok, "unexpected error adding cert to root pool")
+
+	_, possibleLeafCert, err := decodeAndParse([]byte(leafKey.KeyVal.Certificate))
+	assert.Nil(t, err, "unexpected error parsing leaf certificate")
+	leafCert, ok := possibleLeafCert.(*x509.Certificate)
+	assert.True(t, ok, "parseKey didn't return a x509 certificate")
+
+	// Test the happy path
+	_, err = VerifyCertificateTrust(leafCert, rootPool, intermediatePool)
+	assert.Nil(t, err, "unexpected error verifying trust")
+
+	// Test with no intermediate connecting the leaf to the root
+	_, err = VerifyCertificateTrust(leafCert, rootPool, x509.NewCertPool())
+	assert.NotNil(t, err, "expected error with missing intermediate")
+
+	// Test with no root
+	_, err = VerifyCertificateTrust(leafCert, x509.NewCertPool(), intermediatePool)
+	assert.NotNil(t, err, "expected error with missing root")
 }
