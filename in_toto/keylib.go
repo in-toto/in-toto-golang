@@ -39,6 +39,7 @@ const (
 	ed25519KeyType        string = "ed25519"
 	rsassapsssha256Scheme string = "rsassa-pss-sha256"
 	ecdsaSha2nistp224     string = "ecdsa-sha2-nistp224"
+	ecdsaSha2nistp256     string = "ecdsa-sha2-nistp256"
 	ecdsaSha2nistp384     string = "ecdsa-sha2-nistp384"
 	ecdsaSha2nistp521     string = "ecdsa-sha2-nistp521"
 	ed25519Scheme         string = "ed25519"
@@ -71,7 +72,7 @@ We need to use this function instead of a constant because Go does not support
 global constant slices.
 */
 func getSupportedEcdsaSchemes() []string {
-	return []string{ecdsaSha2nistp224, ecdsaSha2nistp384, ecdsaSha2nistp521}
+	return []string{ecdsaSha2nistp224, ecdsaSha2nistp256, ecdsaSha2nistp384, ecdsaSha2nistp521}
 }
 
 /*
@@ -281,12 +282,29 @@ func (k *Key) LoadKey(path string, scheme string, KeyIDHashAlgorithms []string) 
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if closeErr := pemFile.Close(); closeErr != nil {
-			err = closeErr
-		}
-	}()
-	return k.LoadKeyReader(pemFile, scheme, KeyIDHashAlgorithms)
+	defer pemFile.Close()
+
+	err = k.LoadKeyReader(pemFile, scheme, KeyIDHashAlgorithms)
+	if err != nil {
+		return err
+	}
+
+	return pemFile.Close()
+}
+
+func (k *Key) LoadKeyDefaults(path string) error {
+	pemFile, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer pemFile.Close()
+
+	err = k.LoadKeyReaderDefaults(pemFile)
+	if err != nil {
+		return err
+	}
+
+	return pemFile.Close()
 }
 
 // LoadKeyReader loads the key from a supplied reader. The logic matches LoadKey otherwise.
@@ -306,6 +324,54 @@ func (k *Key) LoadKeyReader(r io.Reader, scheme string, KeyIDHashAlgorithms []st
 		return err
 	}
 
+	return k.loadKey(key, pemData, scheme, KeyIDHashAlgorithms)
+}
+
+func (k *Key) LoadKeyReaderDefaults(r io.Reader) error {
+	if r == nil {
+		return ErrNoPEMBlock
+	}
+	// Read key bytes
+	pemBytes, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	// decodeAndParse returns the pemData for later use
+	// and a parsed key object (for operations on that key, like extracting the public Key)
+	pemData, key, err := decodeAndParse(pemBytes)
+	if err != nil {
+		return err
+	}
+
+	scheme, keyIDHashAlgorithms, err := getDefaultKeyScheme(key)
+	if err != nil {
+		return err
+	}
+
+	return k.loadKey(key, pemData, scheme, keyIDHashAlgorithms)
+}
+
+func getDefaultKeyScheme(key interface{}) (scheme string, keyIDHashAlgorithms []string, err error) {
+	keyIDHashAlgorithms = []string{"sha256", "sha512"}
+
+	switch key.(type) {
+	case *rsa.PublicKey, *rsa.PrivateKey:
+		scheme = rsassapsssha256Scheme
+	case *ed25519.PrivateKey, *ed25519.PublicKey:
+		scheme = ed25519Scheme
+	case *ecdsa.PrivateKey, *ecdsa.PublicKey:
+		scheme = ecdsaSha2nistp256
+	case *x509.Certificate:
+		return getDefaultKeyScheme(key.(*x509.Certificate).PublicKey)
+	default:
+		err = ErrUnsupportedKeyType
+	}
+
+	return scheme, keyIDHashAlgorithms, err
+}
+
+func (k *Key) loadKey(key interface{}, pemData *pem.Block, scheme string, keyIDHashAlgorithms []string) error {
+
 	// Use type switch to identify the key format
 	switch key.(type) {
 	case *rsa.PublicKey:
@@ -313,7 +379,7 @@ func (k *Key) LoadKeyReader(r io.Reader, scheme string, KeyIDHashAlgorithms []st
 		if err != nil {
 			return err
 		}
-		if err := k.setKeyComponents(pubKeyBytes, []byte{}, rsaKeyType, scheme, KeyIDHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, []byte{}, rsaKeyType, scheme, keyIDHashAlgorithms); err != nil {
 			return err
 		}
 	case *rsa.PrivateKey:
@@ -323,16 +389,16 @@ func (k *Key) LoadKeyReader(r io.Reader, scheme string, KeyIDHashAlgorithms []st
 		if err != nil {
 			return err
 		}
-		if err := k.setKeyComponents(pubKeyBytes, pemData.Bytes, rsaKeyType, scheme, KeyIDHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, pemData.Bytes, rsaKeyType, scheme, keyIDHashAlgorithms); err != nil {
 			return err
 		}
 	case ed25519.PublicKey:
-		if err := k.setKeyComponents(key.(ed25519.PublicKey), []byte{}, ed25519KeyType, scheme, KeyIDHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(key.(ed25519.PublicKey), []byte{}, ed25519KeyType, scheme, keyIDHashAlgorithms); err != nil {
 			return err
 		}
 	case ed25519.PrivateKey:
 		pubKeyBytes := key.(ed25519.PrivateKey).Public()
-		if err := k.setKeyComponents(pubKeyBytes.(ed25519.PublicKey), key.(ed25519.PrivateKey), ed25519KeyType, scheme, KeyIDHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes.(ed25519.PublicKey), key.(ed25519.PrivateKey), ed25519KeyType, scheme, keyIDHashAlgorithms); err != nil {
 			return err
 		}
 	case *ecdsa.PrivateKey:
@@ -340,7 +406,7 @@ func (k *Key) LoadKeyReader(r io.Reader, scheme string, KeyIDHashAlgorithms []st
 		if err != nil {
 			return err
 		}
-		if err := k.setKeyComponents(pubKeyBytes, pemData.Bytes, ecdsaKeyType, scheme, KeyIDHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, pemData.Bytes, ecdsaKeyType, scheme, keyIDHashAlgorithms); err != nil {
 			return err
 		}
 	case *ecdsa.PublicKey:
@@ -348,7 +414,7 @@ func (k *Key) LoadKeyReader(r io.Reader, scheme string, KeyIDHashAlgorithms []st
 		if err != nil {
 			return err
 		}
-		if err := k.setKeyComponents(pubKeyBytes, []byte{}, ecdsaKeyType, scheme, KeyIDHashAlgorithms); err != nil {
+		if err := k.setKeyComponents(pubKeyBytes, []byte{}, ecdsaKeyType, scheme, keyIDHashAlgorithms); err != nil {
 			return err
 		}
 	default:
@@ -440,6 +506,9 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 		// We are marshalling the ecdsaSignature struct as ASN.1 INTEGER SEQUENCES
 		// into an ASN.1 Object.
 		signatureBuffer, err = ecdsa.SignASN1(rand.Reader, parsedKey.(*ecdsa.PrivateKey), hashed[:])
+		if err != nil {
+			return signature, err
+		}
 	case ed25519KeyType:
 		// We do not need a scheme switch here, because ed25519
 		// only consist of sha256 and curve25519.
@@ -541,7 +610,7 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		default:
 			panic("unexpected Error in VerifySignature function")
 		}
-		if ok := ecdsa.VerifyASN1(parsedKey.(*ecdsa.PublicKey), hashed, sigBytes); !ok {
+		if ok := ecdsa.VerifyASN1(parsedKey.(*ecdsa.PublicKey), hashed[:], sigBytes); !ok {
 			return ErrInvalidSignature
 		}
 	case ed25519KeyType:
