@@ -204,13 +204,13 @@ func TestMetablockLoadDumpLoad(t *testing.T) {
 		},
 		Signatures: []Signature{
 			{
-				KeyID: "2e68b8ae1b921406e9422e5f06280c5c4cb86b20c360a7ca2205b742950edae6",
-				Sig:   "7184b815e9559d77d87af088dd4bf0dbd1d483eb583d665a8a3d1ae94b0b2a1d24a16d1c4cf3163b4ab1f516fe3e601a967ae1975f0f36b6e014112c69e5d7ff9386f9904a123f6cd7a339be0ed0fcc6dacfec49e0c7b0ad883305056a4e82ac6b3e73b62a9a055b728a85c2b873257a713983badcd93d311adb0b3ecad3c78c04a5036ef2be111b38ea1851bf27208cc97368e54a1f6999df93f97e8a840fb97983f96b5916d06fe2e4e438cf131a0d7b268f0f286dcfeb25ea259958d063a08d6820feae11d6159fa63c3642dafe8722a4d332e23c2ed3ca73a55966b2c2a3b1543ce0d3a57990135466ce78c7876d810fe7f44d0ed6376806b3021b7042cb",
+				KeyID: "d3ffd1086938b3698618adf088bf14b13db4c8ae19e4e78d73da49ee88492710",
+				Sig:   "7d42ca77f6bbbb65b015ec9e31abdfa05c0daecc34b016dd7997b26c3a347cb9a3d9045c8ac7e375f017076bc04687eb870e09f76031a014d60421fa288a11a0022ab225bcfde7b22d78891eeab06b0701b5a6d00368534bf7a3f6b16dc7aaed233a3fb5ab7e98e0ed0ffca5d128dd2549f2d2fe296038cd2111e282de31a44c428498e9788f8226d454331af6f582a1e61e88846265d0cd4722a431253f40bb52c9e56feffd90aca8ec0c6970576538eef5824c91159bce7583a10ae1a38c081e3991c7a20f280430cb1eb4e828c8a0f9c8c8ca41c27b2837a88ff7aa5052b4ac45d8fd5897a71f2f488ca3f52c7a770a01f2d8ab775a328cd1d4c45bb2e92c",
 			},
 		},
 	}
 
-	fnExisting := "package.2e68b8ae.link"
+	fnExisting := "package.d3ffd108.link"
 	fnTmp := fnExisting + ".tmp"
 	if err := mbMemory.Dump(fnTmp); err != nil {
 		t.Errorf("JSON serialization failed: %s", err)
@@ -304,7 +304,7 @@ func TestMetablockVerifySignature(t *testing.T) {
 
 func TestValidateLink(t *testing.T) {
 	var mb Metablock
-	if err := mb.Load("package.2e68b8ae.link"); err != nil {
+	if err := mb.Load("package.d3ffd108.link"); err != nil {
 		t.Errorf("Metablock load returned '%s'", err)
 	}
 	if err := validateLink(mb.Signed.(Link)); err != nil {

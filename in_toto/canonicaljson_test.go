@@ -27,11 +27,23 @@ func TestEncodeCanonical(t *testing.T) {
 			"int2":   float64(42),
 			"string": `\"`,
 		},
+		Key{
+			KeyVal: KeyVal{
+				Certificate: "cert",
+				Private:     "priv",
+				Public:      "pub",
+			},
+			KeyIDHashAlgorithms: []string{"hash"},
+			KeyID:               "id",
+			KeyType:             "type",
+			Scheme:              "scheme",
+		},
 	}
 	expectedResult := []string{
-		`{"keyid":"","keyid_hash_algorithms":null,"keytype":"","keyval":{"certificate":"","private":"","public":""},"scheme":""}`,
-		`{"keyid":"id","keyid_hash_algorithms":["hash"],"keytype":"type","keyval":{"certificate":"","private":"priv","public":"pub"},"scheme":"scheme"}`,
+		`{"keyid":"","keyid_hash_algorithms":null,"keytype":"","keyval":{"private":"","public":""},"scheme":""}`,
+		`{"keyid":"id","keyid_hash_algorithms":["hash"],"keytype":"type","keyval":{"private":"priv","public":"pub"},"scheme":"scheme"}`,
 		`{"false":false,"int":3,"int2":42,"nil":null,"string":"\\\"","true":true}`,
+		`{"keyid":"id","keyid_hash_algorithms":["hash"],"keytype":"type","keyval":{"certificate":"cert","private":"priv","public":"pub"},"scheme":"scheme"}`,
 		"",
 	}
 	for i := 0; i < len(objects); i++ {

@@ -1,0 +1,137 @@
+{
+  "signed": {
+    "_type": "layout",
+    "steps": [
+      {
+        "_type": "step",
+        "pubkeys": [
+          "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401"
+        ],
+        "expected_command": [],
+        "threshold": 1,
+        "name": "write-code",
+        "expected_materials": [],
+        "expected_products": [
+          [
+            "ALLOW",
+            "foo.py"
+          ]
+        ]
+      },
+      {
+        "_type": "step",
+        "pubkeys": [
+          "d3ffd1086938b3698618adf088bf14b13db4c8ae19e4e78d73da49ee88492710"
+        ],
+        "expected_command": [
+          "tar",
+          "zcvf",
+          "foo.tar.gz",
+          "foo.py"
+        ],
+        "threshold": 1,
+        "name": "package",
+        "expected_materials": [
+          [
+            "MATCH",
+            "foo.py",
+            "WITH",
+            "PRODUCTS",
+            "FROM",
+            "write-code"
+          ],
+          [
+            "DISALLOW",
+            "*"
+          ]
+        ],
+        "expected_products": [
+          [
+            "ALLOW",
+            "foo.tar.gz"
+          ],
+          [
+            "ALLOW",
+            "foo.py"
+          ]
+        ]
+      }
+    ],
+    "inspect": [
+      {
+        "_type": "inspection",
+        "run": [
+          "tar",
+          "xfz",
+          "foo.tar.gz"
+        ],
+        "name": "untar",
+        "expected_materials": [
+          [
+            "MATCH",
+            "foo.tar.gz",
+            "WITH",
+            "PRODUCTS",
+            "FROM",
+            "package"
+          ],
+          [
+            "DISALLOW",
+            "foo.tar.gz"
+          ]
+        ],
+        "expected_products": [
+          [
+            "MATCH",
+            "foo.py",
+            "WITH",
+            "PRODUCTS",
+            "FROM",
+            "write-code"
+          ],
+          [
+            "DISALLOW",
+            "foo.py"
+          ]
+        ]
+      }
+    ],
+    "keys": {
+      "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401": {
+        "keyid": "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401",
+        "keyid_hash_algorithms": [
+          "sha256",
+          "sha512"
+        ],
+        "keytype": "rsa",
+        "keyval": {
+          "private": "",
+          "public": "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAyCTik98953hKl6+B6n5l\n8DVIDwDnvrJfpasbJ3+Rw66YcawOZinRpMxPTqWBKs7sRop7jqsQNcslUoIZLrXP\nr3foPHF455TlrqPVfCZiFQ+O4CafxWOB4mL1NddvpFXTEjmUiwFrrL7PcvQKMbYz\neUHH4tH9MNzqKWbbJoekBsDpCDIxp1NbgivGBKwjRGa281sClKgpd0Q0ebl+RTcT\nvpfZVDbXazQ7VqZkidt7geWq2BidOXZp/cjoXyVneKx/gYiOUv8x94svQMzSEhw2\nLFMQ04A1KnGn1jxO35/fd6/OW32njyWs96RKu9UQVacYHsQfsACPWwmVqgnX/sp5\nujlvSDjyfZu7c5yUQ2asYfQPLvnjG+u7QcBukGf8hAfVgsezzX9QPiK35BKDgBU/\nVk43riJs165TJGYGVuLUhIEhHgiQtwo8pUTJS5npEe5XMDuZoighNdzoWY2nfsBf\np8348k6vJtDMB093/t6V9sTGYQcSbgKPyEQo5Pk6Wd4ZAgMBAAE=\n-----END PUBLIC KEY-----"
+        },
+        "scheme": "rsassa-pss-sha256"
+      },
+      "d3ffd1086938b3698618adf088bf14b13db4c8ae19e4e78d73da49ee88492710": {
+        "keyid": "d3ffd1086938b3698618adf088bf14b13db4c8ae19e4e78d73da49ee88492710",
+        "keyid_hash_algorithms": [
+          "sha256",
+          "sha512"
+        ],
+        "keytype": "rsa",
+        "keyval": {
+          "private": "",
+          "public": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxcz9AucNbkJbQpwTHlEH\nRB+h+MkYKQjw06IgZ8TXlXGqp5pdwTHI5n5iFol0/rksmiZxatHwhth7ryYNC3Vk\n9g/LAs9E60yWytiSgV93EKv65bmhYqiSAkJdyaPKvCb7cG979B4e+HVpdVx6s7Ex\nIoaDRYcX3VIt6V25/SQz5iNUeVlb++QtSfQFEf3lHauoFhWZoCse24nWtYZo+3Ut\nuTmxygp7tU/9NmYb2BXEfUCdgjoCQ1UsFLBQQ4haIdJNOtRFl8KNY09zbMUijKIe\nX0ZvgT877LUtMyydKPEo04/u3DEr9Zba/SkHw43jYE/ojlXeik5uVjLSr3sJLDSP\nHwIDAQAB\n-----END PUBLIC KEY-----"
+        },
+        "scheme": "rsassa-pss-sha256"
+      }
+    },
+    "expires": "2030-11-18T16:06:36Z",
+    "readme": ""
+  },
+  "signatures": [
+    {
+      "keyid": "70ca5750c2eda80b18f41f4ec5f92146789b5d68dd09577be422a0159bd13680",
+      "sig": "9a6d11c220ede0354b75fe5b45fd16fe1dde1d750f462a0e91d876a32c67263321da9ecd96bfe6c376e0e091267845c52ef37fb7469fe552c3742379b88748e1c516a6ad3e3866501f281697b364ea636081d3d305deba84d6a58e05372488ccd165798b914ee5e0f60f2a90050cd1617bcfdabdf9785b3ba175700d401851e7c1bd1ac2f472c9392d70ef3cb2d514a84448298695f4f5d3ee5423a84261db29a002f6fc1055d2160c6fb9db4e3e2018f9920759d4e7db87519994e045cc1c5b8833bf5a568e277971d4b6aea32c21ceba84ff0c17b2e143e3585ba5ab5f4345d8ccd13bffe1d8ed1b49a4c17fce1e08939356b35eb6889f20d064be3b61e8ab",
+      "cert": ""
+    }
+  ]
+}

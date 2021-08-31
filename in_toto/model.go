@@ -27,7 +27,7 @@ field may be an empty string.
 type KeyVal struct {
 	Private     string `json:"private"`
 	Public      string `json:"public"`
-	Certificate string `json:"certificate"`
+	Certificate string `json:"certificate,omitempty"`
 }
 
 /*
@@ -521,7 +521,7 @@ ExpectedMaterials and ExpectedProducts fields.
 type Step struct {
 	Type                   string                  `json:"_type"`
 	PubKeys                []string                `json:"pubkeys"`
-	CertificateConstraints []CertificateConstraint `json:"cert_constraints"`
+	CertificateConstraints []CertificateConstraint `json:"cert_constraints,omitempty"`
 	ExpectedCommand        []string                `json:"expected_command"`
 	Threshold              int                     `json:"threshold"`
 	SupplyChainItem
@@ -598,8 +598,8 @@ type Layout struct {
 	Steps           []Step         `json:"steps"`
 	Inspect         []Inspection   `json:"inspect"`
 	Keys            map[string]Key `json:"keys"`
-	RootCas         map[string]Key `json:"rootcas"`
-	IntermediateCas map[string]Key `json:"intermediatecas"`
+	RootCas         map[string]Key `json:"rootcas,omitempty"`
+	IntermediateCas map[string]Key `json:"intermediatecas,omitempty"`
 	Expires         string         `json:"expires"`
 	Readme          string         `json:"readme"`
 }
@@ -716,24 +716,41 @@ type Metablock struct {
 	Signatures []Signature `json:"signatures"`
 }
 
+type jsonField struct {
+	name      string
+	omitempty bool
+}
+
 /*
 checkRequiredJSONFields checks that the passed map (obj) has keys for each of
 the json tags in the passed struct type (typ), and returns an error otherwise.
+Any json tags that contain the "omitempty" option be allowed to be optional.
 */
 func checkRequiredJSONFields(obj map[string]interface{},
 	typ reflect.Type) error {
 
 	// Create list of json tags, e.g. `json:"_type"`
 	attributeCount := typ.NumField()
-	allFields := make([]string, 0)
+	allFields := make([]jsonField, 0)
 	for i := 0; i < attributeCount; i++ {
-		allFields = append(allFields, typ.Field(i).Tag.Get("json"))
+		fieldStr := typ.Field(i).Tag.Get("json")
+		field := jsonField{
+			name:      fieldStr,
+			omitempty: false,
+		}
+
+		if idx := strings.Index(fieldStr, ","); idx != -1 {
+			field.name = fieldStr[:idx]
+			field.omitempty = strings.Contains(fieldStr[idx+1:], "omitempty")
+		}
+
+		allFields = append(allFields, field)
 	}
 
 	// Assert that there's a key in the passed map for each tag
 	for _, field := range allFields {
-		if _, ok := obj[field]; !ok {
-			return fmt.Errorf("required field %s missing", field)
+		if _, ok := obj[field.name]; !ok && !field.omitempty {
+			return fmt.Errorf("required field %s missing", field.name)
 		}
 	}
 	return nil

@@ -398,7 +398,7 @@ func TestInTotoRun(t *testing.T) {
 				Environment: map[string]interface{}{},
 			},
 			Signatures: []Signature{{
-				KeyID: "41d55e82a05090d8129880e38b9b82acb9cef4990b3594030bb674d61ec89c38",
+				KeyID: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
 				Sig:   "71dfec1af747d02f6463d4baf3bb2c1d903c107470be86c12349433f780b1030e5ca36a10ee5c5d74de16344fe16b459154fd2be05a58fb556dff934d6682403",
 			}},
 		},
@@ -490,7 +490,7 @@ func TestInTotoRecord(t *testing.T) {
 				Environment: map[string]interface{}{},
 			},
 			Signatures: []Signature{{
-				KeyID: "41d55e82a05090d8129880e38b9b82acb9cef4990b3594030bb674d61ec89c38",
+				KeyID: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
 				Sig:   "f02db2e08d065840f266df850eaef7cfb5364bbe1808708945eb45373f4757cfe70c86f7ad5e4d5f746d41489410e0407921b4480788cfae5a7d695e3aa62f06",
 			}},
 		}, Metablock{
@@ -512,7 +512,7 @@ func TestInTotoRecord(t *testing.T) {
 				Environment: map[string]interface{}{},
 			},
 			Signatures: []Signature{{
-				KeyID: "41d55e82a05090d8129880e38b9b82acb9cef4990b3594030bb674d61ec89c38",
+				KeyID: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
 				Sig:   "f4a2d468965d595b4d29615fb2083ef7ac22a948e1530925612d73ba580ce9765d93db7b7ed1b9755d96f13a6a1e858c64693c2f7adcb311afb28cb57fbadc0c",
 			}},
 		},

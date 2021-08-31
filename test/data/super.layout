@@ -6,8 +6,8 @@
   "inspect": [],
   "intermediatecas": {},
   "keys": {
-   "d7b728368798278c6bbd43e57b9ff9794be73c24edc574fdaae67efcbc34e23a": {
-    "keyid": "d7b728368798278c6bbd43e57b9ff9794be73c24edc574fdaae67efcbc34e23a",
+   "70ca5750c2eda80b18f41f4ec5f92146789b5d68dd09577be422a0159bd13680": {
+    "keyid": "70ca5750c2eda80b18f41f4ec5f92146789b5d68dd09577be422a0159bd13680",
     "keyid_hash_algorithms": [
      "sha256",
      "sha512"
@@ -31,7 +31,7 @@
     "expected_products": [],
     "name": "sub_layout",
     "pubkeys": [
-     "d7b728368798278c6bbd43e57b9ff9794be73c24edc574fdaae67efcbc34e23a"
+     "70ca5750c2eda80b18f41f4ec5f92146789b5d68dd09577be422a0159bd13680"
     ],
     "threshold": 1
    }

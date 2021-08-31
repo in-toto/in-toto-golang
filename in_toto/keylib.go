@@ -103,8 +103,7 @@ func (k *Key) generateKeyID() error {
 		"scheme":                k.Scheme,
 		"keyid_hash_algorithms": k.KeyIDHashAlgorithms,
 		"keyval": map[string]string{
-			"certificate": "",
-			"public":      k.KeyVal.Public,
+			"public": k.KeyVal.Public,
 		},
 	}
 	keyCanonical, err := EncodeCanonical(keyToBeHashed)

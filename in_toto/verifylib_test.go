@@ -49,11 +49,11 @@ func TestGetSummaryLink(t *testing.T) {
 		t.Error(err)
 	}
 	var codeLink Metablock
-	if err := codeLink.Load("write-code.785f486a.link"); err != nil {
+	if err := codeLink.Load("write-code.b7d643de.link"); err != nil {
 		t.Error(err)
 	}
 	var packageLink Metablock
-	if err := packageLink.Load("package.2e68b8ae.link"); err != nil {
+	if err := packageLink.Load("package.d3ffd108.link"); err != nil {
 		t.Error(err)
 	}
 	demoLink := make(map[string]Metablock)
@@ -117,12 +117,12 @@ func TestVerifySublayouts(t *testing.T) {
 	if err := os.Mkdir(sublayoutDirectory, 0700); err != nil {
 		t.Errorf("Unable to create sublayout directory")
 	}
-	writeCodePath := path.Join(sublayoutDirectory, "write-code.785f486a.link")
-	if err := os.Link("write-code.785f486a.link", writeCodePath); err != nil {
+	writeCodePath := path.Join(sublayoutDirectory, "write-code.b7d643de.link")
+	if err := os.Link("write-code.b7d643de.link", writeCodePath); err != nil {
 		t.Errorf("Unable to link write-code metadata.")
 	}
-	packagePath := path.Join(sublayoutDirectory, "package.2e68b8ae.link")
-	if err := os.Link("package.2e68b8ae.link", packagePath); err != nil {
+	packagePath := path.Join(sublayoutDirectory, "package.d3ffd108.link")
+	if err := os.Link("package.d3ffd108.link", packagePath); err != nil {
 		t.Errorf("Unable to link package metadata")
 	}
 
@@ -555,8 +555,8 @@ func TestVerifyStepCommandAlignment(t *testing.T) {
 }
 
 func TestVerifyLinkSignatureThesholds(t *testing.T) {
-	keyID1 := "2e68b8ae1b921406e9422e5f06280c5c4cb86b20c360a7ca2205b742950edae6"
-	keyID2 := "785f486a6e828e62f0348dfbe817b06a66e4640cc8c8e467f3eefe645557705b"
+	keyID1 := "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401"
+	keyID2 := "d3ffd1086938b3698618adf088bf14b13db4c8ae19e4e78d73da49ee88492710"
 	keyID3 := "abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca"
 
 	var mb Metablock
@@ -571,15 +571,15 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 		PubKeys:   []string{keyID1, keyID2, keyID3}}}
 
 	var mbLink1 Metablock
-	if err := mbLink1.Load("foo.2e68b8ae.link"); err != nil {
+	if err := mbLink1.Load("foo.b7d643de.link"); err != nil {
 		t.Errorf("Unable to load link file: %s", err)
 	}
 	var mbLink2 Metablock
-	if err := mbLink2.Load("foo.785f486a.link"); err != nil {
+	if err := mbLink2.Load("foo.d3ffd108.link"); err != nil {
 		t.Errorf("Unable to load link file: %s", err)
 	}
 	var mbLinkBroken Metablock
-	if err := mbLinkBroken.Load("foo.785f486a.link"); err != nil {
+	if err := mbLinkBroken.Load("foo.d3ffd108.link"); err != nil {
 		t.Errorf("Unable to load link file: %s", err)
 	}
 	mbLinkBroken.Signatures[0].Sig = "breaksignature"
@@ -623,8 +623,8 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 }
 
 func TestLoadLinksForLayout(t *testing.T) {
-	keyID1 := "2e68b8ae1b921406e9422e5f06280c5c4cb86b20c360a7ca2205b742950edae6"
-	keyID2 := "785f486a6e828e62f0348dfbe817b06a66e4640cc8c8e467f3eefe645557705b"
+	keyID1 := "d3ffd1086938b3698618adf088bf14b13db4c8ae19e4e78d73da49ee88492710"
+	keyID2 := "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401"
 	var mb Metablock
 	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Unable to load template file: %s", err)
