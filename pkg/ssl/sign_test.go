@@ -151,7 +151,7 @@ func TestNilSign(t *testing.T) {
 		Payload:     base64.StdEncoding.EncodeToString([]byte(payload)),
 		PayloadType: payloadType,
 		Signatures: []Signature{
-			Signature{
+			{
 				KeyID: keyID,
 				Sig:   base64.StdEncoding.EncodeToString(pae),
 			},
@@ -264,7 +264,7 @@ func TestEcdsaSign(t *testing.T) {
 		Payload:     "aGVsbG8gd29ybGQ=",
 		PayloadType: payloadType,
 		Signatures: []Signature{
-			Signature{
+			{
 				KeyID: keyID,
 				Sig:   "A3JqsQGtVsJ2O2xqrI5IcnXip5GToJ3F+FnZ+O88SjtR6rDAajabZKciJTfUiHqJPcIAriEGAHTVeCUjW2JIZA==",
 			},
@@ -385,7 +385,7 @@ func TestVerifyBadBase64(t *testing.T) {
 		env := &Envelope{
 			Payload: "Not base 64",
 			Signatures: []Signature{
-				Signature{},
+				{},
 			},
 		}
 
@@ -397,7 +397,7 @@ func TestVerifyBadBase64(t *testing.T) {
 		env := &Envelope{
 			Payload: "cGF5bG9hZAo=",
 			Signatures: []Signature{
-				Signature{
+				{
 					Sig: "not base 64",
 				},
 			},
@@ -418,7 +418,7 @@ func TestVerifyNoMatch(t *testing.T) {
 		PayloadType: payloadType,
 		Payload:     "cGF5bG9hZAo=",
 		Signatures: []Signature{
-			Signature{
+			{
 				KeyID: "not found",
 				Sig:   "cGF5bG9hZAo=",
 			},

@@ -28,7 +28,7 @@ func TestVerify(t *testing.T) {
 		Payload:     "aGVsbG8gd29ybGQ=",
 		PayloadType: payloadType,
 		Signatures: []Signature{
-			Signature{
+			{
 				KeyID: keyID,
 				Sig:   "Cc3RkvYsLhlaFVd+d6FPx4ZClhqW4ZT0rnCYAfv6/ckoGdwT7g/blWNpOBuL/tZhRiVFaglOGTU8GEjm4aEaNA==",
 			},
