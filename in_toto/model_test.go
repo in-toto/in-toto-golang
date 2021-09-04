@@ -608,7 +608,7 @@ func TestValidateLayout(t *testing.T) {
 				Type:    "layout",
 				Expires: "2020-02-27T18:03:43Z",
 				Keys: map[string]Key{
-					"deadbeef": Key{KeyID: "livebeef"},
+					"deadbeef": {KeyID: "livebeef"},
 				},
 			},
 			"invalid key found",
@@ -618,7 +618,7 @@ func TestValidateLayout(t *testing.T) {
 				Type:    "layout",
 				Expires: "2020-02-27T18:03:43Z",
 				Keys: map[string]Key{
-					"deadbeef": Key{KeyID: "deadbeef"},
+					"deadbeef": {KeyID: "deadbeef"},
 				},
 			},
 			"empty field in key: keytype",
@@ -1568,13 +1568,13 @@ func TestDecodeProvenanceStatement(t *testing.T) {
 			Type:          StatementInTotoV01,
 			PredicateType: PredicateSLSAProvenanceV01,
 			Subject: []Subject{
-				Subject{
+				{
 					Name: "curl-7.72.0.tar.bz2",
 					Digest: DigestSet{
 						"sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef",
 					},
 				},
-				Subject{
+				{
 					Name: "curl-7.72.0.tar.gz",
 					Digest: DigestSet{
 						"sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2",
@@ -1598,13 +1598,13 @@ func TestDecodeProvenanceStatement(t *testing.T) {
 				},
 			},
 			Materials: []ProvenanceMaterial{
-				ProvenanceMaterial{
+				{
 					URI: "git+https://github.com/curl/curl-docker@master",
 					Digest: DigestSet{
 						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
 					},
 				},
-				ProvenanceMaterial{
+				{
 					URI: "github_hosted_vm:ubuntu-18.04:20210123.1",
 				},
 			},
@@ -1633,13 +1633,13 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 			Type:          StatementInTotoV01,
 			PredicateType: PredicateSLSAProvenanceV01,
 			Subject: []Subject{
-				Subject{
+				{
 					Name: "curl-7.72.0.tar.bz2",
 					Digest: DigestSet{
 						"sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef",
 					},
 				},
-				Subject{
+				{
 					Name: "curl-7.72.0.tar.gz",
 					Digest: DigestSet{
 						"sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2",
@@ -1666,16 +1666,16 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 				},
 			},
 			Materials: []ProvenanceMaterial{
-				ProvenanceMaterial{
+				{
 					URI: "git+https://github.com/curl/curl-docker@master",
 					Digest: DigestSet{
 						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
 					},
 				},
-				ProvenanceMaterial{
+				{
 					URI: "github_hosted_vm:ubuntu-18.04:20210123.1",
 				},
-				ProvenanceMaterial{
+				{
 					URI: "git+https://github.com/curl/",
 				},
 			},
@@ -1784,7 +1784,7 @@ func TestLinkStatement(t *testing.T) {
 		StatementHeader: StatementHeader{
 			PredicateType: PredicateLinkV1,
 			Subject: []Subject{
-				Subject{
+				{
 					Name: "baz",
 					Digest: DigestSet{
 						"sha256": "hash1",
