@@ -420,10 +420,10 @@ func VerifyStepCommandAlignment(layout Layout,
 }
 
 /*
-LoadLayoutCertificates loads the root and intermediate CAs from the layout if ne in the layout.
+LoadLayoutCertificates loads the root and intermediate CAs from the layout if in the layout.
 This will be used to check signatures that were used to sign links but not configured
 in the PubKeys section of the step.  No configured CAs means we don't want to allow this.
-Returned CertPools will empty in this case.
+Returned CertPools will be empty in this case.
 */
 func LoadLayoutCertificates(layout Layout, intermediatePems [][]byte) (*x509.CertPool, *x509.CertPool, error) {
 	rootPool := x509.NewCertPool()
