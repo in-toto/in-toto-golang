@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/in-toto/in-toto-golang/pkg/ssl"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -1832,18 +1832,18 @@ func (n nilsigner) Verify(keyID string, data, sig []byte) error {
 		}
 		return nil
 	}
-	return ssl.ErrUnknownKey
+	return dsse.ErrUnknownKey
 }
 
-func TestSSLSigner(t *testing.T) {
+func TestDSSESigner(t *testing.T) {
 	t.Run("No signers provided", func(t *testing.T) {
-		s, err := NewSSLSigner([]ssl.SignVerifier{}...)
+		s, err := NewDSSESigner([]dsse.SignVerifier{}...)
 		assert.Nil(t, s, "unexpected signer returned")
 		assert.NotNil(t, err, "error expected")
 	})
 
 	t.Run("Sign verify ok", func(t *testing.T) {
-		s, err := NewSSLSigner(nilsigner(0))
+		s, err := NewDSSESigner(nilsigner(0))
 		assert.Nil(t, err, "unexpected error")
 		e, err := s.SignPayload([]byte("test data"))
 		assert.NotNil(t, e, "envelope expected")
@@ -1853,7 +1853,7 @@ func TestSSLSigner(t *testing.T) {
 	})
 
 	t.Run("Sign verify bad payload", func(t *testing.T) {
-		s, err := NewSSLSigner(nilsigner(0))
+		s, err := NewDSSESigner(nilsigner(0))
 		assert.Nil(t, err, "unexpected error")
 		e, err := s.SignPayload([]byte("test data"))
 		assert.NotNil(t, e, "envelope expected")

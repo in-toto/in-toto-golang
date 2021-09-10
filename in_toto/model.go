@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/in-toto/in-toto-golang/pkg/ssl"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
 /*
@@ -1051,7 +1051,7 @@ type LinkStatement struct {
 
 /*
 SPDXStatement is the definition for an entire SPDX statement.
-Currently not implemented. Some tooling exists here:
+This is currently not implemented. Some tooling exists here:
 https://github.com/spdx/tools-golang, but this software is still in
 early state.
 This struct is the same as the generic Statement struct but is added for
@@ -1063,32 +1063,32 @@ type SPDXStatement struct {
 }
 
 /*
-SSLSigner provides signature generation and validation based on the SSL
+DSSESigner provides signature generation and validation based on the SSL
 Signing Spec: https://github.com/secure-systems-lab/signing-spec
 as describe by: https://github.com/MarkLodato/ITE/tree/media-type/ITE/5
 It wraps the generic SSL envelope signer and enforces the correct payload
 type both during signature generation and validation.
 */
-type SSLSigner struct {
-	signer *ssl.EnvelopeSigner
+type DSSESigner struct {
+	signer *dsse.EnvelopeSigner
 }
 
-func NewSSLSigner(p ...ssl.SignVerifier) (*SSLSigner, error) {
-	es, err := ssl.NewEnvelopeSigner(p...)
+func NewDSSESigner(p ...dsse.SignVerifier) (*DSSESigner, error) {
+	es, err := dsse.NewEnvelopeSigner(p...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &SSLSigner{
+	return &DSSESigner{
 		signer: es,
 	}, nil
 }
 
-func (s *SSLSigner) SignPayload(body []byte) (*ssl.Envelope, error) {
+func (s *DSSESigner) SignPayload(body []byte) (*dsse.Envelope, error) {
 	return s.signer.SignPayload(PayloadType, body)
 }
 
-func (s *SSLSigner) Verify(e *ssl.Envelope) error {
+func (s *DSSESigner) Verify(e *dsse.Envelope) error {
 	if e.PayloadType != PayloadType {
 		return ErrInvalidPayloadType
 	}
