@@ -2,14 +2,17 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/spf13/cobra"
 )
 
 var (
-	pubKeyPaths []string
-	linkDir     string
+	pubKeyPaths       []string
+	linkDir           string
+	intermediatePaths []string
 )
 
 var verifyCmd = &cobra.Command{
@@ -55,6 +58,16 @@ the root layout should be loaded from. If not passed links are
 loaded from the current working directory.`,
 	)
 
+	verifyCmd.Flags().StringSliceVarP(
+		&intermediatePaths,
+		"intermediate-certs",
+		"i",
+		[]string{},
+		`Path(s) to PEM formatted certificates, used as intermediaries to verify
+the chain of trust to the layout's trusted root. These will be used in
+addition to any intermediates in the layout.`,
+	)
+
 	verifyCmd.MarkFlagRequired("layout")
 	verifyCmd.MarkFlagRequired("layout-keys")
 }
@@ -78,7 +91,27 @@ func verify(cmd *cobra.Command, args []string) error {
 		layoutKeys[pubKey.KeyID] = pubKey
 	}
 
-	_, err := intoto.InTotoVerify(layoutMb, layoutKeys, linkDir, "", make(map[string]string))
+	intermediatePems := make([][]byte, 0, len(intermediatePaths))
+	for _, intermediate := range intermediatePaths {
+		f, err := os.Open(intermediate)
+		if err != nil {
+			return fmt.Errorf("failed to open intermediate %s: %w", intermediate, err)
+		}
+		defer f.Close()
+
+		pemBytes, err := ioutil.ReadAll(f)
+		if err != nil {
+			return fmt.Errorf("failed to read intermediate %s: %w", intermediate, err)
+		}
+
+		intermediatePems = append(intermediatePems, pemBytes)
+
+		if err := f.Close(); err != nil {
+			return fmt.Errorf("could not close intermediate cert: %w", err)
+		}
+	}
+
+	_, err := intoto.InTotoVerify(layoutMb, layoutKeys, linkDir, "", make(map[string]string), intermediatePems)
 	if err != nil {
 		return fmt.Errorf("inspection failed: %w", err)
 	}

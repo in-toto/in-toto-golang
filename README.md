@@ -53,6 +53,17 @@ func main() {
 }
 ```
 
+## Running the Demo
+
+To run the demo, pull down the source code, install Go, and run `make test-verify`.
+This will use openssl to generate a certificate chain.
+
+During the in-toto verification process, `certificate constraints` are checked to ensure the build step link meta-data was signed with the correct SVID.
+
+## Building
+
+Download the source, run `make build`.
+
 ## CLI
 
 ```text
@@ -86,10 +97,18 @@ Usage:
   in-toto run [flags]
 
 Flags:
+  -c, --cert string                Path to a PEM formatted certificate that corresponds with
+                                   the provided key.
   -h, --help                       help for run
   -k, --key string                 Path to a PEM formatted private key file used to sign
                                    the resulting link metadata. (passing one of '--key'
                                    or '--gpg' is required) 
+      --lstrip-paths stringArray   path prefixes used to left-strip artifact paths before storing
+                                   them to the resulting link metadata. If multiple prefixes
+                                   are specified, only a single prefix can match the path of
+                                   any artifact and that is then left-stripped. All prefixes
+                                   are checked to ensure none of them are a left substring
+                                   of another.
   -m, --materials stringArray      Paths to files or directories, whose paths and hashes
                                    are stored in the resulting link metadata before the
                                    command is executed. Symlinks are followed.
@@ -100,7 +119,6 @@ Flags:
   -p, --products stringArray       Paths to files or directories, whose paths and hashes
                                    are stored in the resulting link metadata after the
                                    command is executed. Symlinks are followed.
-
 ```
 
 ### sign
@@ -134,6 +152,9 @@ Usage:
 
 Flags:
   -h, --help                         help for verify
+  -i, --intermediate-certs strings   Path(s) to PEM formatted certificates, used as intermediaries to verify
+                                     the chain of trust to the layout's trusted root. These will be used in
+                                     addition to any intermediates in the layout.
   -l, --layout string                Path to root layout specifying the software supply chain to be verified
   -k, --layout-keys strings          Path(s) to PEM formatted public key(s), used to verify the passed 
                                      root layout's signature(s). Passing at least one key using
@@ -160,6 +181,7 @@ Available Commands:
   stop        Records and adds the paths and hashes of the passed products to the link metadata file and updates the signature.
 
 Flags:
+  -c, --cert string   Path to a PEM formatted certificate that corresponds with the provided key.
   -h, --help          help for record
   -k, --key string    Path to a private key file to sign the resulting link metadata.
                       The keyid prefix is used as an infix for the link metadata filename,
@@ -168,8 +190,38 @@ Flags:
   -n, --name string   name for the resulting link metadata file.
                       It is also used to associate the link with a step defined
                       in an in-toto layout.
-					  
+
 Use "in-toto record [command] --help" for more information about a command.
+```
+
+## Layout Certificate Constraints
+
+Currently only URIs and common name constraints supported:
+
+```json
+{
+  "cert_constraints": [{
+    "common_name": "write-code.example.com",
+      "dns_names": [
+        ""
+      ],
+      "emails": [
+        ""
+      ],
+      "organizations": [
+        "*"
+      ],
+      "roots": [
+        "*"
+      ],
+      "uris": [
+        "spiffe://example.com/write-code"
+      ]
+  }, {
+    "uris": [],
+    "common_names": ["Some User"]
+  }]
+}
 ```
 
 ## Not (yet) supported

@@ -69,6 +69,15 @@ i.e. ‘<name>.<keyid prefix>.link’. See ‘–key-type’ for available
 formats. Passing one of ‘–key’ or ‘–gpg’ is required.`,
 	)
 
+	recordCmd.PersistentFlags().StringVarP(
+		&certPath,
+		"cert",
+		"c",
+		"",
+		`Path to a PEM formatted certificate that corresponds
+with the provided key.`,
+	)
+
 	recordCmd.MarkPersistentFlagRequired("name")
 
 	// Record Start Command
@@ -100,15 +109,23 @@ command is executed. Symlinks are followed.`,
 
 func recordPreRun(cmd *cobra.Command, args []string) error {
 	key = intoto.Key{}
+	cert = intoto.Key{}
 	if err := key.LoadKeyDefaults(keyPath); err != nil {
 		return fmt.Errorf("invalid key at %s: %w", keyPath, err)
 	}
 
+	if len(certPath) > 0 {
+		if err := cert.LoadKeyDefaults(certPath); err != nil {
+			return fmt.Errorf("invalid cert at %s: %w", certPath, err)
+		}
+
+		key.KeyVal.Certificate = cert.KeyVal.Certificate
+	}
 	return nil
 }
 
 func recordStart(cmd *cobra.Command, args []string) error {
-	block, err := intoto.InTotoRecordStart(recordStepName, recordMaterialsPaths, key, []string{"sha256"}, []string{})
+	block, err := intoto.InTotoRecordStart(recordStepName, recordMaterialsPaths, key, []string{"sha256"}, []string{}, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create start link file: %w", err)
 	}
@@ -129,7 +146,7 @@ func recordStop(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load start link file at %s: %w", prelimLinkName, err)
 	}
 
-	linkMb, err := intoto.InTotoRecordStop(prelimLinkMb, recordProductsPaths, key, []string{"sha256"}, []string{})
+	linkMb, err := intoto.InTotoRecordStop(prelimLinkMb, recordProductsPaths, key, []string{"sha256"}, []string{}, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create stop link file: %w", err)
 	}

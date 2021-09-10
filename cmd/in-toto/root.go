@@ -11,7 +11,9 @@ import (
 var (
 	layoutPath string
 	keyPath    string
+	certPath   string
 	key        intoto.Key
+	cert       intoto.Key
 )
 
 var rootCmd = &cobra.Command{

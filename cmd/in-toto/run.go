@@ -14,6 +14,7 @@ var (
 	materialsPaths []string
 	productsPaths  []string
 	outDir         string
+	lStripPaths    []string
 )
 
 var runCmd = &cobra.Command{
@@ -61,6 +62,15 @@ exist, be writable, and not be a symlink.`,
 the resulting link metadata.`,
 	)
 
+	runCmd.Flags().StringVarP(
+		&certPath,
+		"cert",
+		"c",
+		"",
+		`Path to a PEM formatted certificate that corresponds with
+the provided key.`,
+	)
+
 	runCmd.Flags().StringArrayVarP(
 		&materialsPaths,
 		"materials",
@@ -89,20 +99,40 @@ command is executed. Symlinks are followed.`,
 		`directory to store link metadata`,
 	)
 
+	runCmd.Flags().StringArrayVarP(
+		&lStripPaths,
+		"lstrip-paths",
+		"l",
+		[]string{},
+		`path prefixes used to left-strip artifact paths before storing
+them to the resulting link metadata. If multiple prefixes
+are specified, only a single prefix can match the path of
+any artifact and that is then left-stripped. All prefixes
+are checked to ensure none of them are a left substring
+of another.`,
+	)
+
 	runCmd.MarkFlagRequired("name")
 }
 
 func runPreRun(cmd *cobra.Command, args []string) error {
 	key = intoto.Key{}
+	cert = intoto.Key{}
 	if err := key.LoadKeyDefaults(keyPath); err != nil {
 		return fmt.Errorf("invalid key at %s: %w", keyPath, err)
 	}
+	if len(certPath) > 0 {
+		if err := cert.LoadKeyDefaults(certPath); err != nil {
+			return fmt.Errorf("invalid cert at %s: %w", certPath, err)
+		}
 
+		key.KeyVal.Certificate = cert.KeyVal.Certificate
+	}
 	return nil
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	block, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, []string{})
+	block, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, []string{}, lStripPaths)
 	if err != nil {
 		return fmt.Errorf("failed to create link metadata: %w", err)
 	}
