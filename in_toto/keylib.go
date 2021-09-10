@@ -45,7 +45,7 @@ const (
 	ed25519Scheme         string = "ed25519"
 	pemPublicKey          string = "PUBLIC KEY"
 	pemPrivateKey         string = "PRIVATE KEY"
-	pemRSAPrivateKey      string = "PRIVATE RSA KEY"
+	pemRSAPrivateKey      string = "RSA PRIVATE KEY"
 )
 
 /*
@@ -144,6 +144,7 @@ implementation and the securesystemslib.
 */
 func (k *Key) setKeyComponents(pubKeyBytes []byte, privateKeyBytes []byte, keyType string, scheme string, KeyIDHashAlgorithms []string) error {
 	// assume we have a privateKey if the key size is bigger than 0
+
 	switch keyType {
 	case rsaKeyType:
 		if len(privateKeyBytes) > 0 {
@@ -214,6 +215,14 @@ func parseKey(data []byte) (interface{}, error) {
 	if err == nil {
 		return key, nil
 	}
+	key, err = x509.ParseCertificate(data)
+	if err == nil {
+		return key, nil
+	}
+	key, err = x509.ParseECPrivateKey(data)
+	if err == nil {
+		return key, nil
+	}
 	return nil, ErrFailedPEMParsing
 }
 
@@ -234,6 +243,7 @@ func decodeAndParse(pemBytes []byte) (*pem.Block, interface{}, error) {
 	if data == nil {
 		return nil, nil, ErrNoPEMBlock
 	}
+
 	// Try to load private key, if this fails try to load
 	// key as public key
 	key, err := parseKey(data.Bytes)
@@ -357,7 +367,7 @@ func getDefaultKeyScheme(key interface{}) (scheme string, keyIDHashAlgorithms []
 	switch key.(type) {
 	case *rsa.PublicKey, *rsa.PrivateKey:
 		scheme = rsassapsssha256Scheme
-	case *ed25519.PrivateKey, *ed25519.PublicKey:
+	case ed25519.PrivateKey, ed25519.PublicKey:
 		scheme = ed25519Scheme
 	case *ecdsa.PrivateKey, *ecdsa.PublicKey:
 		scheme = ecdsaSha2nistp256
@@ -372,7 +382,6 @@ func getDefaultKeyScheme(key interface{}) (scheme string, keyIDHashAlgorithms []
 
 func (k *Key) loadKey(key interface{}, pemData *pem.Block, scheme string, keyIDHashAlgorithms []string) error {
 
-	// Use type switch to identify the key format
 	switch key.(type) {
 	case *rsa.PublicKey:
 		pubKeyBytes, err := x509.MarshalPKIXPublicKey(key.(*rsa.PublicKey))
@@ -417,10 +426,19 @@ func (k *Key) loadKey(key interface{}, pemData *pem.Block, scheme string, keyIDH
 		if err := k.setKeyComponents(pubKeyBytes, []byte{}, ecdsaKeyType, scheme, keyIDHashAlgorithms); err != nil {
 			return err
 		}
+	case *x509.Certificate:
+		err := k.loadKey(key.(*x509.Certificate).PublicKey, pemData, scheme, keyIDHashAlgorithms)
+		if err != nil {
+			return err
+		}
+
+		k.KeyVal.Certificate = string(pem.EncodeToMemory(pemData))
+
 	default:
 		// We should never get here, because we implement all from Go supported Key Types
-		panic("unexpected Error in LoadKey function")
+		return errors.New("unexpected Error in LoadKey function")
 	}
+
 	return nil
 }
 
@@ -526,6 +544,7 @@ func GenerateSignature(signable []byte, key Key) (Signature, error) {
 	}
 	signature.Sig = hex.EncodeToString(signatureBuffer)
 	signature.KeyID = key.KeyID
+	signature.Certificate = key.KeyVal.Certificate
 	return signature, nil
 }
 
@@ -629,4 +648,20 @@ func VerifySignature(key Key, sig Signature, unverified []byte) error {
 		panic("unexpected Error in VerifySignature function")
 	}
 	return nil
+}
+
+/*
+VerifyCertificateTrust verifies that the certificate has a chain of trust
+to a root in rootCertPool, possibly using any intermediates in
+intermediateCertPool */
+func VerifyCertificateTrust(cert *x509.Certificate, rootCertPool, intermediateCertPool *x509.CertPool) ([][]*x509.Certificate, error) {
+	verifyOptions := x509.VerifyOptions{
+		Roots:         rootCertPool,
+		Intermediates: intermediateCertPool,
+	}
+	chains, err := cert.Verify(verifyOptions)
+	if len(chains) == 0 || err != nil {
+		return nil, fmt.Errorf("cert cannot be verified by provided roots and intermediates")
+	}
+	return chains, nil
 }

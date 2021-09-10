@@ -1,6 +1,9 @@
 package in_toto
 
 import (
+	"bytes"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -55,25 +58,25 @@ func TestMetablockLoad(t *testing.T) {
 			"environment": "some list"}}`),
 		[]byte(`{"signatures": [], "signed": {"_type": "layout",
 			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
-			"keys": "some keys", "expires": "some date"}}`),
+			"keys": "some keys", "expires": "some date", "rootcas": [], "intermediatecas": []}}`),
 		[]byte(`{"signatures": [], "signed": {"_type": "layout",
 			"inspect": "invalid", "readme": "some readme", "keys": "some keys",
-			"expires": "some date"}}`),
+			"expires": "some date", "rootcas": [], "intermediatecas": []}}`),
 		[]byte(`{"signatures": [], "signed": {"_type": "layout",
 			"steps": "invalid", "readme": "some readme", "keys": "some keys",
-			"expires": "some date"}}`),
+			"expires": "some date", "rootcas": [], "intermediatecas": []}}`),
 		[]byte(`{"signatures": [], "signed": {"_type": "layout",
 			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
-			"expires": "some date"}}`),
+			"expires": "some date", "rootcas": [], "intermediatecas": []}}`),
 		[]byte(`{"signatures": [], "signed": {"_type": "layout",
 			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
-			"keys": "some keys"}}`),
+			"keys": "some keys", "rootcas": [], "intermediatecas": []}}`),
 		[]byte(`{"signatures": [], "signed": {"_type": "layout",
 			"steps": "invalid", "inspect": "invalid",
-			"keys": "some keys", "expires": "some date"}}`),
+			"keys": "some keys", "expires": "some date", "rootcas": [], "intermediatecas": []}}`),
 		[]byte(`{"signatures": [], "signed": {"_type": "layout", "steps": [],
 			"inspect": [], "readme": "some readme", "keys": {},
-			"expires": "some date", "foo": "bar"}}`),
+			"expires": "some date", "foo": "bar", "rootcas": [], "intermediatecas": []}}`),
 		[]byte(`{"signatures": [], "signed": {"_type": "link",
 			"materials": "invalid", "products": "invalid",
 			"byproducts": "invalid", "command": "some command",
@@ -201,24 +204,13 @@ func TestMetablockLoadDumpLoad(t *testing.T) {
 		},
 		Signatures: []Signature{
 			{
-				KeyID: "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498",
-				Sig: "66365d379d66a2e76d39a1f048847826393127572ba43bead96419499b0256" +
-					"1a08e1cb06cf91f2addd87c30a01f776a8ccc599574bc9a2bd519558351f56cff" +
-					"a61ac4f994d0d491204ff54707937e15f9abfa97c5bda1ec1ae2a2afea63f8086" +
-					"13f4fb343b85a5a455b668b95fa3a11cb9b34219d4d6af2dd4e80a9af01023954" +
-					"a8813b510a6ff6041c3af52056d021fabbc975211b0d8ee7a429a6c22efde583d" +
-					"8ac0719fd657b398a3e02cc711897acbe8cadf32d54f47012aa44621728ede42c" +
-					"3bc95c662f9c1211df4e18da8e0f6b2de358700cea5db1e76fc61ef5a90bcebcc" +
-					"883eed2272e5ca1c8cbb09b868613b839266cd3ae346ce88439bdb5bb4c69dcb7" +
-					"398f4373f2b051adb3d44d11ef1b70c7189aa5c0e6906bf7be1228dc553390024" +
-					"c9c796316067fda7d63cf60bfac86ef2e13bbd8e4c3575683673f7cdf4639c3a5" +
-					"dc225fc0c040dbd9962a6ff51913b240544939ce2d32a5e84792c0acfa94ee07e" +
-					"88e474bf4937558d107c6ecdef5b5b3a7f3a44a657662bbc1046df3a",
+				KeyID: "d3ffd1086938b3698618adf088bf14b13db4c8ae19e4e78d73da49ee88492710",
+				Sig:   "7d42ca77f6bbbb65b015ec9e31abdfa05c0daecc34b016dd7997b26c3a347cb9a3d9045c8ac7e375f017076bc04687eb870e09f76031a014d60421fa288a11a0022ab225bcfde7b22d78891eeab06b0701b5a6d00368534bf7a3f6b16dc7aaed233a3fb5ab7e98e0ed0ffca5d128dd2549f2d2fe296038cd2111e282de31a44c428498e9788f8226d454331af6f582a1e61e88846265d0cd4722a431253f40bb52c9e56feffd90aca8ec0c6970576538eef5824c91159bce7583a10ae1a38c081e3991c7a20f280430cb1eb4e828c8a0f9c8c8ca41c27b2837a88ff7aa5052b4ac45d8fd5897a71f2f488ca3f52c7a770a01f2d8ab775a328cd1d4c45bb2e92c",
 			},
 		},
 	}
 
-	fnExisting := "package.2f89b927.link"
+	fnExisting := "package.d3ffd108.link"
 	fnTmp := fnExisting + ".tmp"
 	if err := mbMemory.Dump(fnTmp); err != nil {
 		t.Errorf("JSON serialization failed: %s", err)
@@ -287,7 +279,7 @@ func TestMetablockVerifySignature(t *testing.T) {
 		},
 	}
 	expectedErrors := []string{
-		"No signature found",
+		"no signature found",
 		"encoding/hex: invalid byte: U+0020 ' '",
 		"json: unsupported type",
 	}
@@ -312,7 +304,7 @@ func TestMetablockVerifySignature(t *testing.T) {
 
 func TestValidateLink(t *testing.T) {
 	var mb Metablock
-	if err := mb.Load("package.2f89b927.link"); err != nil {
+	if err := mb.Load("package.d3ffd108.link"); err != nil {
 		t.Errorf("Metablock load returned '%s'", err)
 	}
 	if err := validateLink(mb.Signed.(Link)); err != nil {
@@ -608,7 +600,7 @@ func TestValidateLayout(t *testing.T) {
 				Type:    "layout",
 				Expires: "2020-02-27T18:03:43Z",
 				Keys: map[string]Key{
-					"deadbeef": Key{KeyID: "livebeef"},
+					"deadbeef": {KeyID: "livebeef"},
 				},
 			},
 			"invalid key found",
@@ -618,7 +610,7 @@ func TestValidateLayout(t *testing.T) {
 				Type:    "layout",
 				Expires: "2020-02-27T18:03:43Z",
 				Keys: map[string]Key{
-					"deadbeef": Key{KeyID: "deadbeef"},
+					"deadbeef": {KeyID: "deadbeef"},
 				},
 			},
 			"empty field in key: keytype",
@@ -1568,13 +1560,13 @@ func TestDecodeProvenanceStatement(t *testing.T) {
 			Type:          StatementInTotoV01,
 			PredicateType: PredicateSLSAProvenanceV01,
 			Subject: []Subject{
-				Subject{
+				{
 					Name: "curl-7.72.0.tar.bz2",
 					Digest: DigestSet{
 						"sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef",
 					},
 				},
-				Subject{
+				{
 					Name: "curl-7.72.0.tar.gz",
 					Digest: DigestSet{
 						"sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2",
@@ -1598,13 +1590,13 @@ func TestDecodeProvenanceStatement(t *testing.T) {
 				},
 			},
 			Materials: []ProvenanceMaterial{
-				ProvenanceMaterial{
+				{
 					URI: "git+https://github.com/curl/curl-docker@master",
 					Digest: DigestSet{
 						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
 					},
 				},
-				ProvenanceMaterial{
+				{
 					URI: "github_hosted_vm:ubuntu-18.04:20210123.1",
 				},
 			},
@@ -1633,13 +1625,13 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 			Type:          StatementInTotoV01,
 			PredicateType: PredicateSLSAProvenanceV01,
 			Subject: []Subject{
-				Subject{
+				{
 					Name: "curl-7.72.0.tar.bz2",
 					Digest: DigestSet{
 						"sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef",
 					},
 				},
-				Subject{
+				{
 					Name: "curl-7.72.0.tar.gz",
 					Digest: DigestSet{
 						"sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2",
@@ -1666,16 +1658,16 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 				},
 			},
 			Materials: []ProvenanceMaterial{
-				ProvenanceMaterial{
+				{
 					URI: "git+https://github.com/curl/curl-docker@master",
 					Digest: DigestSet{
 						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
 					},
 				},
-				ProvenanceMaterial{
+				{
 					URI: "github_hosted_vm:ubuntu-18.04:20210123.1",
 				},
-				ProvenanceMaterial{
+				{
 					URI: "git+https://github.com/curl/",
 				},
 			},
@@ -1784,7 +1776,7 @@ func TestLinkStatement(t *testing.T) {
 		StatementHeader: StatementHeader{
 			PredicateType: PredicateLinkV1,
 			Subject: []Subject{
-				Subject{
+				{
 					Name: "baz",
 					Digest: DigestSet{
 						"sha256": "hash1",
@@ -1873,4 +1865,85 @@ func TestSSLSigner(t *testing.T) {
 		err = s.Verify(e)
 		assert.Equal(t, ErrInvalidPayloadType, err, "wrong error returned")
 	})
+}
+
+func TestSignatureGetCertificate(t *testing.T) {
+	sig := Signature{}
+	_, err := sig.GetCertificate()
+	assert.NotNil(t, err, "expected empty signature error")
+
+	certTemplate := &x509.Certificate{
+		Subject: pkix.Name{
+			CommonName:   "step1.example.com",
+			Organization: []string{"example"},
+		},
+	}
+
+	cert, _, _, err := createTestCert(certTemplate, x509.Ed25519, time.Hour)
+	assert.Nil(t, err, "unexpected error when creating test certificate")
+	sig.Certificate = string(generatePEMBlock(cert.Raw, "CERTIFICATE"))
+	_, err = sig.GetCertificate()
+	assert.Nil(t, err, "unexpected error getting certificate from signature")
+}
+
+func TestStepCheckCertConstraints(t *testing.T) {
+	step := Step{}
+	key := Key{}
+	rootPool := x509.NewCertPool()
+	intermediatePool := x509.NewCertPool()
+	// Test failure if the step has no constraints
+	err := step.CheckCertConstraints(key, []string{}, rootPool, intermediatePool)
+	assert.NotNil(t, err, "expected error")
+
+	certTemplate := &x509.Certificate{
+		Subject: pkix.Name{
+			CommonName:   "step1.example.com",
+			Organization: []string{"example"},
+		},
+	}
+
+	leaf, intermediate, root, err := createTestCert(certTemplate, x509.Ed25519, time.Hour)
+	assert.Nil(t, err, "unexpected error creating test certificates")
+	rootPool.AddCert(root)
+	intermediatePool.AddCert(intermediate)
+	step.CertificateConstraints = []CertificateConstraint{
+		{
+			CommonName:    certTemplate.Subject.CommonName,
+			Organizations: certTemplate.Subject.Organization,
+			Emails:        certTemplate.EmailAddresses,
+			DNSNames:      certTemplate.DNSNames,
+			URIs:          []string{},
+			Roots:         []string{"*"},
+		},
+	}
+
+	err = key.LoadKeyReaderDefaults(bytes.NewReader(generatePEMBlock(leaf.Raw, "CERTIFICATE")))
+	rootCAIDs := []string{key.KeyID}
+	assert.Nil(t, err, "unexpected error when loading Key")
+
+	// Test to ensure we fail if the key has no certificate
+	err = step.CheckCertConstraints(Key{}, rootCAIDs, rootPool, intermediatePool)
+	assert.NotNil(t, err, "expected error when using key with no certificate")
+
+	// Test to ensure our test constraint passes
+	err = step.CheckCertConstraints(key, rootCAIDs, rootPool, intermediatePool)
+	assert.Nil(t, err, "unexpected error when checking constraints")
+
+	// Test to ensure we get an error when our certificate doesn't match a constraint
+	step.CertificateConstraints[0].CommonName = "bad common name"
+	err = step.CheckCertConstraints(key, rootCAIDs, rootPool, intermediatePool)
+	assert.NotNil(t, err, "expected error when checking constraint without match")
+}
+
+func TestRootCAIDs(t *testing.T) {
+	layout := Layout{
+		RootCas: map[string]Key{
+			"123123": Key{},
+			"456456": Key{},
+		},
+	}
+
+	expectedCAIDs := []string{"123123", "456456"}
+	rootCAIDs := layout.RootCAIDs()
+	assert.ElementsMatch(t, expectedCAIDs, rootCAIDs, "expected root ca ids don't match")
 }
