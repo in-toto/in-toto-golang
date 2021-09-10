@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRecordArtifact(t *testing.T) {
@@ -95,7 +97,7 @@ func TestGitPathSpec(t *testing.T) {
 		"*.pub",           // Match all .pub files (even the ones in subdirectories)
 		"beta/foo.tar.gz", // Match full path
 		"alpha/**",        // Match all directories and files beneath alpha
-	})
+	}, nil)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
@@ -123,7 +125,7 @@ func TestSymlinkToFile(t *testing.T) {
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 		},
 	}
-	result, err := RecordArtifacts([]string{"foo.tar.gz.sym"}, []string{"sha256"}, nil)
+	result, err := RecordArtifacts([]string{"foo.tar.gz.sym"}, []string{"sha256"}, nil, nil)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
@@ -162,7 +164,7 @@ func TestIndirectSymlinkCycles(t *testing.T) {
 	}
 
 	// provoke "symlink cycle detected" error
-	_, err = RecordArtifacts([]string{"symTestA/linkToB.sym", "symTestB/linkToA.sym", "foo.tar.gz"}, []string{"sha256"}, nil)
+	_, err = RecordArtifacts([]string{"symTestA/linkToB.sym", "symTestB/linkToA.sym", "foo.tar.gz"}, []string{"sha256"}, nil, nil)
 	if !errors.Is(err, ErrSymCycle) {
 		t.Errorf("We expected: %s, we got: %s", ErrSymCycle, err)
 	}
@@ -205,7 +207,7 @@ func TestSymlinkToFolder(t *testing.T) {
 		t.Errorf("Could not write symTmpfile: %s", err)
 	}
 
-	result, err := RecordArtifacts([]string{"symTmpfile.sym"}, []string{"sha256"}, nil)
+	result, err := RecordArtifacts([]string{"symTmpfile.sym"}, []string{"sha256"}, nil, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -257,7 +259,7 @@ func TestSymlinkCycle(t *testing.T) {
 	}
 
 	// provoke "symlink cycle detected" error
-	_, err = RecordArtifacts([]string{"symlinkCycle/symCycle.sym", "foo.tar.gz"}, []string{"sha256"}, nil)
+	_, err = RecordArtifacts([]string{"symlinkCycle/symCycle.sym", "foo.tar.gz"}, []string{"sha256"}, nil, nil)
 	if !errors.Is(err, ErrSymCycle) {
 		t.Errorf("We expected: %s, we got: %s", ErrSymCycle, err)
 	}
@@ -280,12 +282,12 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("Could not write tmpfile: %s", err)
 	}
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
-		"tmpdir/tmpfile"}, []string{"sha256"}, nil)
+		"tmpdir/tmpfile"}, []string{"sha256"}, nil, []string{"tmpdir/"})
 	expected := map[string]interface{}{
 		"foo.tar.gz": map[string]interface{}{
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 		},
-		"tmpdir/tmpfile": map[string]interface{}{
+		"tmpfile": map[string]interface{}{
 			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
 		},
 	}
@@ -298,14 +300,14 @@ func TestRecordArtifacts(t *testing.T) {
 	}
 
 	// Test error by recording nonexistent artifact
-	result, err = RecordArtifacts([]string{"file-does-not-exist"}, []string{"sha256"}, nil)
+	result, err = RecordArtifacts([]string{"file-does-not-exist"}, []string{"sha256"}, nil, nil)
 	if !os.IsNotExist(err) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
 			result, err, os.ErrNotExist)
 	}
 }
 
-func TestwaitErrToExitCode(t *testing.T) {
+func TestWaitErrToExitCode(t *testing.T) {
 	// TODO: Find way to test/mock ExitError
 	// Test exit code from error assessment
 	parameters := []error{
@@ -381,7 +383,7 @@ func TestInTotoRun(t *testing.T) {
 				Type: "link",
 				Materials: map[string]interface{}{
 					"alice.pub": map[string]interface{}{
-						"sha256": "54d66a3cda423bb31027f388ffb6753a37e7bd5d9d883140fb818dac73456695",
+						"sha256": "f051e8b561835b7b2aa7791db7bc72f2613411b0b7d428a0ac33d45b8c518039",
 					},
 				},
 				Products: map[string]interface{}{
@@ -397,14 +399,14 @@ func TestInTotoRun(t *testing.T) {
 			},
 			Signatures: []Signature{{
 				KeyID: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
-				Sig:   "aef29094ba7378811897e5914842e65353a834d4f73cac0dcb2148b88a436e3ddc7a6644a6695d3a20693726130f0d8ace916f6482b4a74e29cc77fd7571d401",
+				Sig:   "71dfec1af747d02f6463d4baf3bb2c1d903c107470be86c12349433f780b1030e5ca36a10ee5c5d74de16344fe16b459154fd2be05a58fb556dff934d6682403",
 			}},
 		},
 		},
 	}
 
 	for _, table := range tablesCorrect {
-		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil)
+		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil)
 		if !reflect.DeepEqual(result, table.result) {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result)
 		} else {
@@ -448,10 +450,81 @@ func TestInTotoRun(t *testing.T) {
 	}
 
 	for _, table := range tablesInvalid {
-		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil)
+		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil)
 		if err == nil {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected error",
 				result, err)
 		}
+	}
+}
+
+func TestInTotoRecord(t *testing.T) {
+	// Successfully run InTotoRecordStart
+	linkName := "Name"
+
+	var validKey Key
+	if err := validKey.LoadKey("carol", "ed25519", []string{"sha256", "sha512"}); err != nil {
+		t.Error(err)
+	}
+
+	tablesCorrect := []struct {
+		materialPaths  []string
+		productPaths   []string
+		key            Key
+		hashAlgorithms []string
+		startResult    Metablock
+		stopResult     Metablock
+	}{
+		{[]string{"alice.pub"}, []string{"foo.tar.gz"}, validKey, []string{"sha256"}, Metablock{
+			Signed: Link{
+				Name: linkName,
+				Type: "link",
+				Materials: map[string]interface{}{
+					"alice.pub": map[string]interface{}{
+						"sha256": "f051e8b561835b7b2aa7791db7bc72f2613411b0b7d428a0ac33d45b8c518039",
+					},
+				},
+				Products:    map[string]interface{}{},
+				ByProducts:  map[string]interface{}{},
+				Command:     []string{},
+				Environment: map[string]interface{}{},
+			},
+			Signatures: []Signature{{
+				KeyID: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				Sig:   "f02db2e08d065840f266df850eaef7cfb5364bbe1808708945eb45373f4757cfe70c86f7ad5e4d5f746d41489410e0407921b4480788cfae5a7d695e3aa62f06",
+			}},
+		}, Metablock{
+			Signed: Link{
+				Name: linkName,
+				Type: "link",
+				Materials: map[string]interface{}{
+					"alice.pub": map[string]interface{}{
+						"sha256": "f051e8b561835b7b2aa7791db7bc72f2613411b0b7d428a0ac33d45b8c518039",
+					},
+				},
+				Products: map[string]interface{}{
+					"foo.tar.gz": map[string]interface{}{
+						"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+					},
+				},
+				ByProducts:  map[string]interface{}{},
+				Command:     []string{},
+				Environment: map[string]interface{}{},
+			},
+			Signatures: []Signature{{
+				KeyID: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				Sig:   "f4a2d468965d595b4d29615fb2083ef7ac22a948e1530925612d73ba580ce9765d93db7b7ed1b9755d96f13a6a1e858c64693c2f7adcb311afb28cb57fbadc0c",
+			}},
+		},
+		},
+	}
+
+	for _, table := range tablesCorrect {
+		result, err := InTotoRecordStart(linkName, table.materialPaths, table.key, table.hashAlgorithms, nil, nil)
+		assert.Nil(t, err, "unexpected error while running record start")
+		assert.Equal(t, table.startResult, result, "result from record start did not match expected result")
+		stopResult, err := InTotoRecordStop(result, table.productPaths, table.key, table.hashAlgorithms, nil, nil)
+		assert.Nil(t, err, "unexpected error while running record stop")
+		assert.Equal(t, table.stopResult, stopResult, "result from record stop did not match expected result")
 	}
 }

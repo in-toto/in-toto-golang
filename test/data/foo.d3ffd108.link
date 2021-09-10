@@ -1,0 +1,18 @@
+{
+  "signed": {
+    "_type": "link",
+    "name": "foo",
+    "materials": {},
+    "products": {},
+    "byproducts": {},
+    "command": [],
+    "environment": {}
+  },
+  "signatures": [
+    {
+      "keyid": "d3ffd1086938b3698618adf088bf14b13db4c8ae19e4e78d73da49ee88492710",
+      "sig": "15c4b75db765781ba093bb05095bb6c9480e38472145df72605c3410c5230a0598f02494ccb4d10a92055524f342c24242c32c4eb8cd0a71283bcb0cb7ef7817df322a872000b94d991cdc506481c3d6a5842f1e2be299ead5a6d91652bfb7a8f1398ca88146319c1fe7eda62248c4766b153fb1a166d6ca2dbf7919dc085837e4a79986d511292617b009d708d728453a21bfbcac2228968cf2f742b3e397a5b1fdbf19faf7366f7d20b8f208a92bed74b07d8be913b390a708b21e1e0416ef90c7078f3d8a7c6a7220a68a6edc622ca673da373eaff87e3861b6e0fc3c415bd3ada3b4a0c7ff3d8d546535a0a77a2b43580cd7d7ed4f5a894f29d808181633",
+      "cert": ""
+    }
+  ]
+}
