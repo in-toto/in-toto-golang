@@ -447,6 +447,8 @@ func TestInTotoRun(t *testing.T) {
 			KeyVal:              KeyVal{},
 			Scheme:              "",
 		}, []string{"sha256"}},
+		{[]string{"alice.pub"}, []string{}, nil, validKey, []string{"sha256"}},
+		{[]string{"alice.pub"}, []string{"foo.tar.gz"}, nil, validKey, []string{"sha256"}},
 	}
 
 	for _, table := range tablesInvalid {

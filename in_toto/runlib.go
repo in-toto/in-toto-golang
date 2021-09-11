@@ -240,6 +240,10 @@ command execution.
 */
 func RunCommand(cmdArgs []string, runDir string) (map[string]interface{}, error) {
 
+	if cmdArgs == nil || len(cmdArgs) == 0 {
+		return nil, errors.New("invalid command")
+	}
+
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 
 	if runDir != "" {
