@@ -377,6 +377,23 @@ func TestRunCommand(t *testing.T) {
 	}
 }
 
+func TestRunCommandErrors(t *testing.T) {
+	tables := []struct {
+		CmdArgs       []string
+		RunDir        string
+		ExpectedError error
+	}{
+		{nil, "", ErrEmptyCommandArgs},
+		{[]string{}, "", ErrEmptyCommandArgs},
+	}
+	for _, table := range tables {
+		_, err := RunCommand(table.CmdArgs, table.RunDir)
+		if !errors.Is(err, ErrEmptyCommandArgs) {
+			t.Errorf("RunCommand did not provoke expected error. Got: %s, want: %s", err, ErrEmptyCommandArgs)
+		}
+	}
+}
+
 func TestInTotoRun(t *testing.T) {
 	// Successfully run InTotoRun
 	linkName := "Name"
