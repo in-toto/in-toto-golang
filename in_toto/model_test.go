@@ -140,7 +140,7 @@ func TestMetablockLoad(t *testing.T) {
 				expectedErrors[i])
 		}
 		if err := os.Remove(fn); err != nil {
-			t.Errorf("Unable to remove directory %s: %s", fn, err)
+			t.Errorf("unable to remove directory %s: %s", fn, err)
 		}
 	}
 }
@@ -218,16 +218,16 @@ func TestMetablockLoadDumpLoad(t *testing.T) {
 	for _, fn := range []string{fnExisting, fnTmp} {
 		var mbFile Metablock
 		if err := mbFile.Load(fn); err != nil {
-			t.Errorf("Could not parse Metablock: %s", err)
+			t.Errorf("could not parse Metablock: %s", err)
 		}
 		if !reflect.DeepEqual(mbMemory, mbFile) {
-			t.Errorf("Dumped and Loaded Metablocks are not equal: \n%s\n\n\n%s\n",
+			t.Errorf("dumped and Loaded Metablocks are not equal: \n%s\n\n\n%s\n",
 				mbMemory, mbFile)
 		}
 	}
 	// Remove temporary metablock file (keep other for remaining tests)
 	if err := os.Remove(fnTmp); err != nil {
-		t.Errorf("Unable to remove directory %s: %s", fnTmp, err)
+		t.Errorf("unable to remove directory %s: %s", fnTmp, err)
 	}
 }
 
@@ -236,7 +236,7 @@ func TestMetablockGetSignableRepresentation(t *testing.T) {
 	// (unicode, escapes, non-string types, ...) and compare with reference
 	var mb Metablock
 	if err := mb.Load("canonical-test.link"); err != nil {
-		t.Errorf("Cannot parse link file: %s", err)
+		t.Errorf("cannot parse link file: %s", err)
 	}
 	// Use hex representation for unambiguous assignment
 	referenceHex := "7b225f74797065223a226c696e6b222" +
@@ -265,7 +265,7 @@ func TestMetablockVerifySignature(t *testing.T) {
 	// - invalid metadata (can't canonicalize)
 	var key Key
 	if err := key.LoadKey("alice.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
-		t.Errorf("Cannot load public key file: %s", err)
+		t.Errorf("cannot load public key file: %s", err)
 	}
 	// Test missing key, bad signature and bad metadata
 	mbs := []Metablock{
@@ -294,7 +294,7 @@ func TestMetablockVerifySignature(t *testing.T) {
 	// Test successful metablock signature verification
 	var mb Metablock
 	if err := mb.Load("demo.layout"); err != nil {
-		t.Errorf("Cannot parse template file: %s", err)
+		t.Errorf("cannot parse template file: %s", err)
 	}
 	err := mb.VerifySignature(key)
 	if err != nil {
@@ -305,10 +305,10 @@ func TestMetablockVerifySignature(t *testing.T) {
 func TestValidateLink(t *testing.T) {
 	var mb Metablock
 	if err := mb.Load("package.d3ffd108.link"); err != nil {
-		t.Errorf("Metablock load returned '%s'", err)
+		t.Errorf("Metablock.Load returned '%s'", err)
 	}
 	if err := validateLink(mb.Signed.(Link)); err != nil {
-		t.Errorf("Link metadata validation failed, returned '%s'", err)
+		t.Errorf("link metadata validation failed, returned '%s'", err)
 	}
 
 	testMb := Metablock{
@@ -420,10 +420,10 @@ func TestValidateLink(t *testing.T) {
 func TestValidateLayout(t *testing.T) {
 	var mb Metablock
 	if err := mb.Load("demo.layout"); err != nil {
-		t.Errorf("Metablock load returned '%s'", err)
+		t.Errorf("Metablock.Load returned '%s'", err)
 	}
 	if err := validateLayout(mb.Signed.(Layout)); err != nil {
-		t.Errorf("Layout metadata validation failed, returned '%s'", err)
+		t.Errorf("layout metadata validation failed, returned '%s'", err)
 	}
 
 	testMb := Metablock{
@@ -1105,7 +1105,7 @@ func TestValidateSupplyChainItem(t *testing.T) {
 func TestMetablockSignWithRSA(t *testing.T) {
 	var mb Metablock
 	if err := mb.Load("demo.layout"); err != nil {
-		t.Errorf("Cannot parse template file: %s", err)
+		t.Errorf("cannot parse template file: %s", err)
 	}
 	invalidKey := Key{
 		KeyID:               "test",
@@ -1123,7 +1123,7 @@ func TestMetablockSignWithRSA(t *testing.T) {
 func TestMetablockSignWithEd25519(t *testing.T) {
 	var mb Metablock
 	if err := mb.Load("demo.layout"); err != nil {
-		t.Errorf("Cannot parse template file: %s", err)
+		t.Errorf("cannot parse template file: %s", err)
 	}
 	invalidKey := Key{
 		KeyID:               "invalid",
@@ -1144,7 +1144,7 @@ func TestMetablockSignWithEd25519(t *testing.T) {
 func TestMetaBlockSignWithEcdsa(t *testing.T) {
 	var mb Metablock
 	if err := mb.Load("demo.layout"); err != nil {
-		t.Errorf("Cannot parse template file: %s", err)
+		t.Errorf("cannot parse template file: %s", err)
 	}
 	invalidKey := Key{
 		KeyID:               "invalid",
@@ -1605,7 +1605,7 @@ func TestDecodeProvenanceStatement(t *testing.T) {
 	var got ProvenanceStatement
 
 	if err := json.Unmarshal([]byte(data), &got); err != nil {
-		t.Errorf("Failed to unmarshal json: %s\n", err)
+		t.Errorf("failed to unmarshal json: %s\n", err)
 		return
 	}
 
@@ -1805,7 +1805,7 @@ func TestLinkStatement(t *testing.T) {
 	var got LinkStatement
 
 	if err := json.Unmarshal([]byte(data), &got); err != nil {
-		t.Errorf("Failed to unmarshal json: %s\n", err)
+		t.Errorf("failed to unmarshal json: %s\n", err)
 		return
 	}
 

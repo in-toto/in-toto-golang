@@ -75,7 +75,7 @@ func TestGitPathSpec(t *testing.T) {
 	}
 	for _, v := range directoriesToBeCreated {
 		if err := os.Mkdir(v, 0700); err != nil {
-			t.Errorf("Could not create tmpdir: %s", err)
+			t.Errorf("could not create tmpdir: %s", err)
 		}
 	}
 	filesToBeCreated := map[string]string{
@@ -87,7 +87,7 @@ func TestGitPathSpec(t *testing.T) {
 	for k, v := range filesToBeCreated {
 		_, err := copy(k, v)
 		if err != nil {
-			t.Errorf("Could not copy file: %s", err)
+			t.Errorf("could not copy file: %s", err)
 		}
 	}
 
@@ -117,7 +117,7 @@ func TestGitPathSpec(t *testing.T) {
 // The symlink will not be added to the list right now, nor will we calculate a checksum for it.
 func TestSymlinkToFile(t *testing.T) {
 	if err := os.Symlink("foo.tar.gz", "foo.tar.gz.sym"); err != nil {
-		t.Errorf("Could not create a symlink: %s", err)
+		t.Errorf("could not create a symlink: %s", err)
 	}
 
 	expected := map[string]interface{}{
@@ -132,7 +132,7 @@ func TestSymlinkToFile(t *testing.T) {
 	}
 
 	if err := os.Remove("foo.tar.gz.sym"); err != nil {
-		t.Errorf("Could not remove foo.tar.gz.sym: %s", err)
+		t.Errorf("could not remove foo.tar.gz.sym: %s", err)
 	}
 }
 
@@ -140,10 +140,10 @@ func TestSymlinkToFile(t *testing.T) {
 // symTestA/linkToB -> symTestB and symTestB/linkToA -> symTestA
 func TestIndirectSymlinkCycles(t *testing.T) {
 	if err := os.Mkdir("symTestA", 0700); err != nil {
-		t.Errorf("Could not create tmpdir: %s", err)
+		t.Errorf("could not create tmpdir: %s", err)
 	}
 	if err := os.Mkdir("symTestB", 0700); err != nil {
-		t.Errorf("Could not create tmpdir: %s", err)
+		t.Errorf("could not create tmpdir: %s", err)
 	}
 
 	// we need to get the current working directory here, otherwise
@@ -157,33 +157,33 @@ func TestIndirectSymlinkCycles(t *testing.T) {
 	linkA := filepath.FromSlash("symTestB/linkToA.sym")
 
 	if err := os.Symlink(dir+"/symTestA", linkA); err != nil {
-		t.Errorf("Could not create a symlink: %s", err)
+		t.Errorf("could not create a symlink: %s", err)
 	}
 	if err := os.Symlink(dir+"/symTestB", linkB); err != nil {
-		t.Errorf("Could not create a symlink: %s", err)
+		t.Errorf("could not create a symlink: %s", err)
 	}
 
 	// provoke "symlink cycle detected" error
 	_, err = RecordArtifacts([]string{"symTestA/linkToB.sym", "symTestB/linkToA.sym", "foo.tar.gz"}, []string{"sha256"}, nil, nil)
 	if !errors.Is(err, ErrSymCycle) {
-		t.Errorf("We expected: %s, we got: %s", ErrSymCycle, err)
+		t.Errorf("we expected: %s, we got: %s", ErrSymCycle, err)
 	}
 
 	// make sure to clean up everything
 	if err := os.Remove("symTestA/linkToB.sym"); err != nil {
-		t.Errorf("Could not remove path: %s", err)
+		t.Errorf("could not remove path: %s", err)
 	}
 
 	if err := os.Remove("symTestB/linkToA.sym"); err != nil {
-		t.Errorf("Could not remove path: %s", err)
+		t.Errorf("could not remove path: %s", err)
 	}
 
 	if err := os.Remove("symTestA"); err != nil {
-		t.Errorf("Could not remove path: %s", err)
+		t.Errorf("could not remove path: %s", err)
 	}
 
 	if err := os.Remove("symTestB"); err != nil {
-		t.Errorf("Could not remove path: %s", err)
+		t.Errorf("could not remove path: %s", err)
 	}
 
 }
@@ -191,11 +191,11 @@ func TestIndirectSymlinkCycles(t *testing.T) {
 // TestSymlinkToFolder checks if we are successfully following symlinks to folders
 func TestSymlinkToFolder(t *testing.T) {
 	if err := os.MkdirAll("symTest/symTest2", 0700); err != nil {
-		t.Errorf("Could not create tmpdir: %s", err)
+		t.Errorf("could not create tmpdir: %s", err)
 	}
 
 	if err := os.Symlink("symTest/symTest2", "symTmpfile.sym"); err != nil {
-		t.Errorf("Could not create a symlink: %s", err)
+		t.Errorf("could not create a symlink: %s", err)
 	}
 
 	// create a filepath from slash, because otherwise
@@ -204,7 +204,7 @@ func TestSymlinkToFolder(t *testing.T) {
 	p := filepath.FromSlash("symTest/symTest2/symTmpfile")
 
 	if err := ioutil.WriteFile(p, []byte("abc"), 0400); err != nil {
-		t.Errorf("Could not write symTmpfile: %s", err)
+		t.Errorf("could not write symTmpfile: %s", err)
 	}
 
 	result, err := RecordArtifacts([]string{"symTmpfile.sym"}, []string{"sha256"}, nil, nil)
@@ -225,26 +225,26 @@ func TestSymlinkToFolder(t *testing.T) {
 
 	// make sure to clean up everything
 	if err := os.Remove("symTest/symTest2/symTmpfile"); err != nil {
-		t.Errorf("Could not remove path symTest/symTest2/symTmpfile: %s", err)
+		t.Errorf("could not remove path symTest/symTest2/symTmpfile: %s", err)
 	}
 
 	if err := os.Remove("symTmpfile.sym"); err != nil {
-		t.Errorf("Could not remove path symTest/symTest2/symTmpfile.sym: %s", err)
+		t.Errorf("could not remove path symTest/symTest2/symTmpfile.sym: %s", err)
 	}
 
 	if err := os.Remove("symTest/symTest2"); err != nil {
-		t.Errorf("Could not remove path symTest/symTest2: %s", err)
+		t.Errorf("could not remove path symTest/symTest2: %s", err)
 	}
 
 	if err := os.Remove("symTest/"); err != nil {
-		t.Errorf("Could not remove path symTest: %s", err)
+		t.Errorf("could not remove path symTest: %s", err)
 	}
 }
 
 // This test provokes a symlink cycle
 func TestSymlinkCycle(t *testing.T) {
 	if err := os.Mkdir("symlinkCycle/", 0700); err != nil {
-		t.Errorf("Could not create tmpdir: %s", err)
+		t.Errorf("could not create tmpdir: %s", err)
 	}
 
 	// we need to get the current working directory here, otherwise
@@ -255,31 +255,31 @@ func TestSymlinkCycle(t *testing.T) {
 	}
 	// create a cycle ./symlinkCycle/symCycle.sym -> ./symlinkCycle/
 	if err := os.Symlink(dir+"/symlinkCycle", "symlinkCycle/symCycle.sym"); err != nil {
-		t.Errorf("Could not create a symlink: %s", err)
+		t.Errorf("could not create a symlink: %s", err)
 	}
 
 	// provoke "symlink cycle detected" error
 	_, err = RecordArtifacts([]string{"symlinkCycle/symCycle.sym", "foo.tar.gz"}, []string{"sha256"}, nil, nil)
 	if !errors.Is(err, ErrSymCycle) {
-		t.Errorf("We expected: %s, we got: %s", ErrSymCycle, err)
+		t.Errorf("we expected: %s, we got: %s", ErrSymCycle, err)
 	}
 
 	if err := os.Remove("symlinkCycle/symCycle.sym"); err != nil {
-		t.Errorf("Could not remove path symlinkCycle/symCycle.sym: %s", err)
+		t.Errorf("could not remove path symlinkCycle/symCycle.sym: %s", err)
 	}
 
 	if err := os.Remove("symlinkCycle"); err != nil {
-		t.Errorf("Could not remove path symlinkCycle: %s", err)
+		t.Errorf("could not remove path symlinkCycle: %s", err)
 	}
 }
 
 func TestRecordArtifacts(t *testing.T) {
 	// Test successfully record multiple artifacts including temporary subdir
 	if err := os.Mkdir("tmpdir", 0700); err != nil {
-		t.Errorf("Could not create tmpdir: %s", err)
+		t.Errorf("could not create tmpdir: %s", err)
 	}
 	if err := ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400); err != nil {
-		t.Errorf("Could not write tmpfile: %s", err)
+		t.Errorf("could not write tmpfile: %s", err)
 	}
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
 		"tmpdir/tmpfile"}, []string{"sha256"}, nil, []string{"tmpdir/"})
@@ -295,8 +295,18 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
+	// Test duplicated artifact after left strip
+	if err := ioutil.WriteFile("tmpdir/foo.tar.gz", []byte("abc"), 0400); err != nil {
+		t.Errorf("could not write tmpfile: %s", err)
+	}
+	_, err = RecordArtifacts([]string{"foo.tar.gz",
+		"tmpdir/foo.tar.gz"}, []string{"sha256"}, nil, []string{"tmpdir/"})
+	if err == nil {
+		t.Error("duplicated path error expected")
+	}
+
 	if err := os.RemoveAll("tmpdir"); err != nil {
-		t.Errorf("Could not remove tmpdir: %s", err)
+		t.Errorf("could not remove tmpdir: %s", err)
 	}
 
 	// Test error by recording nonexistent artifact
@@ -412,17 +422,17 @@ func TestInTotoRun(t *testing.T) {
 		} else {
 			// we do not need to check if result == nil here, because our reflect.DeepEqual was successful
 			if err := result.Dump(linkName + ".link"); err != nil {
-				t.Errorf("Error while dumping link metablock to file")
+				t.Errorf("error while dumping link metablock to file")
 			}
 			var loadedResult Metablock
 			if err := loadedResult.Load(linkName + ".link"); err != nil {
-				t.Errorf("Error while loading link metablock from file")
+				t.Errorf("error while loading link metablock from file")
 			}
 			if !reflect.DeepEqual(loadedResult, result) {
-				t.Errorf("Dump and loading of signed Link failed. Loaded result: '%s', dumped result '%s'", loadedResult, result)
+				t.Errorf("dump and loading of signed Link failed. Loaded result: '%s', dumped result '%s'", loadedResult, result)
 			} else {
 				if err := os.Remove(linkName + ".link"); err != nil {
-					t.Errorf("Removing created link file failed")
+					t.Errorf("removing created link file failed")
 				}
 			}
 		}
@@ -526,5 +536,54 @@ func TestInTotoRecord(t *testing.T) {
 		stopResult, err := InTotoRecordStop(result, table.productPaths, table.key, table.hashAlgorithms, nil, nil)
 		assert.Nil(t, err, "unexpected error while running record stop")
 		assert.Equal(t, table.stopResult, stopResult, "result from record stop did not match expected result")
+	}
+}
+
+// TestRecordArtifactWithBlobs ensures that we calculate the same hash for blobs
+func TestRecordArtifactWithBlobs(t *testing.T) {
+	type args struct {
+		path           string
+		hashAlgorithms []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    map[string]interface{}
+		wantErr error
+	}{
+		{
+			name: "test binary blob without line normalization segments",
+			args: args{
+				path:           "foo.tar.gz",
+				hashAlgorithms: []string{"sha256", "sha384", "sha512"},
+			},
+			want: map[string]interface{}{"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+				"sha384": "ce17464027a7d7c15b15032b404fc76fdbadfa1fa566d7f7747020df2542a293b3098873a98dbbda6e461f7767b8ff6c",
+				"sha512": "bb040966a5a6aefb646909f636f7f99c9e16b684a1f0e83a87dc30c3ab4d9dec2f9b0091d8be74bbc78ba29cb0c2dd027c223579028cf9822b0bccc49d493a6d"},
+			wantErr: nil,
+		},
+		{
+			name: "test binary blob with windows-like line breaks as byte segments",
+			args: args{
+				path:           "helloworld",
+				hashAlgorithms: []string{"sha256", "sha384", "sha512"},
+			},
+			want: map[string]interface{}{"sha256": "fd895747460401ca62d81f310538110734ff5401f8ef86c3ab27168598225db8",
+				"sha384": "ddc3ac40ca8d04929e13c42d555a5a6774d35bfac9e2f4cde5847ab3f12f36831faa3baf1b33922b53d288b352ae4b9a",
+				"sha512": "46f0e37e72879843f95ddecc4d511c9ba90241c34b471c2f2caca2784abe185da50ddc5252562b2a911b7cfedafa3e878f0e6b7aa843c136915da5306061e501"},
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := RecordArtifact(tt.args.path, tt.args.hashAlgorithms)
+			if err != tt.wantErr {
+				t.Errorf("RecordArtifact() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RecordArtifact() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

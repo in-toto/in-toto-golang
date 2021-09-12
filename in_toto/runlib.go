@@ -1,7 +1,6 @@
 package in_toto
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -47,9 +46,10 @@ func RecordArtifact(path string, hashAlgorithms []string) (map[string]interface{
 	if err != nil {
 		return nil, err
 	}
+	// TODO: Line Normalization has been disabled due to wrong byte segment replacement in BLOBs
 	// "Normalize" file contents. We convert all line separators to '\n'
 	// for keeping operating system independence
-	contents = bytes.ReplaceAll(contents, []byte("\r\n"), []byte("\n"))
+	//contents = bytes.ReplaceAll(contents, []byte("\r\n"), []byte("\n"))
 
 	// Create a map of all the hashes present in the hash_func list
 	for _, element := range hashAlgorithms {
@@ -182,7 +182,11 @@ func recordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns 
 						break
 					}
 				}
-
+				// Check if path is unique
+				_, existingPath := artifacts[path]
+				if existingPath {
+					return fmt.Errorf("left stripping has resulted in non unique dictionary key: %s", path)
+				}
 				artifacts[path] = artifact
 				return nil
 			})

@@ -13,8 +13,6 @@ var (
 	runDir         string
 	materialsPaths []string
 	productsPaths  []string
-	outDir         string
-	lStripPaths    []string
 )
 
 var runCmd = &cobra.Command{
@@ -26,7 +24,7 @@ execution) and stores them together with other information (executed command,
 return value, stdout, stderr, ...) to a link metadata file, which is signed
 with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 	Args:    cobra.MinimumNArgs(1),
-	PreRunE: runPreRun,
+	PreRunE: getKeyCert,
 	RunE:    run,
 }
 
@@ -93,10 +91,10 @@ command is executed. Symlinks are followed.`,
 
 	runCmd.Flags().StringVarP(
 		&outDir,
-		"output-directory",
+		"metadata-directory",
 		"d",
 		"./",
-		`directory to store link metadata`,
+		`Directory to store link metadata`,
 	)
 
 	runCmd.Flags().StringArrayVarP(
@@ -104,7 +102,7 @@ command is executed. Symlinks are followed.`,
 		"lstrip-paths",
 		"l",
 		[]string{},
-		`path prefixes used to left-strip artifact paths before storing
+		`Path prefixes used to left-strip artifact paths before storing
 them to the resulting link metadata. If multiple prefixes
 are specified, only a single prefix can match the path of
 any artifact and that is then left-stripped. All prefixes
@@ -112,27 +110,28 @@ are checked to ensure none of them are a left substring
 of another.`,
 	)
 
+	runCmd.Flags().StringArrayVarP(
+		&exclude,
+		"exclude",
+		"e",
+		[]string{},
+		`Path patterns to match paths that should not be recorded as 0
+‘materials’ or ‘products’. Passed patterns override patterns defined
+in environment variables or config files. See Config docs for details.`,
+	)
+
+	runCmd.Flags().StringVar(
+		&spiffeUDS,
+		"spiffe-workload-api-path",
+		"",
+		"uds path for spiffe workload api",
+	)
+
 	runCmd.MarkFlagRequired("name")
 }
 
-func runPreRun(cmd *cobra.Command, args []string) error {
-	key = intoto.Key{}
-	cert = intoto.Key{}
-	if err := key.LoadKeyDefaults(keyPath); err != nil {
-		return fmt.Errorf("invalid key at %s: %w", keyPath, err)
-	}
-	if len(certPath) > 0 {
-		if err := cert.LoadKeyDefaults(certPath); err != nil {
-			return fmt.Errorf("invalid cert at %s: %w", certPath, err)
-		}
-
-		key.KeyVal.Certificate = cert.KeyVal.Certificate
-	}
-	return nil
-}
-
 func run(cmd *cobra.Command, args []string) error {
-	block, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, []string{}, lStripPaths)
+	block, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, exclude, lStripPaths)
 	if err != nil {
 		return fmt.Errorf("failed to create link metadata: %w", err)
 	}

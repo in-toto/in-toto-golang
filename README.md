@@ -2,7 +2,7 @@
 [![build](https://github.com/in-toto/in-toto-golang/workflows/build/badge.svg)](https://github.com/in-toto/in-toto-golang/actions?query=workflow%3Abuild) [![Coverage Status](https://coveralls.io/repos/github/in-toto/in-toto-golang/badge.svg)](https://coveralls.io/github/in-toto/in-toto-golang) [![PkgGoDev](https://pkg.go.dev/badge/github.com/in-toto/in-toto-golang)](https://pkg.go.dev/github.com/in-toto/in-toto-golang) [![Go Report Card](https://goreportcard.com/badge/github.com/in-toto/in-toto-golang)](https://goreportcard.com/report/github.com/in-toto/in-toto-golang)
 
 
-Go implementation of the 
+Go implementation of the
 [in-toto Python reference implementation](https://github.com/in-toto/in-toto).
 
 ## Docs
@@ -58,6 +58,10 @@ func main() {
 To run the demo, pull down the source code, install Go, and run `make test-verify`.
 This will use openssl to generate a certificate chain.
 
+To run the demo using Spire, pull down the source code, install Go and Docker, and run `make test-spiffe-verify`.
+
+SPIFFE compliant Leaf certificates are generated with SVIDs corresponding to functionaries. These certificates are consumed by in-toto to sign link-meta data and the layout policy.
+
 During the in-toto verification process, `certificate constraints` are checked to ensure the build step link meta-data was signed with the correct SVID.
 
 ## Building
@@ -72,8 +76,8 @@ Usage:
 
 Available Commands:
   help        Help about any command
-  record      Creates a signed link metadata file in two steps, in order to provide
-evidence for supply chain steps that cannot be carried out by a single command
+  key         Key management commands
+  record      Creates a signed link metadata file in two steps, in order to provide evidence for supply chain steps that cannot be carried out by a single command
   run         Executes the passed command and records paths and hashes of 'materials'
   sign        Provides command line interface to sign in-toto link or layout metadata
   verify      Verify that the software supply chain of the delivered product
@@ -82,6 +86,24 @@ Flags:
   -h, --help                              help for in-toto
 
 Use "in-toto [command] --help" for more information about a command.
+```
+
+### key
+
+```text
+Key management commands
+
+Usage:
+  in-toto key [command]
+
+Available Commands:
+  id          Output the key id for a given key
+  layout      Output the key layout for a given key in <KEYID>: <KEYOBJ> format
+
+Flags:
+  -h, --help   help for key
+
+Use "in-toto key [command] --help" for more information about a command.
 ```
 
 ### run
@@ -97,28 +119,40 @@ Usage:
   in-toto run [flags]
 
 Flags:
-  -c, --cert string                Path to a PEM formatted certificate that corresponds with
-                                   the provided key.
-  -h, --help                       help for run
-  -k, --key string                 Path to a PEM formatted private key file used to sign
-                                   the resulting link metadata. (passing one of '--key'
-                                   or '--gpg' is required) 
-      --lstrip-paths stringArray   path prefixes used to left-strip artifact paths before storing
-                                   them to the resulting link metadata. If multiple prefixes
-                                   are specified, only a single prefix can match the path of
-                                   any artifact and that is then left-stripped. All prefixes
-                                   are checked to ensure none of them are a left substring
-                                   of another.
-  -m, --materials stringArray      Paths to files or directories, whose paths and hashes
-                                   are stored in the resulting link metadata before the
-                                   command is executed. Symlinks are followed.
-  -n, --name string                Name used to associate the resulting link metadata
-                                   with the corresponding step defined in an in-toto
-                                   layout.
-  -d, --output-directory string    directory to store link metadata (default "./")
-  -p, --products stringArray       Paths to files or directories, whose paths and hashes
-                                   are stored in the resulting link metadata after the
-                                   command is executed. Symlinks are followed.
+  -c, --cert string                       Path to a PEM formatted certificate that corresponds with
+                                          the provided key.
+  -e, --exclude stringArray               path patterns to match paths that should not be recorded as 0
+                                          ‘materials’ or ‘products’. Passed patterns override patterns defined
+                                          in environment variables or config files. See Config docs for details.
+  -h, --help                              help for run
+  -k, --key string                        Path to a PEM formatted private key file used to sign
+                                          the resulting link metadata. (passing one of '--key'
+                                          or '--gpg' is required) 
+  -l, --lstrip-paths stringArray          path prefixes used to left-strip artifact paths before storing
+                                          them to the resulting link metadata. If multiple prefixes
+                                          are specified, only a single prefix can match the path of
+                                          any artifact and that is then left-stripped. All prefixes
+                                          are checked to ensure none of them are a left substring
+                                          of another.
+  -m, --materials stringArray             Paths to files or directories, whose paths and hashes
+                                          are stored in the resulting link metadata before the
+                                          command is executed. Symlinks are followed.
+  -n, --name string                       Name used to associate the resulting link metadata
+                                          with the corresponding step defined in an in-toto
+                                          layout.
+  -d, --metadata-directory string         directory to store link metadata (default "./")
+  -p, --products stringArray              Paths to files or directories, whose paths and hashes
+                                          are stored in the resulting link metadata after the
+                                          command is executed. Symlinks are followed.
+  -r, --run-dir string                    runDir specifies the working directory of the command.
+                                          If runDir is the empty string, the command will run in the
+                                          calling process's current directory. The runDir directory must
+                                          exist, be writable, and not be a symlink.
+  -d, --output-directory string           directory to store link metadata (default "./")
+  -p, --products stringArray              Paths to files or directories, whose paths and hashes
+                                          are stored in the resulting link metadata after the
+                                          command is executed. Symlinks are followed.
+      --spiffe-workload-api-path string   uds path for spiffe workload api
 ```
 
 ### sign
@@ -181,22 +215,82 @@ Available Commands:
   stop        Records and adds the paths and hashes of the passed products to the link metadata file and updates the signature.
 
 Flags:
-  -c, --cert string   Path to a PEM formatted certificate that corresponds with the provided key.
-  -h, --help          help for record
-  -k, --key string    Path to a private key file to sign the resulting link metadata.
-                      The keyid prefix is used as an infix for the link metadata filename,
-                      i.e. ‘<name>.<keyid prefix>.link’. See ‘–key-type’ for available
-                      formats. Passing one of ‘–key’ or ‘–gpg’ is required.
-  -n, --name string   name for the resulting link metadata file.
-                      It is also used to associate the link with a step defined
-                      in an in-toto layout.
+  -c, --cert string                       Path to a PEM formatted certificate that corresponds with the provided key.
+  -e, --exclude stringArray               Path patterns to match paths that should not be recorded as 
+                                          ‘materials’ or ‘products’. Passed patterns override patterns defined
+                                          in environment variables or config files. See Config docs for details.
+  -h, --help                              help for record
+  -k, --key string                        Path to a private key file to sign the resulting link metadata.
+                                          The keyid prefix is used as an infix for the link metadata filename,
+                                          i.e. ‘<name>.<keyid prefix>.link’. See ‘–key-type’ for available
+                                          formats. Passing one of ‘–key’ or ‘–gpg’ is required.
+  -l, --lstrip-paths stringArray          Path prefixes used to left-strip artifact paths before storing
+                                          them to the resulting link metadata. If multiple prefixes
+                                          are specified, only a single prefix can match the path of
+                                          any artifact and that is then left-stripped. All prefixes
+                                          are checked to ensure none of them are a left substring
+                                          of another.
+  -d, --metadata-directory string         directory to store link metadata (default "./")
+  -n, --name string                       name for the resulting link metadata file.
+                                          It is also used to associate the link with a step defined
+                                          in an in-toto layout.
+      --spiffe-workload-api-path string   uds path for spiffe workload api
+```
 
-Use "in-toto record [command] --help" for more information about a command.
+### Completion
+
+```text
+Generate completion script
+Usage:
+  in-toto completion [bash|zsh|fish|powershell]
+
+Flags:
+  -h, --help   help for completion
+```
+
+#### Bash
+
+```shell
+$ source <(in-toto completion bash)
+# To load completions for each session, execute once:
+# Linux (the target location may differ depending on your distro):
+$ in-toto completion bash > /etc/bash_completion.d/in-toto
+# macOS:
+$ in-toto completion bash > /usr/local/etc/bash_completion.d/in-toto
+```
+
+#### Zsh
+
+```shell
+# If shell completion is not already enabled in your environment,
+# you will need to enable it.  You can execute the following once:
+$ echo "autoload -U compinit; compinit" >> ~/.zshrc
+# To load completions for each session, execute once:
+$ in-toto completion zsh > "${fpath[1]}/_in-toto"
+# You will need to start a new shell for this setup to take effect.
+```
+
+#### Fish
+
+```shell
+fish:
+$ in-toto completion fish | source
+# To load completions for each session, execute once:
+$ in-toto completion fish > ~/.config/fish/completions/in-toto.fish
+```
+
+#### PowerShell
+
+```shell
+PS> in-toto completion powershell | Out-String | Invoke-Expression
+# To load completions for every new session, run:
+PS> in-toto completion powershell > in-toto.ps1
+# and source this file from your PowerShell profile.
 ```
 
 ## Layout Certificate Constraints
 
-Currently only URIs and common name constraints supported:
+Currently the following constraints supported:
 
 ```json
 {
