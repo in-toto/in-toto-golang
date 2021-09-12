@@ -9,11 +9,14 @@ import (
 )
 
 var (
-	layoutPath string
-	keyPath    string
-	certPath   string
-	key        intoto.Key
-	cert       intoto.Key
+	layoutPath  string
+	keyPath     string
+	certPath    string
+	key         intoto.Key
+	cert        intoto.Key
+	lStripPaths []string
+	exclude     []string
+	outDir      string
 )
 
 var rootCmd = &cobra.Command{
