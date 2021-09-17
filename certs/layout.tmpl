@@ -1,0 +1,144 @@
+{
+"signatures": [],
+"signed": {
+  "_type": "layout",
+  "expires": "2030-11-18T16:06:36Z",
+  "inspect": [
+   {
+    "_type": "inspection",
+    "expected_materials": [
+     [
+      "MATCH",
+      "foo.tar.gz",
+      "WITH",
+      "PRODUCTS",
+      "FROM",
+      "package"
+     ],
+     [
+      "DISALLOW",
+      "foo.tar.gz"
+     ]
+    ],
+    "expected_products": [
+     [
+      "MATCH",
+      "foo.py",
+      "WITH",
+      "PRODUCTS",
+      "FROM",
+      "write-code"
+     ],
+     [
+      "DISALLOW",
+      "foo.py"
+     ]
+    ],
+    "name": "untar",
+    "run": [
+     "tar",
+     "xfz",
+     "./test/tmp/foo.tar.gz"
+    ]
+   }
+  ],
+  "intermediatecas": {},
+  "keys": {},
+  "readme": "",
+  "rootcas": {
+   {{ROOTCA}}
+  },
+  "steps": [
+   {
+    "_type": "step",
+    "cert_constraints": [
+     {
+      "common_name": "write-code.example.com",
+      "dns_names": [
+        ""
+      ],
+      "emails": [
+        ""
+      ],
+      "organizations": [
+        "*"
+      ],
+      "roots": [
+        "*"
+      ],
+      "uris": [
+        "spiffe://example.com/write-code"
+      ]
+     }
+    ],
+    "expected_command": ["/bin/sh -c echo hello > ./test/tmp/foo.py"],
+    "expected_materials": [],
+    "expected_products": [
+     [
+      "ALLOW",
+      "foo.py"
+     ]
+    ],
+    "name": "write-code",
+    "pubkeys": [],
+    "threshold": 1
+   },
+   {
+    "_type": "step",
+    "cert_constraints": [
+     {
+      "common_name": "package.example.com",
+      "dns_names": [
+       ""
+      ],
+      "emails": [
+       ""
+      ],
+      "organizations": [
+       "*"
+      ],
+      "roots": [
+       "*"
+      ],
+      "uris": [
+       "spiffe://example.com/package"
+      ]
+     }
+    ],
+    "expected_command": [
+     "tar",
+     "zcvf",
+     "./test/tmp/foo.tar.gz",
+     "./test/tmp/foo.py"
+    ],
+    "expected_materials": [
+     [
+      "MATCH",
+      "foo.py",
+      "WITH",
+      "PRODUCTS",
+      "FROM",
+      "write-code"
+     ],
+     [
+      "DISALLOW",
+      "*"
+     ]
+    ],
+    "expected_products": [
+     [
+      "ALLOW",
+      "foo.tar.gz"
+     ],
+     [
+      "ALLOW",
+      "foo.py"
+     ]
+    ],
+    "name": "package",
+    "pubkeys": [],
+    "threshold": 1
+   }
+  ]
+}
+}
