@@ -1,14 +1,11 @@
-*Please fill in the fields below to submit a pull request.  The more
-information that is provided, the better.*
-
-**Fixes issue #**:
+**Fixes issue:**
 
 
-**Description of pull request**:
+**Description:**
 
 
 **Please verify and check that the pull request fulfills the following
-requirements**:
+requirements:**
 
 - [ ] Tests have been added for the bug fix or new feature
 - [ ] Docs have been added for the bug fix or new feature
