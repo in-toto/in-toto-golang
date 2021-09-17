@@ -12,9 +12,9 @@ assignees: ''
 If you're new to the project, welcome!
 
 In addition to filling out this mentorship request, consider joining the
-in-toto slack community and introducing yourself!
+#in-toto channel on the CNCF slack workspace and introducing yourself!
+Link to sign up: https://slack.cncf.io/
 
-https://app.slack.com/client/T08PSQ7BQ/CM46K2VT2
 -->
 
 **About**
