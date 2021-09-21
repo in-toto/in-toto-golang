@@ -1,1 +1,13 @@
+# goreleaser distribution directory
+dist
+
+# GoLand idea configuration
+.idea
+
+# VSCode configuration
+.vscode
+
+# ignore cosign private key
+cosign.key
+
 bin/
