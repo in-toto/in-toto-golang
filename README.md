@@ -72,13 +72,8 @@ Usage:
 
 Available Commands:
   help        Help about any command
-<<<<<<< HEAD
-  record      Creates a signed link metadata file in two steps, in order to provide
-evidence for supply chain steps that cannot be carried out by a single command
-=======
   key         Key management commands
   record      Creates a signed link metadata file in two steps, in order to provide evidence for supply chain steps that cannot be carried out by a single command
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
   run         Executes the passed command and records paths and hashes of 'materials'
   sign        Provides command line interface to sign in-toto link or layout metadata
   verify      Verify that the software supply chain of the delivered product
@@ -89,8 +84,6 @@ Flags:
 Use "in-toto [command] --help" for more information about a command.
 ```
 
-<<<<<<< HEAD
-=======
 ### key
 
 ```text
@@ -109,7 +102,6 @@ Flags:
 Use "in-toto key [command] --help" for more information about a command.
 ```
 
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 ### run
 
 ```text
@@ -125,21 +117,14 @@ Usage:
 Flags:
   -c, --cert string                Path to a PEM formatted certificate that corresponds with
                                    the provided key.
-<<<<<<< HEAD
-=======
   -e, --exclude stringArray        path patterns to match paths that should not be recorded as 0
                                    ‘materials’ or ‘products’. Passed patterns override patterns defined
                                    in environment variables or config files. See Config docs for details.
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
   -h, --help                       help for run
   -k, --key string                 Path to a PEM formatted private key file used to sign
                                    the resulting link metadata. (passing one of '--key'
                                    or '--gpg' is required) 
-<<<<<<< HEAD
-      --lstrip-paths stringArray   path prefixes used to left-strip artifact paths before storing
-=======
   -l, --lstrip-paths stringArray   path prefixes used to left-strip artifact paths before storing
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
                                    them to the resulting link metadata. If multiple prefixes
                                    are specified, only a single prefix can match the path of
                                    any artifact and that is then left-stripped. All prefixes
@@ -151,12 +136,6 @@ Flags:
   -n, --name string                Name used to associate the resulting link metadata
                                    with the corresponding step defined in an in-toto
                                    layout.
-<<<<<<< HEAD
-  -d, --output-directory string    directory to store link metadata (default "./")
-  -p, --products stringArray       Paths to files or directories, whose paths and hashes
-                                   are stored in the resulting link metadata after the
-                                   command is executed. Symlinks are followed.
-=======
   -d, --metadata-directory string  directory to store link metadata (default "./")
   -p, --products stringArray       Paths to files or directories, whose paths and hashes
                                    are stored in the resulting link metadata after the
@@ -165,7 +144,6 @@ Flags:
                                    If runDir is the empty string, the command will run in the
                                    calling process's current directory. The runDir directory must
                                    exist, be writable, and not be a symlink.
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 ```
 
 ### sign
@@ -228,17 +206,6 @@ Available Commands:
   stop        Records and adds the paths and hashes of the passed products to the link metadata file and updates the signature.
 
 Flags:
-<<<<<<< HEAD
-  -c, --cert string   Path to a PEM formatted certificate that corresponds with the provided key.
-  -h, --help          help for record
-  -k, --key string    Path to a private key file to sign the resulting link metadata.
-                      The keyid prefix is used as an infix for the link metadata filename,
-                      i.e. ‘<name>.<keyid prefix>.link’. See ‘–key-type’ for available
-                      formats. Passing one of ‘–key’ or ‘–gpg’ is required.
-  -n, --name string   name for the resulting link metadata file.
-                      It is also used to associate the link with a step defined
-                      in an in-toto layout.
-=======
   -c, --cert string                Path to a PEM formatted certificate that corresponds with the provided key.
   -e, --exclude stringArray        Path patterns to match paths that should not be recorded as 
                                    ‘materials’ or ‘products’. Passed patterns override patterns defined
@@ -258,18 +225,13 @@ Flags:
   -n, --name string                name for the resulting link metadata file.
                                    It is also used to associate the link with a step defined
                                    in an in-toto layout.
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 
 Use "in-toto record [command] --help" for more information about a command.
 ```
 
 ## Layout Certificate Constraints
 
-<<<<<<< HEAD
-Currently only URIs and common name constraints supported:
-=======
 Currently the following constraints supported:
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 
 ```json
 {

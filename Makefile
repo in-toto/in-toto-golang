@@ -39,8 +39,6 @@ test-sign: build generate_layout
 	# Running test-sign
 	@./bin/in-toto sign -f ./test/tmp/test.layout -k ./certs/example.com.layout.key.pem -o ./test/tmp/signed.layout
 
-<<<<<<< HEAD
-=======
 test-record: build generate_layout
     # Running record start
 	@./bin/in-toto record start -n write-code -c ./certs/example.com.write-code.cert.pem -k ./certs/example.com.write-code.key.pem -d ./test/tmp
@@ -49,7 +47,6 @@ test-record: build generate_layout
 	# Running record stop
 	@./bin/in-toto record stop -n write-code -c ./certs/example.com.write-code.cert.pem -p ./test/tmp/foo.py -k ./certs/example.com.write-code.key.pem -d ./test/tmp
 
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 test-run: build generate_layout
 	# Running write code step
 	@./bin/in-toto run -n write-code -c ./certs/example.com.write-code.cert.pem -k ./certs/example.com.write-code.key.pem -p ./test/tmp/foo.py -d ./test/tmp -- /bin/sh -c "echo hello > ./test/tmp/foo.py"
@@ -62,14 +59,8 @@ test-verify: test-sign test-run
 
 generate_layout: leaf_certs
 	@mkdir -p ./test/tmp
-<<<<<<< HEAD
-	$(eval rootid := $(shell ./bin/in-toto key id ./certs/root.cert.pem))
-	$(eval rootca := $(shell ./bin/in-toto key layout ./certs/root.cert.pem | sed -e 's/\\n/\\\\n/g'))
-	@cat $(LAYOUT_TMPL) | sed -e 's#{{ROOTCA}}#$(rootca)#' -e 's#{{ROOTID}}#$(rootid)#' > ./test/tmp/test.layout
-=======
 	$(eval rootca := $(shell ./bin/in-toto key layout ./certs/root.cert.pem | sed -e 's/\\n/\\\\n/g'))
 	@cat $(LAYOUT_TMPL) | sed -e 's#{{ROOTCA}}#$(rootca)#' > ./test/tmp/test.layout
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 
 root-cert:
 	# Generate root cert openssl conf file

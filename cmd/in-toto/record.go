@@ -2,11 +2,8 @@ package main
 
 import (
 	"fmt"
-<<<<<<< HEAD
-=======
 	"os"
 	"path/filepath"
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/spf13/cobra"
@@ -21,11 +18,7 @@ var (
 var recordCmd = &cobra.Command{
 	Use: "record",
 	Short: `Creates a signed link metadata file in two steps, in order to provide
-<<<<<<< HEAD
-evidence for supply chain steps that cannot be carried out by a single command`,
-=======
               evidence for supply chain steps that cannot be carried out by a single command`,
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 	Long: `Creates a signed link metadata file in two steps, in order to provide
 evidence for supply chain steps that cannot be carried out by a single command
 (for which ‘in-toto-run’ should be used). It returns a non-zero value on
@@ -87,8 +80,6 @@ formats. Passing one of ‘–key’ or ‘–gpg’ is required.`,
 with the provided key.`,
 	)
 
-<<<<<<< HEAD
-=======
 	recordCmd.PersistentFlags().StringVarP(
 		&outDir,
 		"metadata-directory",
@@ -120,7 +111,6 @@ of another.`,
 in environment variables or config files. See Config docs for details.`,
 	)
 
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 	recordCmd.MarkPersistentFlagRequired("name")
 
 	// Record Start Command
@@ -153,18 +143,6 @@ command is executed. Symlinks are followed.`,
 func recordPreRun(cmd *cobra.Command, args []string) error {
 	key = intoto.Key{}
 	cert = intoto.Key{}
-<<<<<<< HEAD
-	if err := key.LoadKeyDefaults(keyPath); err != nil {
-		return fmt.Errorf("invalid key at %s: %w", keyPath, err)
-	}
-
-	if len(certPath) > 0 {
-		if err := cert.LoadKeyDefaults(certPath); err != nil {
-			return fmt.Errorf("invalid cert at %s: %w", certPath, err)
-		}
-
-		key.KeyVal.Certificate = cert.KeyVal.Certificate
-=======
 
 	if keyPath == "" && certPath == "" {
 		return fmt.Errorf("key or cert must be provided")
@@ -189,28 +167,19 @@ func recordPreRun(cmd *cobra.Command, args []string) error {
 		} else {
 			return fmt.Errorf("cert not found at %s: %w", certPath, err)
 		}
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 	}
 	return nil
 }
 
 func recordStart(cmd *cobra.Command, args []string) error {
-<<<<<<< HEAD
-	block, err := intoto.InTotoRecordStart(recordStepName, recordMaterialsPaths, key, []string{"sha256"}, []string{}, nil)
-=======
 	block, err := intoto.InTotoRecordStart(recordStepName, recordMaterialsPaths, key, []string{"sha256"}, exclude, lStripPaths)
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 	if err != nil {
 		return fmt.Errorf("failed to create start link file: %w", err)
 	}
 
 	prelimLinkName := fmt.Sprintf(intoto.PreliminaryLinkNameFormat, recordStepName, key.KeyID)
-<<<<<<< HEAD
-	err = block.Dump(prelimLinkName)
-=======
 	prelimLinkPath := filepath.Join(outDir, prelimLinkName)
 	err = block.Dump(prelimLinkPath)
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 	if err != nil {
 		return fmt.Errorf("failed to write start link file to %s: %w", prelimLinkName, err)
 	}
@@ -221,31 +190,19 @@ func recordStart(cmd *cobra.Command, args []string) error {
 func recordStop(cmd *cobra.Command, args []string) error {
 	var prelimLinkMb intoto.Metablock
 	prelimLinkName := fmt.Sprintf(intoto.PreliminaryLinkNameFormat, recordStepName, key.KeyID)
-<<<<<<< HEAD
-	if err := prelimLinkMb.Load(prelimLinkName); err != nil {
-		return fmt.Errorf("failed to load start link file at %s: %w", prelimLinkName, err)
-	}
-
-	linkMb, err := intoto.InTotoRecordStop(prelimLinkMb, recordProductsPaths, key, []string{"sha256"}, []string{}, nil)
-=======
 	prelimLinkPath := filepath.Join(outDir, prelimLinkName)
 	if err := prelimLinkMb.Load(prelimLinkPath); err != nil {
 		return fmt.Errorf("failed to load start link file at %s: %w", prelimLinkName, err)
 	}
 
 	linkMb, err := intoto.InTotoRecordStop(prelimLinkMb, recordProductsPaths, key, []string{"sha256"}, exclude, lStripPaths)
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 	if err != nil {
 		return fmt.Errorf("failed to create stop link file: %w", err)
 	}
 
 	linkName := fmt.Sprintf(intoto.LinkNameFormat, recordStepName, key.KeyID)
-<<<<<<< HEAD
-	err = linkMb.Dump(linkName)
-=======
 	linkPath := filepath.Join(outDir, linkName)
 	err = linkMb.Dump(linkPath)
->>>>>>> f2c57d1e0f15e3ffbeac531829c696b72ecc4290
 	if err != nil {
 		return fmt.Errorf("failed to write stop link file to %s: %w", prelimLinkName, err)
 	}
