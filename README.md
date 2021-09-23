@@ -58,6 +58,10 @@ func main() {
 To run the demo, pull down the source code, install Go, and run `make test-verify`.
 This will use openssl to generate a certificate chain.
 
+To run the demo using Spire, pull down the source code, install Go and Docker, and run `make test-spiffe-verify`.
+
+SPIFFE compliant Leaf certificates are generated with SVIDs corresponding to functionaries. These certificates are consumed by in-toto to sign link-meta data and the layout policy.
+
 During the in-toto verification process, `certificate constraints` are checked to ensure the build step link meta-data was signed with the correct SVID.
 
 ## Building
@@ -144,6 +148,7 @@ Flags:
                                    If runDir is the empty string, the command will run in the
                                    calling process's current directory. The runDir directory must
                                    exist, be writable, and not be a symlink.
+      --spiffe-workload-api-path string   uds path for spiffe workload api
 ```
 
 ### sign
@@ -161,6 +166,7 @@ Flags:
                         root layout's signature(s). Passing exactly one key using
                         '--layout-key' is required.
   -o, --output string   Path to store metadata file to be signed
+      --spiffe-workload-api-path string   uds path for spiffe workload api
 ```
 
 ### verify
@@ -188,6 +194,7 @@ Flags:
   -d, --link-dir string              Path to directory where link metadata files for steps defined in 
                                      the root layout should be loaded from. If not passed links are 
                                      loaded from the current working directory.
+      --spiffe-workload-api-path string   uds path for spiffe workload api
 ```
 
 ### record
@@ -225,8 +232,7 @@ Flags:
   -n, --name string                name for the resulting link metadata file.
                                    It is also used to associate the link with a step defined
                                    in an in-toto layout.
-
-Use "in-toto record [command] --help" for more information about a command.
+      --spiffe-workload-api-path string   uds path for spiffe workload api
 ```
 
 ## Layout Certificate Constraints

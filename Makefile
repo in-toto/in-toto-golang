@@ -7,6 +7,9 @@ ORGANIZATION := example
 ROOT_DAYS := 3650
 INTERMEDIATE_DAYS := 3650
 LEAF_DAYS := 1
+GOOS ?= $(shell go env GOOS)
+GOARCH ?= $(shell go env GOARCH)
+
 
 # Template Locations
 OPENSSL_TMPL := ./certs/openssl.cnf.tmpl
@@ -14,12 +17,13 @@ LAYOUT_TMPL := ./certs/layout.tmpl
 
 build: modules
 	@mkdir -p bin
-	@go build -o ./bin/in-toto ./cmd/in-toto
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build \
+	-o ./bin/in-toto ./cmd/in-toto
 
 modules:
 	@go mod tidy
 
-clean: clean-certs clean-test-files
+clean: clean-certs clean-test-files spiffe-infra-down
 	@rm -rf ./bin
 
 clean-certs:
@@ -30,37 +34,66 @@ clean-test-files:
 	@rm -rf ./untar.link
 	@rm -rf ./.srl
 
-test: go-test test-verify
+test: go-test test-verify test-spiffe-verify
 
 go-test:
 	@go test ./...
 
 test-sign: build generate_layout
 	# Running test-sign
-	@./bin/in-toto sign -f ./test/tmp/test.layout -k ./certs/example.com.layout.key.pem -o ./test/tmp/signed.layout
+	cd ./test/tmp; ../../bin/in-toto sign -f ./test.layout -k ../../certs/example.com.layout.key.pem -o ./signed.layout
 
 test-record: build generate_layout
     # Running record start
-	@./bin/in-toto record start -n write-code -c ./certs/example.com.write-code.cert.pem -k ./certs/example.com.write-code.key.pem -d ./test/tmp
+	cd ./test/tmp; ../../bin/in-toto record start -n write-code -c ../../certs/example.com.write-code.cert.pem -k ../../certs/example.com.write-code.key.pem -d .
     # Record running step
-	@echo goodbye > ./test/tmp/foo.py
+	cd ./test/tmp; echo goodbye > foo.py
 	# Running record stop
-	@./bin/in-toto record stop -n write-code -c ./certs/example.com.write-code.cert.pem -p ./test/tmp/foo.py -k ./certs/example.com.write-code.key.pem -d ./test/tmp
+	cd ./test/tmp; ../../bin/in-toto record stop -n write-code -c ../../certs/example.com.write-code.cert.pem -p foo.py -k ../../certs/example.com.write-code.key.pem -d .
 
 test-run: build generate_layout
 	# Running write code step
-	@./bin/in-toto run -n write-code -c ./certs/example.com.write-code.cert.pem -k ./certs/example.com.write-code.key.pem -p ./test/tmp/foo.py -d ./test/tmp -- /bin/sh -c "echo hello > ./test/tmp/foo.py"
+	cd ./test/tmp; ../../bin/in-toto run -n write-code -c ../../certs/example.com.write-code.cert.pem -k ../../certs/example.com.write-code.key.pem -p foo.py -d . -- /bin/sh -c "echo hello > foo.py"
 	# Running package step
-	@./bin/in-toto run -n package -c ./certs/example.com.package.cert.pem -k ./certs/example.com.package.key.pem -m ./test/tmp/foo.py -p ./test/tmp/foo.tar.gz -d ./test/tmp -- tar zcvf ./test/tmp/foo.tar.gz ./test/tmp/foo.py
+	cd ./test/tmp; ../../bin/in-toto run -n package -c ../../certs/example.com.package.cert.pem -k ../../certs/example.com.package.key.pem -m foo.py -p foo.tar.gz -d . -- tar zcvf foo.tar.gz foo.py
 
 test-verify: test-sign test-run
 	# Running test verify
-	@./bin/in-toto verify -l ./test/tmp/signed.layout -k ./certs/example.com.layout.cert.pem -i ./certs/example.com.intermediate.cert.pem -d ./test/tmp
+	cd ./test/tmp; ../../bin/in-toto verify -l ./signed.layout -k ../../certs/example.com.layout.cert.pem -i ../../certs/example.com.intermediate.cert.pem -d .
 
-generate_layout: leaf_certs
+test-spiffe-run: test-spiffe-sign
+	# Running write code step
+	docker exec -u 1000 -w /test/tmp -it intoto-runner in-toto run --spiffe-workload-api-path unix:///run/spire/sockets/agent.sock -n write-code -p foo.py -d . -- /bin/sh -c "echo hello > foo.py"
+	# Running package step
+	docker exec -u 1001 -w /test/tmp -it intoto-runner in-toto run --spiffe-workload-api-path unix:///run/spire/sockets/agent.sock -n package -m foo.py -p foo.tar.gz -d . -- tar zcvf foo.tar.gz foo.py
+
+test-spiffe-verify: test-spiffe-sign test-spiffe-run
+	# Running test verify
+	docker exec -it -w /test/tmp intoto-runner /bin/in-toto verify -l ./spiffe.signed.layout -k ./layout-svid.pem -d .
+
+test-spiffe-sign: build spiffe-test-generate-layout
+	docker exec -it -w /test/tmp intoto-runner /bin/in-toto sign -f ./spiffe.test.layout -k ./layout-key.pem -o ./spiffe.signed.layout
+
+spiffe-test-generate-layout: spiffe-infra-up
+	# Get key layout from the root cert
+	$(eval rootca := $(shell ./bin/in-toto key layout ./test/tmp/layout-bundle.pem | sed -e 's/\\n/\\\\n/g'))
+	cat $(LAYOUT_TMPL) | sed -e 's#{{ROOTCA}}#$(rootca)#' > ./test/tmp/spiffe.test.layout
+	docker-compose -f ./test-infra/docker-compose.yaml up -d intoto-runner
+
+spiffe-infra-up: build
 	@mkdir -p ./test/tmp
+	@chmod 777 ./test/tmp
+	./test-infra/infra-up.sh
+	./test-infra/mint-cert.sh layout
+
+spiffe-infra-down:
+	./test-infra/infra-down.sh
+
+generate_layout: build leaf_certs
+	@mkdir -p ./test/tmp
+	# get key layout from the root cert
 	$(eval rootca := $(shell ./bin/in-toto key layout ./certs/root.cert.pem | sed -e 's/\\n/\\\\n/g'))
-	@cat $(LAYOUT_TMPL) | sed -e 's#{{ROOTCA}}#$(rootca)#' > ./test/tmp/test.layout
+	cat $(LAYOUT_TMPL) | sed -e 's#{{ROOTCA}}#$(rootca)#' > ./test/tmp/test.layout
 
 root-cert:
 	# Generate root cert openssl conf file

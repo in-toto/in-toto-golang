@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
+	"github.com/in-toto/in-toto-golang/internal/spiffe"
 	"github.com/spf13/cobra"
 )
 
@@ -47,6 +49,13 @@ root layout's signature(s). Passing exactly one key using
 '--key' is required.`,
 	)
 
+	signCmd.Flags().StringVar(
+		&spiffeUDS,
+		"spiffe-workload-api-path",
+		"",
+		"uds path for spiffe workload api",
+	)
+
 	signCmd.MarkFlagRequired("file")
 	signCmd.MarkFlagRequired("key")
 	signCmd.MarkFlagRequired("output")
@@ -59,9 +68,18 @@ func sign(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load layout at %s: %w", layoutPath, err)
 	}
 
-	key = intoto.Key{}
-	if err := key.LoadKeyDefaults(keyPath); err != nil {
-		return fmt.Errorf("invalid key at %s: %w", keyPath, err)
+	if spiffeUDS != "" {
+		ctx := context.Background()
+		var err error
+		key, err = spiffe.GetSVID(ctx, spiffeUDS)
+		if err != nil {
+			return fmt.Errorf("failed to get spiffe x.509 SVID: %w", err)
+		}
+	} else {
+		key = intoto.Key{}
+		if err := key.LoadKeyDefaults(keyPath); err != nil {
+			return fmt.Errorf("invalid key at %s: %w", keyPath, err)
+		}
 	}
 
 	layoutMb.Sign(key)

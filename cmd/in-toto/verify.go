@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
+	"github.com/in-toto/in-toto-golang/internal/spiffe"
 	"github.com/spf13/cobra"
 )
 
@@ -68,6 +72,13 @@ the chain of trust to the layout's trusted root. These will be used in
 addition to any intermediates in the layout.`,
 	)
 
+	verifyCmd.Flags().StringVar(
+		&spiffeUDS,
+		"spiffe-workload-api-path",
+		"",
+		"uds path for spiffe workload api",
+	)
+
 	verifyCmd.MarkFlagRequired("layout")
 	verifyCmd.MarkFlagRequired("layout-keys")
 }
@@ -89,6 +100,38 @@ func verify(cmd *cobra.Command, args []string) error {
 		}
 
 		layoutKeys[pubKey.KeyID] = pubKey
+	}
+
+	if spiffeUDS != "" {
+		ctx := context.Background()
+		bundle, err := spiffe.GetTrustBundle(ctx, spiffeUDS)
+		if err != nil {
+			return fmt.Errorf("failed to get spiffe trust bundle: %w", err)
+		}
+
+		for i, c := range bundle {
+			certFile := fmt.Sprintf("intermediate_%v.cert.pem", i)
+			certPath := filepath.Join(linkDir, certFile)
+			certOut, err := os.Create(certPath)
+			if err != nil {
+				return fmt.Errorf("failed to write spiffe intermediate cert to %s: %w", certPath, err)
+			}
+			defer certOut.Close()
+
+			if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: c.Raw}); err != nil {
+				return fmt.Errorf("failed to encode spiffe intermediate cert: %w", err)
+			}
+
+			intermediatePaths = append(intermediatePaths, certPath)
+
+			if err := certOut.Sync(); err != nil {
+				return fmt.Errorf("failed to sync intermediate cert to disk: %w", err)
+			}
+
+			if err := certOut.Close(); err != nil {
+				return fmt.Errorf("could not close intermediate cert: %w", err)
+			}
+		}
 	}
 
 	intermediatePems := make([][]byte, 0, len(intermediatePaths))
