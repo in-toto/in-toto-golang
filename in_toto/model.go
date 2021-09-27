@@ -306,7 +306,7 @@ used signature scheme is found in the corresponding Key.
 type Signature struct {
 	KeyID       string `json:"keyid"`
 	Sig         string `json:"sig"`
-	Certificate string `json:"cert"`
+	Certificate string `json:"cert,omitempty"`
 }
 
 // GetCertificate returns the parsed x509 certificate attached to the signature,
