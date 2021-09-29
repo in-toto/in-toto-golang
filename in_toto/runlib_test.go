@@ -528,3 +528,52 @@ func TestInTotoRecord(t *testing.T) {
 		assert.Equal(t, table.stopResult, stopResult, "result from record stop did not match expected result")
 	}
 }
+
+// TestRecordArtifactWithBlobs ensures that we calculate the same hash for blobs
+func TestRecordArtifactWithBlobs(t *testing.T) {
+	type args struct {
+		path           string
+		hashAlgorithms []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    map[string]interface{}
+		wantErr error
+	}{
+		{
+			name: "test binary blob without line normalization segments",
+			args: args{
+				path:           "foo.tar.gz",
+				hashAlgorithms: []string{"sha256", "sha384", "sha512"},
+			},
+			want: map[string]interface{}{"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+				"sha384": "ce17464027a7d7c15b15032b404fc76fdbadfa1fa566d7f7747020df2542a293b3098873a98dbbda6e461f7767b8ff6c",
+				"sha512": "bb040966a5a6aefb646909f636f7f99c9e16b684a1f0e83a87dc30c3ab4d9dec2f9b0091d8be74bbc78ba29cb0c2dd027c223579028cf9822b0bccc49d493a6d"},
+			wantErr: nil,
+		},
+		{
+			name: "test binary blob with windows-like line breaks as byte segments",
+			args: args{
+				path:           "helloworld",
+				hashAlgorithms: []string{"sha256", "sha384", "sha512"},
+			},
+			want: map[string]interface{}{"sha256": "fd895747460401ca62d81f310538110734ff5401f8ef86c3ab27168598225db8",
+				"sha384": "ddc3ac40ca8d04929e13c42d555a5a6774d35bfac9e2f4cde5847ab3f12f36831faa3baf1b33922b53d288b352ae4b9a",
+				"sha512": "46f0e37e72879843f95ddecc4d511c9ba90241c34b471c2f2caca2784abe185da50ddc5252562b2a911b7cfedafa3e878f0e6b7aa843c136915da5306061e501"},
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := RecordArtifact(tt.args.path, tt.args.hashAlgorithms)
+			if err != tt.wantErr {
+				t.Errorf("RecordArtifact() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RecordArtifact() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
