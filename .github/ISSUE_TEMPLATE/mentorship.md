@@ -1,7 +1,6 @@
 ---
-name: Mentorship request
-about: Interested in getting involved, but want some guidance? Submit a mentorship
-request!
+name: Mentorship Request
+about: Interested in getting involved, but want some guidance? Submit a mentorship request!
 title: Mentorship request for <your-name>
 labels: mentorship
 assignees: ''
