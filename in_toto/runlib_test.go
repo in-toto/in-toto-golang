@@ -295,6 +295,16 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
 	}
+	// Test duplicated artifact after left strip
+	if err := ioutil.WriteFile("tmpdir/foo.tar.gz", []byte("abc"), 0400); err != nil {
+		t.Errorf("Could not write tmpfile: %s", err)
+	}
+	_, err = RecordArtifacts([]string{"foo.tar.gz",
+		"tmpdir/foo.tar.gz"}, []string{"sha256"}, nil, []string{"tmpdir/"})
+	if err == nil {
+		t.Error("Duplicated path error expected")
+	}
+
 	if err := os.RemoveAll("tmpdir"); err != nil {
 		t.Errorf("Could not remove tmpdir: %s", err)
 	}
