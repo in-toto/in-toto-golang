@@ -182,7 +182,11 @@ func recordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns 
 						break
 					}
 				}
-
+				// Check if path is unique
+				_, existingPath := artifacts[path]
+				if existingPath {
+					return fmt.Errorf("Prefix selection has resulted in non unique dictionary key: %s", path)
+				}
 				artifacts[path] = artifact
 				return nil
 			})
