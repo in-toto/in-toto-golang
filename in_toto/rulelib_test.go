@@ -55,7 +55,7 @@ func TestUnpackValidRules(t *testing.T) {
 		for _, key := range []string{"type", "pattern", "srcPrefix", "dstPrefix",
 			"dstName", "dstType"} {
 			if returnedRuleMap[key] != expectedRuleMaps[i][key] {
-				t.Errorf("Invalid '%s' in unpacked rule '%s', should be '%s', got"+
+				t.Errorf("invalid '%s' in unpacked rule '%s', should be '%s', got"+
 					" '%s'", key, rule, expectedRuleMaps[i][key],
 					returnedRuleMap[key])
 			}
@@ -74,7 +74,7 @@ func TestUnpackInvalidRules(t *testing.T) {
 	}
 	for _, rule := range rules {
 		if _, err := UnpackRule(rule); err == nil {
-			t.Errorf("Invalid rule %s should return error from UnpackRule.", rule)
+			t.Errorf("invalid rule %s should return error from UnpackRule.", rule)
 		}
 	}
 }

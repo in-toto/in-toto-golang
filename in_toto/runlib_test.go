@@ -75,7 +75,7 @@ func TestGitPathSpec(t *testing.T) {
 	}
 	for _, v := range directoriesToBeCreated {
 		if err := os.Mkdir(v, 0700); err != nil {
-			t.Errorf("Could not create tmpdir: %s", err)
+			t.Errorf("could not create tmpdir: %s", err)
 		}
 	}
 	filesToBeCreated := map[string]string{
@@ -87,7 +87,7 @@ func TestGitPathSpec(t *testing.T) {
 	for k, v := range filesToBeCreated {
 		_, err := copy(k, v)
 		if err != nil {
-			t.Errorf("Could not copy file: %s", err)
+			t.Errorf("could not copy file: %s", err)
 		}
 	}
 
@@ -117,7 +117,7 @@ func TestGitPathSpec(t *testing.T) {
 // The symlink will not be added to the list right now, nor will we calculate a checksum for it.
 func TestSymlinkToFile(t *testing.T) {
 	if err := os.Symlink("foo.tar.gz", "foo.tar.gz.sym"); err != nil {
-		t.Errorf("Could not create a symlink: %s", err)
+		t.Errorf("could not create a symlink: %s", err)
 	}
 
 	expected := map[string]interface{}{
@@ -132,7 +132,7 @@ func TestSymlinkToFile(t *testing.T) {
 	}
 
 	if err := os.Remove("foo.tar.gz.sym"); err != nil {
-		t.Errorf("Could not remove foo.tar.gz.sym: %s", err)
+		t.Errorf("could not remove foo.tar.gz.sym: %s", err)
 	}
 }
 
@@ -140,10 +140,10 @@ func TestSymlinkToFile(t *testing.T) {
 // symTestA/linkToB -> symTestB and symTestB/linkToA -> symTestA
 func TestIndirectSymlinkCycles(t *testing.T) {
 	if err := os.Mkdir("symTestA", 0700); err != nil {
-		t.Errorf("Could not create tmpdir: %s", err)
+		t.Errorf("could not create tmpdir: %s", err)
 	}
 	if err := os.Mkdir("symTestB", 0700); err != nil {
-		t.Errorf("Could not create tmpdir: %s", err)
+		t.Errorf("could not create tmpdir: %s", err)
 	}
 
 	// we need to get the current working directory here, otherwise
@@ -157,33 +157,33 @@ func TestIndirectSymlinkCycles(t *testing.T) {
 	linkA := filepath.FromSlash("symTestB/linkToA.sym")
 
 	if err := os.Symlink(dir+"/symTestA", linkA); err != nil {
-		t.Errorf("Could not create a symlink: %s", err)
+		t.Errorf("could not create a symlink: %s", err)
 	}
 	if err := os.Symlink(dir+"/symTestB", linkB); err != nil {
-		t.Errorf("Could not create a symlink: %s", err)
+		t.Errorf("could not create a symlink: %s", err)
 	}
 
 	// provoke "symlink cycle detected" error
 	_, err = RecordArtifacts([]string{"symTestA/linkToB.sym", "symTestB/linkToA.sym", "foo.tar.gz"}, []string{"sha256"}, nil, nil)
 	if !errors.Is(err, ErrSymCycle) {
-		t.Errorf("We expected: %s, we got: %s", ErrSymCycle, err)
+		t.Errorf("we expected: %s, we got: %s", ErrSymCycle, err)
 	}
 
 	// make sure to clean up everything
 	if err := os.Remove("symTestA/linkToB.sym"); err != nil {
-		t.Errorf("Could not remove path: %s", err)
+		t.Errorf("could not remove path: %s", err)
 	}
 
 	if err := os.Remove("symTestB/linkToA.sym"); err != nil {
-		t.Errorf("Could not remove path: %s", err)
+		t.Errorf("could not remove path: %s", err)
 	}
 
 	if err := os.Remove("symTestA"); err != nil {
-		t.Errorf("Could not remove path: %s", err)
+		t.Errorf("could not remove path: %s", err)
 	}
 
 	if err := os.Remove("symTestB"); err != nil {
-		t.Errorf("Could not remove path: %s", err)
+		t.Errorf("could not remove path: %s", err)
 	}
 
 }
@@ -191,11 +191,11 @@ func TestIndirectSymlinkCycles(t *testing.T) {
 // TestSymlinkToFolder checks if we are successfully following symlinks to folders
 func TestSymlinkToFolder(t *testing.T) {
 	if err := os.MkdirAll("symTest/symTest2", 0700); err != nil {
-		t.Errorf("Could not create tmpdir: %s", err)
+		t.Errorf("could not create tmpdir: %s", err)
 	}
 
 	if err := os.Symlink("symTest/symTest2", "symTmpfile.sym"); err != nil {
-		t.Errorf("Could not create a symlink: %s", err)
+		t.Errorf("could not create a symlink: %s", err)
 	}
 
 	// create a filepath from slash, because otherwise
@@ -204,7 +204,7 @@ func TestSymlinkToFolder(t *testing.T) {
 	p := filepath.FromSlash("symTest/symTest2/symTmpfile")
 
 	if err := ioutil.WriteFile(p, []byte("abc"), 0400); err != nil {
-		t.Errorf("Could not write symTmpfile: %s", err)
+		t.Errorf("could not write symTmpfile: %s", err)
 	}
 
 	result, err := RecordArtifacts([]string{"symTmpfile.sym"}, []string{"sha256"}, nil, nil)
@@ -225,26 +225,26 @@ func TestSymlinkToFolder(t *testing.T) {
 
 	// make sure to clean up everything
 	if err := os.Remove("symTest/symTest2/symTmpfile"); err != nil {
-		t.Errorf("Could not remove path symTest/symTest2/symTmpfile: %s", err)
+		t.Errorf("could not remove path symTest/symTest2/symTmpfile: %s", err)
 	}
 
 	if err := os.Remove("symTmpfile.sym"); err != nil {
-		t.Errorf("Could not remove path symTest/symTest2/symTmpfile.sym: %s", err)
+		t.Errorf("could not remove path symTest/symTest2/symTmpfile.sym: %s", err)
 	}
 
 	if err := os.Remove("symTest/symTest2"); err != nil {
-		t.Errorf("Could not remove path symTest/symTest2: %s", err)
+		t.Errorf("could not remove path symTest/symTest2: %s", err)
 	}
 
 	if err := os.Remove("symTest/"); err != nil {
-		t.Errorf("Could not remove path symTest: %s", err)
+		t.Errorf("could not remove path symTest: %s", err)
 	}
 }
 
 // This test provokes a symlink cycle
 func TestSymlinkCycle(t *testing.T) {
 	if err := os.Mkdir("symlinkCycle/", 0700); err != nil {
-		t.Errorf("Could not create tmpdir: %s", err)
+		t.Errorf("could not create tmpdir: %s", err)
 	}
 
 	// we need to get the current working directory here, otherwise
@@ -255,31 +255,31 @@ func TestSymlinkCycle(t *testing.T) {
 	}
 	// create a cycle ./symlinkCycle/symCycle.sym -> ./symlinkCycle/
 	if err := os.Symlink(dir+"/symlinkCycle", "symlinkCycle/symCycle.sym"); err != nil {
-		t.Errorf("Could not create a symlink: %s", err)
+		t.Errorf("could not create a symlink: %s", err)
 	}
 
 	// provoke "symlink cycle detected" error
 	_, err = RecordArtifacts([]string{"symlinkCycle/symCycle.sym", "foo.tar.gz"}, []string{"sha256"}, nil, nil)
 	if !errors.Is(err, ErrSymCycle) {
-		t.Errorf("We expected: %s, we got: %s", ErrSymCycle, err)
+		t.Errorf("we expected: %s, we got: %s", ErrSymCycle, err)
 	}
 
 	if err := os.Remove("symlinkCycle/symCycle.sym"); err != nil {
-		t.Errorf("Could not remove path symlinkCycle/symCycle.sym: %s", err)
+		t.Errorf("could not remove path symlinkCycle/symCycle.sym: %s", err)
 	}
 
 	if err := os.Remove("symlinkCycle"); err != nil {
-		t.Errorf("Could not remove path symlinkCycle: %s", err)
+		t.Errorf("could not remove path symlinkCycle: %s", err)
 	}
 }
 
 func TestRecordArtifacts(t *testing.T) {
 	// Test successfully record multiple artifacts including temporary subdir
 	if err := os.Mkdir("tmpdir", 0700); err != nil {
-		t.Errorf("Could not create tmpdir: %s", err)
+		t.Errorf("could not create tmpdir: %s", err)
 	}
 	if err := ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400); err != nil {
-		t.Errorf("Could not write tmpfile: %s", err)
+		t.Errorf("could not write tmpfile: %s", err)
 	}
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
 		"tmpdir/tmpfile"}, []string{"sha256"}, nil, []string{"tmpdir/"})
@@ -297,16 +297,16 @@ func TestRecordArtifacts(t *testing.T) {
 	}
 	// Test duplicated artifact after left strip
 	if err := ioutil.WriteFile("tmpdir/foo.tar.gz", []byte("abc"), 0400); err != nil {
-		t.Errorf("Could not write tmpfile: %s", err)
+		t.Errorf("could not write tmpfile: %s", err)
 	}
 	_, err = RecordArtifacts([]string{"foo.tar.gz",
 		"tmpdir/foo.tar.gz"}, []string{"sha256"}, nil, []string{"tmpdir/"})
 	if err == nil {
-		t.Error("Duplicated path error expected")
+		t.Error("duplicated path error expected")
 	}
 
 	if err := os.RemoveAll("tmpdir"); err != nil {
-		t.Errorf("Could not remove tmpdir: %s", err)
+		t.Errorf("could not remove tmpdir: %s", err)
 	}
 
 	// Test error by recording nonexistent artifact
@@ -422,17 +422,17 @@ func TestInTotoRun(t *testing.T) {
 		} else {
 			// we do not need to check if result == nil here, because our reflect.DeepEqual was successful
 			if err := result.Dump(linkName + ".link"); err != nil {
-				t.Errorf("Error while dumping link metablock to file")
+				t.Errorf("error while dumping link metablock to file")
 			}
 			var loadedResult Metablock
 			if err := loadedResult.Load(linkName + ".link"); err != nil {
-				t.Errorf("Error while loading link metablock from file")
+				t.Errorf("error while loading link metablock from file")
 			}
 			if !reflect.DeepEqual(loadedResult, result) {
-				t.Errorf("Dump and loading of signed Link failed. Loaded result: '%s', dumped result '%s'", loadedResult, result)
+				t.Errorf("dump and loading of signed Link failed. Loaded result: '%s', dumped result '%s'", loadedResult, result)
 			} else {
 				if err := os.Remove(linkName + ".link"); err != nil {
-					t.Errorf("Removing created link file failed")
+					t.Errorf("removing created link file failed")
 				}
 			}
 		}

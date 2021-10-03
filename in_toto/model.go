@@ -531,7 +531,7 @@ type Step struct {
 // of the constraints for this step.
 func (s Step) CheckCertConstraints(key Key, rootCAIDs []string, rootCertPool, intermediateCertPool *x509.CertPool) error {
 	if len(s.CertificateConstraints) == 0 {
-		return fmt.Errorf("No constraints found")
+		return fmt.Errorf("no constraints found")
 	}
 
 	_, possibleCert, err := decodeAndParse([]byte(key.KeyVal.Certificate))
@@ -541,7 +541,7 @@ func (s Step) CheckCertConstraints(key Key, rootCAIDs []string, rootCertPool, in
 
 	cert, ok := possibleCert.(*x509.Certificate)
 	if !ok {
-		return fmt.Errorf("Not a valid certificate")
+		return fmt.Errorf("not a valid certificate")
 	}
 
 	for _, constraint := range s.CertificateConstraints {
@@ -555,7 +555,7 @@ func (s Step) CheckCertConstraints(key Key, rootCAIDs []string, rootCertPool, in
 	}
 
 	// this should not be reachable since there is at least one constraint, and the for loop only saw err != nil
-	return fmt.Errorf("Unknown certificate constraint error")
+	return fmt.Errorf("unknown certificate constraint error")
 }
 
 /*

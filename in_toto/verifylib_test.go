@@ -67,34 +67,34 @@ func TestGetSummaryLink(t *testing.T) {
 		t.Error(err)
 	}
 	if summaryLink.Signed.(Link).Type != codeLink.Signed.(Link).Type {
-		t.Errorf("Summary Link isn't of type Link")
+		t.Errorf("summary Link isn't of type Link")
 	}
 	if summaryLink.Signed.(Link).Name != "" {
-		t.Errorf("Summary Link name doesn't match. Expected '%s', returned "+
+		t.Errorf("summary Link name doesn't match. Expected '%s', returned "+
 			"'%s", codeLink.Signed.(Link).Name, summaryLink.Signed.(Link).Name)
 	}
 	if !reflect.DeepEqual(summaryLink.Signed.(Link).Materials,
 		codeLink.Signed.(Link).Materials) {
-		t.Errorf("Summary Link materials don't match. Expected '%s', "+
+		t.Errorf("summary Link materials don't match. Expected '%s', "+
 			"returned '%s", codeLink.Signed.(Link).Materials,
 			summaryLink.Signed.(Link).Materials)
 	}
 
 	if !reflect.DeepEqual(summaryLink.Signed.(Link).Products,
 		packageLink.Signed.(Link).Products) {
-		t.Errorf("Summary Link products don't match. Expected '%s', "+
+		t.Errorf("summary Link products don't match. Expected '%s', "+
 			"returned '%s", packageLink.Signed.(Link).Products,
 			summaryLink.Signed.(Link).Products)
 	}
 	if !reflect.DeepEqual(summaryLink.Signed.(Link).Command,
 		packageLink.Signed.(Link).Command) {
-		t.Errorf("Summary Link command doesn't match. Expected '%s', "+
+		t.Errorf("summary Link command doesn't match. Expected '%s', "+
 			"returned '%s", packageLink.Signed.(Link).Command,
 			summaryLink.Signed.(Link).Command)
 	}
 	if !reflect.DeepEqual(summaryLink.Signed.(Link).ByProducts,
 		packageLink.Signed.(Link).ByProducts) {
-		t.Errorf("Summary Link by-products don't match. Expected '%s', "+
+		t.Errorf("summary Link by-products don't match. Expected '%s', "+
 			"returned '%s", packageLink.Signed.(Link).ByProducts,
 			summaryLink.Signed.(Link).ByProducts)
 	}
@@ -104,59 +104,59 @@ func TestVerifySublayouts(t *testing.T) {
 	sublayoutName := "sub_layout"
 	var aliceKey Key
 	if err := aliceKey.LoadKey("alice.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
-		t.Errorf("Unable to load Alice's public key")
+		t.Errorf("unable to load Alice's public key")
 	}
 	sublayoutDirectory := fmt.Sprintf(SublayoutLinkDirFormat, sublayoutName,
 		aliceKey.KeyID)
 	defer func(sublayoutDirectory string) {
 		if err := os.RemoveAll(sublayoutDirectory); err != nil {
-			t.Errorf("Unable to remove directory %s: %s", sublayoutDirectory, err)
+			t.Errorf("unable to remove directory %s: %s", sublayoutDirectory, err)
 		}
 	}(sublayoutDirectory)
 
 	if err := os.Mkdir(sublayoutDirectory, 0700); err != nil {
-		t.Errorf("Unable to create sublayout directory")
+		t.Errorf("unable to create sublayout directory")
 	}
 	writeCodePath := path.Join(sublayoutDirectory, "write-code.b7d643de.link")
 	if err := os.Link("write-code.b7d643de.link", writeCodePath); err != nil {
-		t.Errorf("Unable to link write-code metadata.")
+		t.Errorf("unable to link write-code metadata.")
 	}
 	packagePath := path.Join(sublayoutDirectory, "package.d3ffd108.link")
 	if err := os.Link("package.d3ffd108.link", packagePath); err != nil {
-		t.Errorf("Unable to link package metadata")
+		t.Errorf("unable to link package metadata")
 	}
 
 	var superLayoutMb Metablock
 	if err := superLayoutMb.Load("super.layout"); err != nil {
-		t.Errorf("Unable to load super layout")
+		t.Errorf("unable to load super layout")
 	}
 
 	stepsMetadata, err := LoadLinksForLayout(superLayoutMb.Signed.(Layout), ".")
 	if err != nil {
-		t.Errorf("Unable to load link metadata for super layout")
+		t.Errorf("unable to load link metadata for super layout")
 	}
 
 	rootCertPool, intermediateCertPool, err := LoadLayoutCertificates(superLayoutMb.Signed.(Layout), [][]byte{})
 	if err != nil {
-		t.Errorf("Unable to load layout certificates")
+		t.Errorf("unable to load layout certificates")
 	}
 
 	stepsMetadataVerified, err := VerifyLinkSignatureThesholds(
 		superLayoutMb.Signed.(Layout), stepsMetadata, rootCertPool, intermediateCertPool)
 	if err != nil {
-		t.Errorf("Unable to verify link threshold values: %v", err)
+		t.Errorf("unable to verify link threshold values: %v", err)
 	}
 
 	result, err := VerifySublayouts(superLayoutMb.Signed.(Layout),
 		stepsMetadataVerified, ".", [][]byte{})
 	if err != nil {
-		t.Errorf("Unable to verify sublayouts: %v", err)
+		t.Errorf("unable to verify sublayouts: %v", err)
 	}
 
 	for _, stepData := range result {
 		for _, metadata := range stepData {
 			if _, ok := metadata.Signed.(Link); !ok {
-				t.Errorf("Sublayout expansion error: found non link")
+				t.Errorf("sublayout expansion error: found non link")
 			}
 		}
 	}
@@ -166,7 +166,7 @@ func TestRunInspections(t *testing.T) {
 	// Load layout template used as basis for all tests
 	var mb Metablock
 	if err := mb.Load("demo.layout"); err != nil {
-		t.Errorf("Unable to parse template file: %s", err)
+		t.Errorf("unable to parse template file: %s", err)
 	}
 	layout := mb.Signed.(Layout)
 
@@ -608,7 +608,7 @@ func TestVerifyMatchRule(t *testing.T) {
 func TestReduceStepsMetadata(t *testing.T) {
 	var mb Metablock
 	if err := mb.Load("demo.layout"); err != nil {
-		t.Errorf("Unable to parse template file: %s", err)
+		t.Errorf("unable to parse template file: %s", err)
 	}
 	layout := mb.Signed.(Layout)
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{Name: "foo"}}}
@@ -679,7 +679,7 @@ func TestReduceStepsMetadata(t *testing.T) {
 		}
 	}()
 	if _, err := ReduceStepsMetadata(layout, nil); err != nil {
-		t.Errorf("Error while calling ReduceStepsMetadata: %s", err)
+		t.Errorf("error while calling ReduceStepsMetadata: %s", err)
 	}
 	//NOTE: This test won't get any further because of panic
 }
@@ -687,7 +687,7 @@ func TestReduceStepsMetadata(t *testing.T) {
 func TestVerifyStepCommandAlignment(t *testing.T) {
 	var mb Metablock
 	if err := mb.Load("demo.layout"); err != nil {
-		t.Errorf("Unable to load template file: %s", err)
+		t.Errorf("unable to load template file: %s", err)
 	}
 	layout := mb.Signed.(Layout)
 	layout.Steps = []Step{
@@ -725,7 +725,7 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 
 	var mb Metablock
 	if err := mb.Load("demo.layout"); err != nil {
-		t.Errorf("Unable to load template file: %s", err)
+		t.Errorf("unable to load template file: %s", err)
 	}
 	layout := mb.Signed.(Layout)
 
@@ -736,15 +736,15 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 
 	var mbLink1 Metablock
 	if err := mbLink1.Load("foo.b7d643de.link"); err != nil {
-		t.Errorf("Unable to load link file: %s", err)
+		t.Errorf("unable to load link file: %s", err)
 	}
 	var mbLink2 Metablock
 	if err := mbLink2.Load("foo.d3ffd108.link"); err != nil {
-		t.Errorf("Unable to load link file: %s", err)
+		t.Errorf("unable to load link file: %s", err)
 	}
 	var mbLinkBroken Metablock
 	if err := mbLinkBroken.Load("foo.d3ffd108.link"); err != nil {
-		t.Errorf("Unable to load link file: %s", err)
+		t.Errorf("unable to load link file: %s", err)
 	}
 	mbLinkBroken.Signatures[0].Sig = "breaksignature"
 
@@ -791,7 +791,7 @@ func TestLoadLinksForLayout(t *testing.T) {
 	keyID2 := "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401"
 	var mb Metablock
 	if err := mb.Load("demo.layout"); err != nil {
-		t.Errorf("Unable to load template file: %s", err)
+		t.Errorf("unable to load template file: %s", err)
 	}
 	layout := mb.Signed.(Layout)
 
@@ -824,7 +824,7 @@ func TestLoadLinksForLayout(t *testing.T) {
 func TestVerifyLayoutExpiration(t *testing.T) {
 	var mb Metablock
 	if err := mb.Load("demo.layout"); err != nil {
-		t.Errorf("Unable to load template file: %s", err)
+		t.Errorf("unable to load template file: %s", err)
 	}
 	layout := mb.Signed.(Layout)
 
@@ -854,11 +854,11 @@ func TestVerifyLayoutExpiration(t *testing.T) {
 func TestVerifyLayoutSignatures(t *testing.T) {
 	var mbLayout Metablock
 	if err := mbLayout.Load("demo.layout"); err != nil {
-		t.Errorf("Unable to load template file: %s", err)
+		t.Errorf("unable to load template file: %s", err)
 	}
 	var layoutKey Key
 	if err := layoutKey.LoadKey("alice.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
-		t.Errorf("Unable to load public key file: %s", err)
+		t.Errorf("unable to load public key file: %s", err)
 	}
 
 	// Test layout signature verification errors:

@@ -60,7 +60,7 @@ func RunInspections(layout Layout, runDir string) (map[string]Metablock, error) 
 
 		retVal := linkMb.Signed.(Link).ByProducts["return-value"]
 		if retVal != float64(0) {
-			return nil, fmt.Errorf("Inspection command '%s' of inspection '%s'"+
+			return nil, fmt.Errorf("inspection command '%s' of inspection '%s'"+
 				" returned a non-zero value: %d", inspection.Run, inspection.Name,
 				retVal)
 		}
@@ -401,7 +401,7 @@ func ReduceStepsMetadata(layout Layout,
 					referenceLinkMb.Signed.(Link).Materials) ||
 					!reflect.DeepEqual(linkMb.Signed.(Link).Products,
 						referenceLinkMb.Signed.(Link).Products) {
-					return nil, fmt.Errorf("Link '%s' and '%s' have different"+
+					return nil, fmt.Errorf("link '%s' and '%s' have different"+
 						" artifacts",
 						fmt.Sprintf(LinkNameFormat, step.Name, referenceKeyID),
 						fmt.Sprintf(LinkNameFormat, step.Name, keyID))

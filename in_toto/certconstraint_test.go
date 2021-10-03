@@ -69,7 +69,7 @@ func TestCheckCertConstraint(t *testing.T) {
 		err := checkCertConstraint("constraint", c.Constraints, c.Values)
 		actual := err == nil
 		if actual != c.Expected {
-			t.Errorf("Got %v when expected %v. Constraints: %v, Values: %v", actual, c.Expected, c.Constraints, c.Values)
+			t.Errorf("got %v when expected %v. Constraints: %v, Values: %v", actual, c.Expected, c.Constraints, c.Values)
 		}
 	}
 }
@@ -273,7 +273,7 @@ func TestConstraintCheck(t *testing.T) {
 		err := c.Constraint.Check(c.Cert, roots, rootCertPool, intermediateCertPool)
 		actual := err == nil
 		if actual != c.Expected {
-			t.Errorf("Got %v when expected %v. Constraint: %+v, Errors: %s", actual, c.Expected, c.Constraint, err)
+			t.Errorf("got %v when expected %v. Constraint: %+v, Errors: %s", actual, c.Expected, c.Constraint, err)
 		}
 	}
 }
