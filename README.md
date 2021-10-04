@@ -2,7 +2,7 @@
 [![build](https://github.com/in-toto/in-toto-golang/workflows/build/badge.svg)](https://github.com/in-toto/in-toto-golang/actions?query=workflow%3Abuild) [![Coverage Status](https://coveralls.io/repos/github/in-toto/in-toto-golang/badge.svg)](https://coveralls.io/github/in-toto/in-toto-golang) [![PkgGoDev](https://pkg.go.dev/badge/github.com/in-toto/in-toto-golang)](https://pkg.go.dev/github.com/in-toto/in-toto-golang) [![Go Report Card](https://goreportcard.com/badge/github.com/in-toto/in-toto-golang)](https://goreportcard.com/report/github.com/in-toto/in-toto-golang)
 
 
-Go implementation of the 
+Go implementation of the
 [in-toto Python reference implementation](https://github.com/in-toto/in-toto).
 
 ## Docs
@@ -227,6 +227,57 @@ Flags:
                                    in an in-toto layout.
 
 Use "in-toto record [command] --help" for more information about a command.
+```
+
+### Completion
+
+```text
+Generate completion script
+Usage:
+  in-toto completion [bash|zsh|fish|powershell]
+
+Flags:
+  -h, --help   help for completion
+```
+
+#### Bash
+
+```shell
+$ source <(in-toto completion bash)
+# To load completions for each session, execute once:
+# Linux:
+$ in-toto completion bash > /etc/bash_completion.d/in-toto
+# macOS:
+$ in-toto completion bash > /usr/local/etc/bash_completion.d/in-toto
+```
+
+#### Zsh
+
+```shell
+# If shell completion is not already enabled in your environment,
+# you will need to enable it.  You can execute the following once:
+$ echo "autoload -U compinit; compinit" >> ~/.zshrc
+# To load completions for each session, execute once:
+$ in-toto completion zsh > "${fpath[1]}/_in-toto"
+# You will need to start a new shell for this setup to take effect.
+```
+
+#### Fish
+
+```shell
+fish:
+$ in-toto completion fish | source
+# To load completions for each session, execute once:
+$ in-toto completion fish > ~/.config/fish/completions/in-toto.fish
+```
+
+#### PowerShell
+
+```shell
+PS> in-toto completion powershell | Out-String | Invoke-Expression
+# To load completions for every new session, run:
+PS> in-toto completion powershell > in-toto.ps1
+# and source this file from your PowerShell profile.
 ```
 
 ## Layout Certificate Constraints
