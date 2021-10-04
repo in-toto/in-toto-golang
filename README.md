@@ -245,7 +245,7 @@ Flags:
 ```shell
 $ source <(in-toto completion bash)
 # To load completions for each session, execute once:
-# Linux:
+# Linux (the target location may differ depending on your distro):
 $ in-toto completion bash > /etc/bash_completion.d/in-toto
 # macOS:
 $ in-toto completion bash > /usr/local/etc/bash_completion.d/in-toto
