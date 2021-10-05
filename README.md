@@ -148,10 +148,6 @@ Flags:
                                           If runDir is the empty string, the command will run in the
                                           calling process's current directory. The runDir directory must
                                           exist, be writable, and not be a symlink.
-  -d, --output-directory string           directory to store link metadata (default "./")
-  -p, --products stringArray              Paths to files or directories, whose paths and hashes
-                                          are stored in the resulting link metadata after the
-                                          command is executed. Symlinks are followed.
       --spiffe-workload-api-path string   uds path for spiffe workload api
 ```
 
