@@ -16,4 +16,4 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: '1.17.x'
-      - run: ./cmd/verify.sh
+      - run: ./scripts/verify-docs.sh

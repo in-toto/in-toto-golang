@@ -14,7 +14,7 @@ LAYOUT_TMPL := ./certs/layout.tmpl
 
 build: modules
 	@mkdir -p bin
-	@go build -o ./bin/in-toto ./cmd
+	@go build -o ./bin/in-toto main.go
 
 modules:
 	@go mod tidy
