@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -20,11 +20,12 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:           "in-toto",
-	Short:         "Framework to secure integrity of software supply chains",
-	Long:          `A framework to secure the integrity of software supply chains https://in-toto.io/`,
-	SilenceUsage:  true,
-	SilenceErrors: true,
+	Use:               "in-toto",
+	Short:             "Framework to secure integrity of software supply chains",
+	Long:              `A framework to secure the integrity of software supply chains https://in-toto.io/`,
+	SilenceUsage:      true,
+	SilenceErrors:     true,
+	DisableAutoGenTag: true,
 }
 
 // Execute runs the root command
