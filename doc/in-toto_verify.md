@@ -29,6 +29,9 @@ in-toto verify [flags]
   -d, --link-dir string              Path to directory where link metadata files for steps defined in 
                                      the root layout should be loaded from. If not passed links are 
                                      loaded from the current working directory.
+      --normalize-line-endings       Enable line normalization in order to support different
+                                     operating systems. It is done by replacing all line separators
+                                     with a new line character.
 ```
 
 ### SEE ALSO

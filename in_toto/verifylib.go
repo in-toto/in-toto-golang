@@ -41,7 +41,7 @@ If executing the inspection command fails, or if the executed command has a
 non-zero exit code, the first return value is an empty Metablock map and the
 second return value is the error.
 */
-func RunInspections(layout Layout, runDir string) (map[string]Metablock, error) {
+func RunInspections(layout Layout, runDir string, lineNormalization bool) (map[string]Metablock, error) {
 	inspectionMetadata := make(map[string]Metablock)
 
 	for _, inspection := range layout.Inspect {
@@ -52,7 +52,7 @@ func RunInspections(layout Layout, runDir string) (map[string]Metablock, error) 
 		}
 
 		linkMb, err := InTotoRun(inspection.Name, runDir, paths, paths,
-			inspection.Run, Key{}, []string{"sha256"}, nil, nil)
+			inspection.Run, Key{}, []string{"sha256"}, nil, nil, lineNormalization)
 
 		if err != nil {
 			return nil, err
@@ -732,7 +732,7 @@ steps carried out in the sublayout.
 */
 func VerifySublayouts(layout Layout,
 	stepsMetadataVerified map[string]map[string]Metablock,
-	superLayoutLinkPath string, intermediatePems [][]byte) (map[string]map[string]Metablock, error) {
+	superLayoutLinkPath string, intermediatePems [][]byte, lineNormalization bool) (map[string]map[string]Metablock, error) {
 	for stepName, linkData := range stepsMetadataVerified {
 		for keyID, metadata := range linkData {
 			if _, ok := metadata.Signed.(Layout); ok {
@@ -744,7 +744,7 @@ func VerifySublayouts(layout Layout,
 				sublayoutLinkPath := filepath.Join(superLayoutLinkPath,
 					sublayoutLinkDir)
 				summaryLink, err := InTotoVerify(metadata, layoutKeys,
-					sublayoutLinkPath, stepName, make(map[string]string), intermediatePems)
+					sublayoutLinkPath, stepName, make(map[string]string), intermediatePems, lineNormalization)
 				if err != nil {
 					return nil, err
 				}
@@ -862,7 +862,7 @@ NOTE: Artifact rules of type "create", "modify"
 and "delete" are currently not supported.
 */
 func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
-	linkDir string, stepName string, parameterDictionary map[string]string, intermediatePems [][]byte) (
+	linkDir string, stepName string, parameterDictionary map[string]string, intermediatePems [][]byte, lineNormalization bool) (
 	Metablock, error) {
 
 	var summaryLink Metablock
@@ -907,7 +907,7 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 
 	// Verify and resolve sublayouts
 	stepsSublayoutVerified, err := VerifySublayouts(layout,
-		stepsMetadataVerified, linkDir, intermediatePems)
+		stepsMetadataVerified, linkDir, intermediatePems, lineNormalization)
 	if err != nil {
 		return summaryLink, err
 	}
@@ -931,7 +931,7 @@ func InTotoVerify(layoutMb Metablock, layoutKeys map[string]Key,
 		return summaryLink, err
 	}
 
-	inspectionMetadata, err := RunInspections(layout, "")
+	inspectionMetadata, err := RunInspections(layout, "", lineNormalization)
 	if err != nil {
 		return summaryLink, err
 	}
@@ -960,7 +960,7 @@ InTotoVerifyWithDirectory provides the same functionality as IntotoVerify, but
 adds the possibility to select a local directory from where the inspections are run.
 */
 func InTotoVerifyWithDirectory(layoutMb Metablock, layoutKeys map[string]Key,
-	linkDir string, runDir string, stepName string, parameterDictionary map[string]string, intermediatePems [][]byte) (
+	linkDir string, runDir string, stepName string, parameterDictionary map[string]string, intermediatePems [][]byte, lineNormalization bool) (
 	Metablock, error) {
 
 	var summaryLink Metablock
@@ -1042,7 +1042,7 @@ func InTotoVerifyWithDirectory(layoutMb Metablock, layoutKeys map[string]Key,
 
 	// Verify and resolve sublayouts
 	stepsSublayoutVerified, err := VerifySublayouts(layout,
-		stepsMetadataVerified, linkDir, intermediatePems)
+		stepsMetadataVerified, linkDir, intermediatePems, lineNormalization)
 	if err != nil {
 		return summaryLink, err
 	}
@@ -1066,7 +1066,7 @@ func InTotoVerifyWithDirectory(layoutMb Metablock, layoutKeys map[string]Key,
 		return summaryLink, err
 	}
 
-	inspectionMetadata, err := RunInspections(layout, runDir)
+	inspectionMetadata, err := RunInspections(layout, runDir, lineNormalization)
 	if err != nil {
 		return summaryLink, err
 	}
