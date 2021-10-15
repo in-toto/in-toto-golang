@@ -14,6 +14,7 @@ var (
 	runDir         string
 	materialsPaths []string
 	productsPaths  []string
+	useDSSE        bool
 )
 
 var runCmd = &cobra.Command{
@@ -121,6 +122,8 @@ of another.`,
 in environment variables or config files. See Config docs for details.`,
 	)
 
+	runCmd.Flags().BoolVarP(&useDSSE, "use-dsse", "", false, "blabla")
+
 	runCmd.MarkFlagRequired("name")
 }
 
@@ -156,7 +159,7 @@ func runPreRun(cmd *cobra.Command, args []string) error {
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	block, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, exclude, lStripPaths)
+	block, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, exclude, lStripPaths, useDSSE)
 	if err != nil {
 		return fmt.Errorf("failed to create link metadata: %w", err)
 	}

@@ -1,8 +1,10 @@
 package in_toto
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -284,9 +286,7 @@ and materials at the passed materialPaths.  The returned link is wrapped in a
 Metablock object.  If command execution or artifact recording fails the first
 return value is an empty Metablock and the second return value is the error.
 */
-func InTotoRun(name string, runDir string, materialPaths []string, productPaths []string,
-	cmdArgs []string, key Key, hashAlgorithms []string, gitignorePatterns []string,
-	lStripPaths []string) (Metablock, error) {
+func InTotoRun(name string, runDir string, materialPaths []string, productPaths []string, cmdArgs []string, key Key, hashAlgorithms []string, gitignorePatterns []string, lStripPaths []string, useDSSE bool) (Metablock, error) {
 	var linkMb Metablock
 
 	materials, err := RecordArtifacts(materialPaths, hashAlgorithms, gitignorePatterns, lStripPaths)
@@ -304,7 +304,7 @@ func InTotoRun(name string, runDir string, materialPaths []string, productPaths 
 		return linkMb, err
 	}
 
-	linkMb.Signed = Link{
+	link := Link{
 		Type:        "link",
 		Name:        name,
 		Materials:   materials,
@@ -312,6 +312,21 @@ func InTotoRun(name string, runDir string, materialPaths []string, productPaths 
 		ByProducts:  byProducts,
 		Command:     cmdArgs,
 		Environment: map[string]interface{}{},
+	}
+
+	encodedJSONLink, err := json.Marshal(link)
+	if err != nil {
+		return linkMb, err
+	}
+
+	if useDSSE {
+		linkMb.Signed = dsse.Envelope{
+			PayloadType: "application/vnd.in-toto+json",
+			Payload:     string(encodedJSONLink),
+			Signatures:  []dsse.Signature{},
+		}
+	} else {
+		linkMb.Signed = link
 	}
 
 	linkMb.Signatures = []Signature{}
