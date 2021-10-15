@@ -44,6 +44,7 @@ in-toto run [flags]
                                     If runDir is the empty string, the command will run in the
                                     calling process's current directory. The runDir directory must
                                     exist, be writable, and not be a symlink.
+      --use-dsse                    blabla
 ```
 
 ### SEE ALSO
