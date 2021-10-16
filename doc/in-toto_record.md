@@ -33,6 +33,9 @@ failure and zero otherwise.
   -n, --name string                 Name for the resulting link metadata file.
                                     It is also used to associate the link with a step defined
                                     in an in-toto layout.
+      --normalize-line-endings      Enable line normalization in order to support different
+                                    operating systems. It is done by replacing all line separators
+                                    with a new line character.
 ```
 
 ### SEE ALSO

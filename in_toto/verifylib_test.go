@@ -38,7 +38,7 @@ func TestInTotoVerifyPass(t *testing.T) {
 
 	// No error should occur
 	if _, err := InTotoVerify(layoutMb, layouKeys, linkDir, "",
-		make(map[string]string), [][]byte{}); err != nil {
+		make(map[string]string), [][]byte{}, testOSisWindows()); err != nil {
 		t.Error(err)
 	}
 }
@@ -148,7 +148,7 @@ func TestVerifySublayouts(t *testing.T) {
 	}
 
 	result, err := VerifySublayouts(superLayoutMb.Signed.(Layout),
-		stepsMetadataVerified, ".", [][]byte{})
+		stepsMetadataVerified, ".", [][]byte{}, testOSisWindows())
 	if err != nil {
 		t.Errorf("unable to verify sublayouts: %v", err)
 	}
@@ -186,7 +186,7 @@ func TestRunInspections(t *testing.T) {
 
 	// Make a list of files in current dir (all must be recorded as artifacts)
 	availableFiles, _ := filepath.Glob("*")
-	result, err := RunInspections(layout, "")
+	result, err := RunInspections(layout, "", testOSisWindows())
 
 	// Error must be nil
 	if err != nil {
@@ -232,7 +232,7 @@ func TestRunInspections(t *testing.T) {
 		},
 	}
 
-	result, err = RunInspections(layout, "")
+	result, err = RunInspections(layout, "", testOSisWindows())
 	if result != nil || err == nil {
 		t.Errorf("RunInspections returned '(%s, %s)', expected"+
 			" '(nil, *exec.Error)'", result, err)
@@ -246,7 +246,7 @@ func TestRunInspections(t *testing.T) {
 			Run:             []string{"sh", "-c", "false"},
 		},
 	}
-	result, err = RunInspections(layout, "")
+	result, err = RunInspections(layout, "", testOSisWindows())
 	if result != nil || err == nil {
 		t.Errorf("RunInspections returned '(%s, %s)', expected"+
 			" '(nil, *exec.Error)'", result, err)
@@ -994,7 +994,7 @@ func TestInTotoVerifyWithDirectory(t *testing.T) {
 
 	// No error should occur
 	if _, err := InTotoVerifyWithDirectory(layoutMb, layouKeys, linkDir, ".", "",
-		make(map[string]string), [][]byte{}); err != nil {
+		make(map[string]string), [][]byte{}, testOSisWindows()); err != nil {
 		t.Error(err)
 	}
 }

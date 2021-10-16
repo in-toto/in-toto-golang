@@ -115,35 +115,36 @@ Usage:
   in-toto run [flags]
 
 Flags:
-  -c, --cert string                Path to a PEM formatted certificate that corresponds with
-                                   the provided key.
-  -e, --exclude stringArray        path patterns to match paths that should not be recorded as 0
-                                   ‘materials’ or ‘products’. Passed patterns override patterns defined
-                                   in environment variables or config files. See Config docs for details.
-  -h, --help                       help for run
-  -k, --key string                 Path to a PEM formatted private key file used to sign
-                                   the resulting link metadata. (passing one of '--key'
-                                   or '--gpg' is required) 
-  -l, --lstrip-paths stringArray   path prefixes used to left-strip artifact paths before storing
-                                   them to the resulting link metadata. If multiple prefixes
-                                   are specified, only a single prefix can match the path of
-                                   any artifact and that is then left-stripped. All prefixes
-                                   are checked to ensure none of them are a left substring
-                                   of another.
-  -m, --materials stringArray      Paths to files or directories, whose paths and hashes
-                                   are stored in the resulting link metadata before the
-                                   command is executed. Symlinks are followed.
-  -n, --name string                Name used to associate the resulting link metadata
-                                   with the corresponding step defined in an in-toto
-                                   layout.
-  -d, --metadata-directory string  directory to store link metadata (default "./")
-  -p, --products stringArray       Paths to files or directories, whose paths and hashes
-                                   are stored in the resulting link metadata after the
-                                   command is executed. Symlinks are followed.
-  -r, --run-dir string             runDir specifies the working directory of the command.
-                                   If runDir is the empty string, the command will run in the
-                                   calling process's current directory. The runDir directory must
-                                   exist, be writable, and not be a symlink.
+  -c, --cert string                 Path to a PEM formatted certificate that corresponds with
+                                    the provided key.
+  -e, --exclude stringArray         Path patterns to match paths that should not be recorded as 0
+                                    ‘materials’ or ‘products’. Passed patterns override patterns defined
+                                    in environment variables or config files. See Config docs for details.
+  -h, --help                        help for run
+  -k, --key string                  Path to a PEM formatted private key file used to sign
+                                    the resulting link metadata.
+  -l, --lstrip-paths stringArray    Path prefixes used to left-strip artifact paths before storing
+                                    them to the resulting link metadata. If multiple prefixes
+                                    are specified, only a single prefix can match the path of
+                                    any artifact and that is then left-stripped. All prefixes
+                                    are checked to ensure none of them are a left substring
+                                    of another.
+  -m, --materials stringArray       Paths to files or directories, whose paths and hashes
+                                    are stored in the resulting link metadata before the
+                                    command is executed. Symlinks are followed.
+  -d, --metadata-directory string   Directory to store link metadata (default "./")
+  -n, --name string                 Name used to associate the resulting link metadata
+                                    with the corresponding step defined in an in-toto layout.
+      --normalize-line-endings      Enable line normalization in order to support different
+                                    operating systems. It is done by replacing all line separators
+                                    with a new line character.
+  -p, --products stringArray        Paths to files or directories, whose paths and hashes
+                                    are stored in the resulting link metadata after the
+                                    command is executed. Symlinks are followed.
+  -r, --run-dir string              runDir specifies the working directory of the command.
+                                    If runDir is the empty string, the command will run in the
+                                    calling process's current directory. The runDir directory must
+                                    exist, be writable, and not be a symlink.
 ```
 
 ### sign
@@ -188,6 +189,9 @@ Flags:
   -d, --link-dir string              Path to directory where link metadata files for steps defined in 
                                      the root layout should be loaded from. If not passed links are 
                                      loaded from the current working directory.
+      --normalize-line-endings       Enable line normalization in order to support different
+                                     operating systems. It is done by replacing all line separators
+                                     with a new line character.
 ```
 
 ### record
@@ -202,29 +206,34 @@ Usage:
   in-toto record [command]
 
 Available Commands:
-  start       Creates a preliminary link file recording the paths and hashes of the passed materials and signs it with the passed functionary’s key.
+  start       Creates a preliminary link file recording the paths and hashes of the
+passed materials and signs it with the passed functionary’s key.
   stop        Records and adds the paths and hashes of the passed products to the link metadata file and updates the signature.
 
 Flags:
-  -c, --cert string                Path to a PEM formatted certificate that corresponds with the provided key.
-  -e, --exclude stringArray        Path patterns to match paths that should not be recorded as 
-                                   ‘materials’ or ‘products’. Passed patterns override patterns defined
-                                   in environment variables or config files. See Config docs for details.
-  -h, --help                       help for record
-  -k, --key string                 Path to a private key file to sign the resulting link metadata.
-                                   The keyid prefix is used as an infix for the link metadata filename,
-                                   i.e. ‘<name>.<keyid prefix>.link’. See ‘–key-type’ for available
-                                   formats. Passing one of ‘–key’ or ‘–gpg’ is required.
-  -l, --lstrip-paths stringArray   Path prefixes used to left-strip artifact paths before storing
-                                   them to the resulting link metadata. If multiple prefixes
-                                   are specified, only a single prefix can match the path of
-                                   any artifact and that is then left-stripped. All prefixes
-                                   are checked to ensure none of them are a left substring
-                                   of another.
-  -d, --metadata-directory string  directory to store link metadata (default "./")
-  -n, --name string                name for the resulting link metadata file.
-                                   It is also used to associate the link with a step defined
-                                   in an in-toto layout.
+  -c, --cert string                 Path to a PEM formatted certificate that corresponds
+                                    with the provided key.
+  -e, --exclude stringArray         Path patterns to match paths that should not be recorded as 
+                                    ‘materials’ or ‘products’. Passed patterns override patterns defined
+                                    in environment variables or config files. See Config docs for details.
+  -h, --help                        help for record
+  -k, --key string                  Path to a private key file to sign the resulting link metadata.
+                                    The keyid prefix is used as an infix for the link metadata filename,
+                                    i.e. ‘<name>.<keyid prefix>.link’. See ‘–key-type’ for available
+                                    formats. Passing one of ‘–key’ or ‘–gpg’ is required.
+  -l, --lstrip-paths stringArray    Path prefixes used to left-strip artifact paths before storing
+                                    them to the resulting link metadata. If multiple prefixes
+                                    are specified, only a single prefix can match the path of
+                                    any artifact and that is then left-stripped. All prefixes
+                                    are checked to ensure none of them are a left substring
+                                    of another.
+  -d, --metadata-directory string   Directory to store link metadata (default "./")
+  -n, --name string                 Name for the resulting link metadata file.
+                                    It is also used to associate the link with a step defined
+                                    in an in-toto layout.
+      --normalize-line-endings      Enable line normalization in order to support different
+                                    operating systems. It is done by replacing all line separators
+                                    with a new line character.
 
 Use "in-toto record [command] --help" for more information about a command.
 ```

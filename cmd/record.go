@@ -138,6 +138,15 @@ command is executed. Symlinks are followed.`,
 are stored in the resulting link metadata after the
 command is executed. Symlinks are followed.`,
 	)
+
+	recordCmd.Flags().BoolVar(
+		&lineNormalization,
+		"normalize-line-endings",
+		false,
+		`Enable line normalization in order to support different
+operating systems. It is done by replacing all line separators
+with a new line character.`,
+	)
 }
 
 func recordPreRun(cmd *cobra.Command, args []string) error {
@@ -172,7 +181,7 @@ func recordPreRun(cmd *cobra.Command, args []string) error {
 }
 
 func recordStart(cmd *cobra.Command, args []string) error {
-	block, err := intoto.InTotoRecordStart(recordStepName, recordMaterialsPaths, key, []string{"sha256"}, exclude, lStripPaths)
+	block, err := intoto.InTotoRecordStart(recordStepName, recordMaterialsPaths, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization)
 	if err != nil {
 		return fmt.Errorf("failed to create start link file: %w", err)
 	}
@@ -195,7 +204,7 @@ func recordStop(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load start link file at %s: %w", prelimLinkName, err)
 	}
 
-	linkMb, err := intoto.InTotoRecordStop(prelimLinkMb, recordProductsPaths, key, []string{"sha256"}, exclude, lStripPaths)
+	linkMb, err := intoto.InTotoRecordStop(prelimLinkMb, recordProductsPaths, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization)
 	if err != nil {
 		return fmt.Errorf("failed to create stop link file: %w", err)
 	}
