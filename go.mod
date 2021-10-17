@@ -3,7 +3,7 @@ module github.com/in-toto/in-toto-golang
 go 1.17
 
 require (
-	github.com/codahale/rfc6979 v0.0.0-20141003034818-6a90f24967eb
+	github.com/secure-systems-lab/go-securesystemslib v0.1.0
 	github.com/shibumi/go-pathspec v1.2.0
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
