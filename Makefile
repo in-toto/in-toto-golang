@@ -18,7 +18,7 @@ LAYOUT_TMPL := ./certs/layout.tmpl
 build: modules
 	@mkdir -p bin
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build \
-	-o ./bin/in-toto ./cmd/in-toto
+	-o ./bin/in-toto main.go
 
 modules:
 	@go mod tidy

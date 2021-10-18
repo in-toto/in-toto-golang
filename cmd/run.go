@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -120,6 +120,17 @@ of another.`,
 in environment variables or config files. See Config docs for details.`,
 	)
 
+	runCmd.MarkFlagRequired("name")
+
+	runCmd.Flags().BoolVar(
+		&lineNormalization,
+		"normalize-line-endings",
+		false,
+		`Enable line normalization in order to support different
+operating systems. It is done by replacing all line separators
+with a new line character.`,
+	)
+
 	runCmd.Flags().StringVar(
 		&spiffeUDS,
 		"spiffe-workload-api-path",
@@ -127,11 +138,10 @@ in environment variables or config files. See Config docs for details.`,
 		"UDS path for SPIFFE workload API",
 	)
 
-	runCmd.MarkFlagRequired("name")
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	block, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, exclude, lStripPaths)
+	block, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization)
 	if err != nil {
 		return fmt.Errorf("failed to create link metadata: %w", err)
 	}

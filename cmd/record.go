@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -117,6 +117,15 @@ in environment variables or config files. See Config docs for details.`,
 		"UDS path for SPIFFE workload API",
 	)
 
+	recordCmd.PersistentFlags().BoolVar(
+		&lineNormalization,
+		"normalize-line-endings",
+		false,
+		`Enable line normalization in order to support different
+operating systems. It is done by replacing all line separators
+with a new line character.`,
+	)
+
 	recordCmd.MarkPersistentFlagRequired("name")
 
 	// Record Start Command
@@ -147,7 +156,7 @@ command is executed. Symlinks are followed.`,
 }
 
 func recordStart(cmd *cobra.Command, args []string) error {
-	block, err := intoto.InTotoRecordStart(recordStepName, recordMaterialsPaths, key, []string{"sha256"}, exclude, lStripPaths)
+	block, err := intoto.InTotoRecordStart(recordStepName, recordMaterialsPaths, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization)
 	if err != nil {
 		return fmt.Errorf("failed to create start link file: %w", err)
 	}
@@ -170,7 +179,7 @@ func recordStop(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load start link file at %s: %w", prelimLinkName, err)
 	}
 
-	linkMb, err := intoto.InTotoRecordStop(prelimLinkMb, recordProductsPaths, key, []string{"sha256"}, exclude, lStripPaths)
+	linkMb, err := intoto.InTotoRecordStop(prelimLinkMb, recordProductsPaths, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization)
 	if err != nil {
 		return fmt.Errorf("failed to create stop link file: %w", err)
 	}

@@ -140,6 +140,9 @@ Flags:
   -n, --name string                       Name used to associate the resulting link metadata
                                           with the corresponding step defined in an in-toto
                                           layout.
+        --normalize-line-endings          Enable line normalization in order to support different
+                                          operating systems. It is done by replacing all line separators
+                                          with a new line character.
   -d, --metadata-directory string         directory to store link metadata (default "./")
   -p, --products stringArray              Paths to files or directories, whose paths and hashes
                                           are stored in the resulting link metadata after the
@@ -193,6 +196,9 @@ Flags:
   -d, --link-dir string              Path to directory where link metadata files for steps defined in 
                                      the root layout should be loaded from. If not passed links are 
                                      loaded from the current working directory.
+      --normalize-line-endings       Enable line normalization in order to support different
+                                     operating systems. It is done by replacing all line separators
+                                     with a new line character.
 ```
 
 ### record
@@ -207,7 +213,8 @@ Usage:
   in-toto record [command]
 
 Available Commands:
-  start       Creates a preliminary link file recording the paths and hashes of the passed materials and signs it with the passed functionary’s key.
+  start       Creates a preliminary link file recording the paths and hashes of the
+passed materials and signs it with the passed functionary’s key.
   stop        Records and adds the paths and hashes of the passed products to the link metadata file and updates the signature.
 
 Flags:
@@ -230,7 +237,12 @@ Flags:
   -n, --name string                       name for the resulting link metadata file.
                                           It is also used to associate the link with a step defined
                                           in an in-toto layout.
+      --normalize-line-endings            Enable line normalization in order to support different
+                                          operating systems. It is done by replacing all line separators
+                                          with a new line character.
       --spiffe-workload-api-path string   uds path for spiffe workload api
+
+Use "in-toto record [command] --help" for more information about a command.
 ```
 
 ### Completion

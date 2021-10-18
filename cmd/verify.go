@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -70,6 +70,15 @@ addition to any intermediates in the layout.`,
 
 	verifyCmd.MarkFlagRequired("layout")
 	verifyCmd.MarkFlagRequired("layout-keys")
+
+	verifyCmd.Flags().BoolVar(
+		&lineNormalization,
+		"normalize-line-endings",
+		false,
+		`Enable line normalization in order to support different
+operating systems. It is done by replacing all line separators
+with a new line character.`,
+	)
 }
 
 func verify(cmd *cobra.Command, args []string) error {
@@ -111,7 +120,7 @@ func verify(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	_, err := intoto.InTotoVerify(layoutMb, layoutKeys, linkDir, "", make(map[string]string), intermediatePems)
+	_, err := intoto.InTotoVerify(layoutMb, layoutKeys, linkDir, "", make(map[string]string), intermediatePems, lineNormalization)
 	if err != nil {
 		return fmt.Errorf("inspection failed: %w", err)
 	}

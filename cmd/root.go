@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"context"
@@ -13,15 +13,16 @@ import (
 )
 
 var (
-	spiffeUDS   string
-	layoutPath  string
-	keyPath     string
-	certPath    string
-	key         intoto.Key
-	cert        intoto.Key
-	lStripPaths []string
-	exclude     []string
-	outDir      string
+	spiffeUDS         string
+	layoutPath        string
+	keyPath           string
+	certPath          string
+	key               intoto.Key
+	cert              intoto.Key
+	lStripPaths       []string
+	exclude           []string
+	outDir            string
+	lineNormalization bool
 )
 
 var rootCmd = &cobra.Command{
