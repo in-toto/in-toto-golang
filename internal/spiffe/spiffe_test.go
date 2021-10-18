@@ -27,7 +27,7 @@ func assertX509SVID(tb testing.TB, sd SVIDDetails, spiffeID spiffeid.ID, certifi
 	assert.NotEmpty(tb, sd.PrivateKey)
 }
 
-func assertIntotoKey(tb testing.TB, key intoto.Key, svid *x509svid.SVID) {
+func assertInTotoKey(tb testing.TB, key intoto.Key, svid *x509svid.SVID) {
 	assert.NotNil(tb, key.KeyID, "keyID is empty.")
 	assert.Equal(tb, []string{"sha256", "sha512"}, key.KeyIDHashAlgorithms)
 	assert.Equal(tb, "ecdsa", key.KeyType)
@@ -130,9 +130,9 @@ func TestSVIDDetails_IntotoKey(t *testing.T) {
 
 	require.NoError(t, err)
 
-	key, err := svidDetail.IntotoKey()
+	key, err := svidDetail.InTotoKey()
 	assert.Nil(t, err, "Unexpected error!")
-	assertIntotoKey(t, key, resp.SVIDs[0])
+	assertInTotoKey(t, key, resp.SVIDs[0])
 }
 
 func TestSVIDDetails_BadIntotoKey(t *testing.T) {
@@ -151,7 +151,7 @@ func TestSVIDDetails_BadIntotoKey(t *testing.T) {
 
 	svidDetail.PrivateKey = nil
 
-	key, err := svidDetail.IntotoKey()
+	key, err := svidDetail.InTotoKey()
 	assert.Equal(t, intoto.Key{KeyID: "", KeyIDHashAlgorithms: nil, KeyType: "",
 		Scheme: "", KeyVal: intoto.KeyVal{Private: "",
 			Public: "", Certificate: ""}}, key)

@@ -45,7 +45,7 @@ func loadKeyFromSpireSocket() error {
 		return fmt.Errorf("failed to get spiffe x.509 SVID: %w", err)
 	}
 
-	key, err = svidDetails.IntotoKey()
+	key, err = svidDetails.InTotoKey()
 	if err != nil {
 		return fmt.Errorf("failed to convert svid to in-toto key: %w", err)
 	}
@@ -98,7 +98,6 @@ func loadKeyFromDisk() error {
 		}
 	}
 	return nil
-
 }
 
 func getKeyCert(cmd *cobra.Command, args []string) error {

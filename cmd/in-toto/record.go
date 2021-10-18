@@ -114,7 +114,7 @@ in environment variables or config files. See Config docs for details.`,
 		&spiffeUDS,
 		"spiffe-workload-api-path",
 		"",
-		"uds path for spiffe workload api",
+		"UDS path for SPIFFE workload API",
 	)
 
 	recordCmd.MarkPersistentFlagRequired("name")

@@ -55,7 +55,7 @@ func GetSVID(ctx context.Context, client SVIDFetcher) (SVIDDetails, error) {
 	return s, nil
 }
 
-func (s SVIDDetails) IntotoKey() (intoto.Key, error) {
+func (s SVIDDetails) InTotoKey() (intoto.Key, error) {
 	key := intoto.Key{}
 	keyBytes, err := x509.MarshalPKCS8PrivateKey(s.PrivateKey)
 	if err != nil {
