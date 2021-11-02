@@ -15,7 +15,8 @@ import (
 	"testing"
 	"time"
 
-	latest "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
+	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
+
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
 )
@@ -1558,41 +1559,41 @@ func TestDecodeProvenanceStatement(t *testing.T) {
 	var want = ProvenanceStatement{
 		StatementHeader: StatementHeader{
 			Type:          StatementInTotoV01,
-			PredicateType: latest.PredicateSLSAProvenance,
+			PredicateType: slsa.PredicateSLSAProvenance,
 			Subject: []Subject{
 				{
 					Name: "curl-7.72.0.tar.bz2",
-					Digest: latest.DigestSet{
+					Digest: slsa.DigestSet{
 						"sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef",
 					},
 				},
 				{
 					Name: "curl-7.72.0.tar.gz",
-					Digest: latest.DigestSet{
+					Digest: slsa.DigestSet{
 						"sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2",
 					},
 				},
 			},
 		},
-		Predicate: latest.ProvenancePredicate{
-			Builder: latest.ProvenanceBuilder{
+		Predicate: slsa.ProvenancePredicate{
+			Builder: slsa.ProvenanceBuilder{
 				ID: "https://github.com/Attestations/GitHubHostedActions@v1",
 			},
-			Recipe: latest.ProvenanceRecipe{
+			Recipe: slsa.ProvenanceRecipe{
 				Type:              "https://github.com/Attestations/GitHubActionsWorkflow@v1",
 				DefinedInMaterial: new(int),
 				EntryPoint:        "build.yaml:maketgz",
 			},
-			Metadata: &latest.ProvenanceMetadata{
+			Metadata: &slsa.ProvenanceMetadata{
 				BuildStartedOn: &testTime,
-				Completeness: latest.ProvenanceComplete{
+				Completeness: slsa.ProvenanceComplete{
 					Environment: true,
 				},
 			},
-			Materials: []latest.ProvenanceMaterial{
+			Materials: []slsa.ProvenanceMaterial{
 				{
 					URI: "git+https://github.com/curl/curl-docker@master",
-					Digest: latest.DigestSet{
+					Digest: slsa.DigestSet{
 						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
 					},
 				},
@@ -1623,44 +1624,44 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 	var p = ProvenanceStatement{
 		StatementHeader: StatementHeader{
 			Type:          StatementInTotoV01,
-			PredicateType: latest.PredicateSLSAProvenance,
+			PredicateType: slsa.PredicateSLSAProvenance,
 			Subject: []Subject{
 				{
 					Name: "curl-7.72.0.tar.bz2",
-					Digest: latest.DigestSet{
+					Digest: slsa.DigestSet{
 						"sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef",
 					},
 				},
 				{
 					Name: "curl-7.72.0.tar.gz",
-					Digest: latest.DigestSet{
+					Digest: slsa.DigestSet{
 						"sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2",
 					},
 				},
 			},
 		},
-		Predicate: latest.ProvenancePredicate{
-			Builder: latest.ProvenanceBuilder{
+		Predicate: slsa.ProvenancePredicate{
+			Builder: slsa.ProvenanceBuilder{
 				ID: "https://github.com/Attestations/GitHubHostedActions@v1",
 			},
-			Recipe: latest.ProvenanceRecipe{
+			Recipe: slsa.ProvenanceRecipe{
 				Type:              "https://github.com/Attestations/GitHubActionsWorkflow@v1",
 				DefinedInMaterial: new(int),
 				EntryPoint:        "build.yaml:maketgz",
 			},
-			Metadata: &latest.ProvenanceMetadata{
+			Metadata: &slsa.ProvenanceMetadata{
 				BuildStartedOn:  &testTime,
 				BuildFinishedOn: &testTime,
-				Completeness: latest.ProvenanceComplete{
+				Completeness: slsa.ProvenanceComplete{
 					Arguments:   true,
 					Environment: false,
 					Materials:   true,
 				},
 			},
-			Materials: []latest.ProvenanceMaterial{
+			Materials: []slsa.ProvenanceMaterial{
 				{
 					URI: "git+https://github.com/curl/curl-docker@master",
-					Digest: latest.DigestSet{
+					Digest: slsa.DigestSet{
 						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
 					},
 				},
@@ -1683,14 +1684,14 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 // Test that the default date (January 1, year 1, 00:00:00 UTC) is
 // not marshalled
 func TestMetadataNoTime(t *testing.T) {
-	var md = latest.ProvenanceMetadata{
-		Completeness: latest.ProvenanceComplete{
+	var md = slsa.ProvenanceMetadata{
+		Completeness: slsa.ProvenanceComplete{
 			Arguments: true,
 		},
 		Reproducible: true,
 	}
 	var want = `{"completeness":{"arguments":true,"environment":false,"materials":false},"reproducible":true}`
-	var got latest.ProvenanceMetadata
+	var got slsa.ProvenanceMetadata
 	b, err := json.Marshal(&md)
 
 	t.Run("Marshal", func(t *testing.T) {
@@ -1708,12 +1709,12 @@ func TestMetadataNoTime(t *testing.T) {
 // Verify that the behaviour of definedInMaterial can be controlled,
 // as there is a semantic difference in value present or 0.
 func TestRecipe(t *testing.T) {
-	var r = latest.ProvenanceRecipe{
+	var r = slsa.ProvenanceRecipe{
 		Type:       "testType",
 		EntryPoint: "testEntry",
 	}
 	var want = `{"type":"testType","entryPoint":"testEntry"}`
-	var got latest.ProvenanceRecipe
+	var got slsa.ProvenanceRecipe
 	b, err := json.Marshal(&r)
 
 	t.Run("No time/marshal", func(t *testing.T) {
@@ -1778,7 +1779,7 @@ func TestLinkStatement(t *testing.T) {
 			Subject: []Subject{
 				{
 					Name: "baz",
-					Digest: latest.DigestSet{
+					Digest: slsa.DigestSet{
 						"sha256": "hash1",
 					},
 				},

@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	latest "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
+	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
 
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
@@ -961,8 +961,8 @@ func (mb *Metablock) Sign(key Key) error {
 
 // Subject describes the set of software artifacts the statement applies to.
 type Subject struct {
-	Name   string           `json:"name"`
-	Digest latest.DigestSet `json:"digest"`
+	Name   string         `json:"name"`
+	Digest slsa.DigestSet `json:"digest"`
 }
 
 // StatementHeader defines the common fields for all statements
@@ -985,7 +985,7 @@ type Statement struct {
 // ProvenanceStatement is the definition for an entire provenance statement.
 type ProvenanceStatement struct {
 	StatementHeader
-	Predicate latest.ProvenancePredicate `json:"predicate"`
+	Predicate slsa.ProvenancePredicate `json:"predicate"`
 }
 
 // LinkStatement is the definition for an entire link statement.

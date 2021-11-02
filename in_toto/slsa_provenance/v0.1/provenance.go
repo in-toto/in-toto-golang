@@ -56,8 +56,6 @@ type ProvenanceComplete struct {
 	Materials   bool `json:"materials"`
 }
 
-/*
-DigestSet contains a set of digests. It is represented as a map from
-algorithm name to lowercase hex-encoded value.
-*/
+// DigestSet contains a set of digests. It is represented as a map from
+// algorithm name to lowercase hex-encoded value.
 type DigestSet map[string]string
