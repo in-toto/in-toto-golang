@@ -12,17 +12,29 @@ import (
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 )
 
+/*
+SVIDDetails captures the Private Key, Root and Intermediate Certificate
+from the SVID provided by spire for the workload.
+*/
 type SVIDDetails struct {
 	PrivateKey    crypto.Signer
 	Certificate   *x509.Certificate
 	Intermediates []*x509.Certificate
 }
 
+/*
+SVIDFetcher uses the context to connect to the spire and get the SVID associated with
+the workload.
+*/
 type SVIDFetcher interface {
 	FetchX509Context(ctx context.Context) (*workloadapi.X509Context, error)
 	Close() error
 }
 
+/*
+NewClient takes the context and the provided spire agent socket path in order to initialize
+the workload API.
+*/
 func NewClient(ctx context.Context, socketPath string) (SVIDFetcher, error) {
 	return workloadapi.New(ctx, workloadapi.WithAddr(socketPath))
 }
@@ -55,6 +67,10 @@ func GetSVID(ctx context.Context, client SVIDFetcher) (SVIDDetails, error) {
 	return s, nil
 }
 
+/*
+InTotoKey uses the private key and certificate obtained from Spire to initialize
+intoto.key to be used for signing.
+*/
 func (s SVIDDetails) InTotoKey() (intoto.Key, error) {
 	key := intoto.Key{}
 	keyBytes, err := x509.MarshalPKCS8PrivateKey(s.PrivateKey)

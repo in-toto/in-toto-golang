@@ -31,6 +31,7 @@ services:
     build:
       context: ../
       dockerfile: ./Dockerfile
+      target: debug
     volumes:
         - /tmp/spire/sockets:/run/spire/sockets
         - ../test/tmp:/test/tmp

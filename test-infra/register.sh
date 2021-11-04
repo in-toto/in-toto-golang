@@ -1,6 +1,6 @@
 #!/bin/bash
 
-## DEMO REGISTRATIONS #######################################
+## DEMO REGISTRATIONS ##
 #intoto-write-code
 docker exec test-infra_spire-server_1 \
 /opt/spire/bin/spire-server entry create \
@@ -17,4 +17,3 @@ docker exec test-infra_spire-server_1 \
 -spiffeID spiffe://example.com/package \
 -parentID spiffe://example.com/spire/agent/sshpop/21Aic_muK032oJMhLfU1_CMNcGmfAnvESeuH5zyFw_g
 
-## ----------------------------------------------------------------##

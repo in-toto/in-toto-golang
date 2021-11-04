@@ -53,7 +53,7 @@ test-record: build generate_layout
 
 test-run: build generate_layout
 	# Running write code step
-	cd ./test/tmp; ../../bin/in-toto run -n write-code -c ../../certs/example.com.write-code.cert.pem -k ../../certs/example.com.write-code.key.pem -p foo.py -d . -- /bin/sh -c "echo hello > foo.py"
+	cd ./test/tmp; ../../bin/in-toto run -n write-code -c ../../certs/example.com.write-code.cert.pem -k ../../certs/example.com.write-code.key.pem -p foo.py -d . -- sh -c "echo hello > foo.py"
 	# Running package step
 	cd ./test/tmp; ../../bin/in-toto run -n package -c ../../certs/example.com.package.cert.pem -k ../../certs/example.com.package.key.pem -m foo.py -p foo.tar.gz -d . -- tar zcvf foo.tar.gz foo.py
 
@@ -63,7 +63,7 @@ test-verify: test-sign test-run
 
 test-spiffe-run: test-spiffe-sign
 	# Running write code step
-	docker exec -u 1000 -w /test/tmp -it intoto-runner in-toto run --spiffe-workload-api-path unix:///run/spire/sockets/agent.sock -n write-code -p foo.py -d . -- /bin/sh -c "echo hello > foo.py"
+	docker exec -u 1000 -w /test/tmp -it intoto-runner in-toto run --spiffe-workload-api-path unix:///run/spire/sockets/agent.sock -n write-code -p foo.py -d . -- sh -c "echo hello > foo.py"
 	# Running package step
 	docker exec -u 1001 -w /test/tmp -it intoto-runner in-toto run --spiffe-workload-api-path unix:///run/spire/sockets/agent.sock -n package -m foo.py -p foo.tar.gz -d . -- tar zcvf foo.tar.gz foo.py
 
