@@ -81,7 +81,7 @@ func TestDecodeProvenancePredicate(t *testing.T) {
 }
 
 func TestEncodeProvenancePredicate(t *testing.T) {
-	var testTime = time.Unix(1597826280, 0)
+	var testTime = time.Unix(1597826280, 0).In(time.UTC)
 	var p = ProvenancePredicate{
 		Builder: ProvenanceBuilder{
 			ID: "https://github.com/Attestations/GitHubHostedActions@v1",
