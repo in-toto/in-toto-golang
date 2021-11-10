@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
+	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
 
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
@@ -1529,13 +1529,16 @@ func TestDecodeProvenanceStatement(t *testing.T) {
     { "name": "curl-7.72.0.tar.gz",
       "digest": { "sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2" }}
   ],
-  "predicateType": "https://slsa.dev/provenance/v0.1",
+  "predicateType": "https://slsa.dev/provenance/v0.2",
   "predicate": {
     "builder": { "id": "https://github.com/Attestations/GitHubHostedActions@v1" },
-    "recipe": {
-      "type": "https://github.com/Attestations/GitHubActionsWorkflow@v1",
-      "definedInMaterial": 0,
-      "entryPoint": "build.yaml:maketgz"
+	"buildType": "https://github.com/Attestations/GitHubActionsWorkflow@v1",
+    "invocation": {
+	  "configSource": {
+		"uri": "git+https://github.com/curl/curl-docker@master",
+		"digest": { "sha1": "d6525c840a62b398424a78d792f457477135d0cf" },
+		"entryPoint": "build.yaml:maketgz"
+	  }
     },
     "metadata": {
       "buildStartedOn": "2020-08-19T08:38:00Z",
@@ -1579,10 +1582,15 @@ func TestDecodeProvenanceStatement(t *testing.T) {
 			Builder: slsa.ProvenanceBuilder{
 				ID: "https://github.com/Attestations/GitHubHostedActions@v1",
 			},
-			Recipe: slsa.ProvenanceRecipe{
-				Type:              "https://github.com/Attestations/GitHubActionsWorkflow@v1",
-				DefinedInMaterial: new(int),
-				EntryPoint:        "build.yaml:maketgz",
+			BuildType: "https://github.com/Attestations/GitHubActionsWorkflow@v1",
+			Invocation: slsa.ProvenanceInvocation{
+				ConfigSource: slsa.ConfigSource{
+					EntryPoint: "build.yaml:maketgz",
+					URI:        "git+https://github.com/curl/curl-docker@master",
+					Digest: slsa.DigestSet{
+						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
+					},
+				},
 			},
 			Metadata: &slsa.ProvenanceMetadata{
 				BuildStartedOn: &testTime,
@@ -1644,16 +1652,21 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 			Builder: slsa.ProvenanceBuilder{
 				ID: "https://github.com/Attestations/GitHubHostedActions@v1",
 			},
-			Recipe: slsa.ProvenanceRecipe{
-				Type:              "https://github.com/Attestations/GitHubActionsWorkflow@v1",
-				DefinedInMaterial: new(int),
-				EntryPoint:        "build.yaml:maketgz",
+			BuildType: "https://github.com/Attestations/GitHubActionsWorkflow@v1",
+			Invocation: slsa.ProvenanceInvocation{
+				ConfigSource: slsa.ConfigSource{
+					URI: "git+https://github.com/curl/curl-docker@master",
+					Digest: slsa.DigestSet{
+						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
+					},
+					EntryPoint: "build.yaml:maketgz",
+				},
 			},
 			Metadata: &slsa.ProvenanceMetadata{
 				BuildStartedOn:  &testTime,
 				BuildFinishedOn: &testTime,
 				Completeness: slsa.ProvenanceComplete{
-					Arguments:   true,
+					Parameters:  true,
 					Environment: false,
 					Materials:   true,
 				},
@@ -1674,7 +1687,7 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 			},
 		},
 	}
-	var want = `{"_type":"https://in-toto.io/Statement/v0.1","predicateType":"https://slsa.dev/provenance/v0.1","subject":[{"name":"curl-7.72.0.tar.bz2","digest":{"sha256":"ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef"}},{"name":"curl-7.72.0.tar.gz","digest":{"sha256":"d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2"}}],"predicate":{"builder":{"id":"https://github.com/Attestations/GitHubHostedActions@v1"},"recipe":{"type":"https://github.com/Attestations/GitHubActionsWorkflow@v1","definedInMaterial":0,"entryPoint":"build.yaml:maketgz"},"metadata":{"buildStartedOn":"2020-08-19T08:38:00Z","buildFinishedOn":"2020-08-19T08:38:00Z","completeness":{"arguments":true,"environment":false,"materials":true},"reproducible":false},"materials":[{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"}},{"uri":"github_hosted_vm:ubuntu-18.04:20210123.1"},{"uri":"git+https://github.com/curl/"}]}}`
+	var want = `{"_type":"https://in-toto.io/Statement/v0.1","predicateType":"https://slsa.dev/provenance/v0.2","subject":[{"name":"curl-7.72.0.tar.bz2","digest":{"sha256":"ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef"}},{"name":"curl-7.72.0.tar.gz","digest":{"sha256":"d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2"}}],"predicate":{"builder":{"id":"https://github.com/Attestations/GitHubHostedActions@v1"},"buildType":"https://github.com/Attestations/GitHubActionsWorkflow@v1","invocation":{"configSource":{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"},"entryPoint":"build.yaml:maketgz"}},"metadata":{"buildStartedOn":"2020-08-19T08:38:00Z","buildFinishedOn":"2020-08-19T08:38:00Z","completeness":{"parameters":true,"environment":false,"materials":true},"reproducible":false},"materials":[{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"}},{"uri":"github_hosted_vm:ubuntu-18.04:20210123.1"},{"uri":"git+https://github.com/curl/"}]}}`
 
 	b, err := json.Marshal(&p)
 	assert.Nil(t, err, "Error during JSON marshal")
@@ -1686,11 +1699,11 @@ func TestEncodeProvenanceStatement(t *testing.T) {
 func TestMetadataNoTime(t *testing.T) {
 	var md = slsa.ProvenanceMetadata{
 		Completeness: slsa.ProvenanceComplete{
-			Arguments: true,
+			Parameters: true,
 		},
 		Reproducible: true,
 	}
-	var want = `{"completeness":{"arguments":true,"environment":false,"materials":false},"reproducible":true}`
+	var want = `{"completeness":{"parameters":true,"environment":false,"materials":false},"reproducible":true}`
 	var got slsa.ProvenanceMetadata
 	b, err := json.Marshal(&md)
 
@@ -1703,45 +1716,6 @@ func TestMetadataNoTime(t *testing.T) {
 		err := json.Unmarshal(b, &got)
 		assert.Nil(t, err, "Error during JSON unmarshal")
 		assert.Equal(t, md, got, "Wrong struct after JSON unmarshal")
-	})
-}
-
-// Verify that the behaviour of definedInMaterial can be controlled,
-// as there is a semantic difference in value present or 0.
-func TestRecipe(t *testing.T) {
-	var r = slsa.ProvenanceRecipe{
-		Type:       "testType",
-		EntryPoint: "testEntry",
-	}
-	var want = `{"type":"testType","entryPoint":"testEntry"}`
-	var got slsa.ProvenanceRecipe
-	b, err := json.Marshal(&r)
-
-	t.Run("No time/marshal", func(t *testing.T) {
-		assert.Nil(t, err, "Error during JSON marshal")
-		assert.Equal(t, want, string(b), "Wrong JSON produced")
-	})
-
-	t.Run("No time/unmarshal", func(t *testing.T) {
-		err = json.Unmarshal(b, &got)
-		assert.Nil(t, err, "Error during JSON unmarshal")
-		assert.Equal(t, r, got, "Wrong struct after JSON unmarshal")
-	})
-
-	// Set time to zero and run test again
-	r.DefinedInMaterial = new(int)
-	want = `{"type":"testType","definedInMaterial":0,"entryPoint":"testEntry"}`
-	b, err = json.Marshal(&r)
-
-	t.Run("With time/marshal", func(t *testing.T) {
-		assert.Nil(t, err, "Error during JSON marshal")
-		assert.Equal(t, want, string(b), "Wrong JSON produced")
-	})
-
-	t.Run("With time/unmarshal", func(t *testing.T) {
-		err = json.Unmarshal(b, &got)
-		assert.Nil(t, err, "Error during JSON unmarshal")
-		assert.Equal(t, r, got, "Wrong struct after JSON unmarshal")
 	})
 }
 
