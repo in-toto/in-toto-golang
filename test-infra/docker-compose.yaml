@@ -1,0 +1,39 @@
+version: '2'
+services:
+  
+  spire-server:
+    image: gcr.io/spiffe-io/spire-server:0.12.0
+    container_name: test-infra_spire-server_1
+    hostname: spire-server
+    volumes:
+        - ./spire/server:/opt/spire/conf/server
+        - /tmp/spire/sockets:/run/spire/sockets
+    command: ["-config", "/opt/spire/conf/server/server.conf"]
+
+  spire-agent:
+    pid: "host"
+    container_name: test-infra_spire-agent_1
+    privileged: true
+    image: gcr.io/spiffe-io/spire-agent:0.12.0
+    depends_on: ["spire-server"]
+    hostname: spire-agent
+    volumes:
+        - ./spire/agent:/opt/spire/conf/agent
+        - /tmp/spire/sockets:/run/spire/sockets
+        - /proc:/proc
+    command: ["-config", "/opt/spire/conf/agent/agent.conf"]
+
+  intoto-runner:
+    container_name: intoto-runner
+    image: intoto-run:latest
+    privileged: true
+    entrypoint: sleep 1000
+    build:
+      context: ../
+      dockerfile: ./Dockerfile
+      target: debug
+    volumes:
+        - /tmp/spire/sockets:/run/spire/sockets
+        - ../test/tmp:/test/tmp
+    depends_on:
+      - spire-agent
