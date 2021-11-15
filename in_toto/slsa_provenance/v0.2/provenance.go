@@ -11,7 +11,7 @@ const (
 type ProvenancePredicate struct {
 	Builder     ProvenanceBuilder    `json:"builder"`
 	BuildType   string               `json:"buildType"`
-	Invocation  ProvenanceInvocation `json:"invocation"`
+	Invocation  ProvenanceInvocation `json:"invocation,omitempty"`
 	BuildConfig interface{}          `json:"buildConfig,omitempty"`
 	Metadata    *ProvenanceMetadata  `json:"metadata,omitempty"`
 	Materials   []ProvenanceMaterial `json:"materials,omitempty"`
@@ -48,7 +48,7 @@ type ProvenanceMetadata struct {
 
 // ProvenanceMaterial defines the materials used to build an artifact.
 type ProvenanceMaterial struct {
-	URI    string    `json:"uri"`
+	URI    string    `json:"uri,omitempty"`
 	Digest DigestSet `json:"digest,omitempty"`
 }
 

@@ -1532,7 +1532,7 @@ func TestDecodeProvenanceStatement(t *testing.T) {
   "predicateType": "https://slsa.dev/provenance/v0.2",
   "predicate": {
     "builder": { "id": "https://github.com/Attestations/GitHubHostedActions@v1" },
-	"buildType": "https://github.com/Attestations/GitHubActionsWorkflow@v1",
+    "buildType": "https://github.com/Attestations/GitHubActionsWorkflow@v1",
     "invocation": {
 	  "configSource": {
 		"uri": "git+https://github.com/curl/curl-docker@master",
