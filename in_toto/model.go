@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
+	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
 
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
