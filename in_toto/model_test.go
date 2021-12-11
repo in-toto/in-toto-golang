@@ -2,6 +2,7 @@ package in_toto
 
 import (
 	"bytes"
+	"crypto"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/hex"
@@ -1789,25 +1790,31 @@ func TestLinkStatement(t *testing.T) {
 
 type nilsigner int
 
-func (n nilsigner) Sign(data []byte) ([]byte, string, error) {
-	return data, "nil", nil
+func (n nilsigner) Sign(data []byte) ([]byte, error) {
+	return data, nil
 }
 
-func (n nilsigner) Verify(keyID string, data, sig []byte) error {
-
-	if keyID == "nil" {
-		if len(data) != len(sig) {
-			return errLength
-		}
-
-		for i := range data {
-			if data[i] != sig[i] {
-				return errVerify
-			}
-		}
-		return nil
+func (n nilsigner) Verify(data, sig []byte) error {
+	if len(data) != len(sig) {
+		return errLength
 	}
-	return dsse.ErrUnknownKey
+
+	for i := range data {
+		if data[i] != sig[i] {
+			return errVerify
+		}
+	}
+	return nil
+}
+
+// KeyID implements dsse.SignVerifier
+func (n nilsigner) KeyID() (string, error) {
+	return "nil", nil
+}
+
+// Public implements dsse.SignVerifier
+func (n nilsigner) Public() crypto.PublicKey {
+	return nil
 }
 
 func TestDSSESigner(t *testing.T) {

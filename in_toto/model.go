@@ -1039,5 +1039,6 @@ func (s *DSSESigner) Verify(e *dsse.Envelope) error {
 		return ErrInvalidPayloadType
 	}
 
-	return s.signer.Verify(e)
+	_, err := s.signer.Verify(e)
+	return err
 }
