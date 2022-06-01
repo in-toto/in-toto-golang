@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/google/go-cmp v0.5.8
-	github.com/secure-systems-lab/go-securesystemslib v0.3.0
+	github.com/secure-systems-lab/go-securesystemslib v0.4.0
 	github.com/shibumi/go-pathspec v1.3.0
 	github.com/spf13/cobra v1.4.0
 	github.com/stretchr/testify v1.7.1
