@@ -7,7 +7,7 @@ require (
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0
 	github.com/shibumi/go-pathspec v1.3.0
 	github.com/spf13/cobra v1.4.0
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.7.3
 	golang.org/x/sys v0.0.0-20211210111614-af8b64212486
 )
 
