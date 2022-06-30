@@ -49,9 +49,9 @@ test-record: build generate_layout
 
 test-run: build generate_layout
 	# Running write code step
-	@./bin/in-toto run -n write-code -c ./certs/example.com.write-code.cert.pem -k ./certs/example.com.write-code.key.pem -p ./test/tmp/foo.py -d ./test/tmp -- /bin/sh -c "echo hello > ./test/tmp/foo.py"
+	@./bin/in-toto run -n write-code -c ./certs/example.com.write-code.cert.pem -k ./certs/example.com.write-code.key.pem -p ./test/tmp/foo.py -d ./test/tmp -l ./test/tmp/ -- /bin/sh -c "echo hello > ./test/tmp/foo.py"
 	# Running package step
-	@./bin/in-toto run -n package -c ./certs/example.com.package.cert.pem -k ./certs/example.com.package.key.pem -m ./test/tmp/foo.py -p ./test/tmp/foo.tar.gz -d ./test/tmp -- tar zcvf ./test/tmp/foo.tar.gz ./test/tmp/foo.py
+	@./bin/in-toto run -n package -c ./certs/example.com.package.cert.pem -k ./certs/example.com.package.key.pem -m ./test/tmp/foo.py -p ./test/tmp/foo.tar.gz -d ./test/tmp -l ./test/tmp/ -- tar zcvf ./test/tmp/foo.tar.gz ./test/tmp/foo.py
 
 test-verify: test-sign test-run
 	# Running test verify
