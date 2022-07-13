@@ -1,6 +1,10 @@
 package v01
 
-import "time"
+import (
+	"time"
+
+	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
+)
 
 const (
 	// PredicateSLSAProvenance represents a build provenance for an artifact.
@@ -9,15 +13,10 @@ const (
 
 // ProvenancePredicate is the provenance predicate definition.
 type ProvenancePredicate struct {
-	Builder   ProvenanceBuilder    `json:"builder"`
-	Recipe    ProvenanceRecipe     `json:"recipe"`
-	Metadata  *ProvenanceMetadata  `json:"metadata,omitempty"`
-	Materials []ProvenanceMaterial `json:"materials,omitempty"`
-}
-
-// ProvenanceBuilder idenfifies the entity that executed the build steps.
-type ProvenanceBuilder struct {
-	ID string `json:"id"`
+	Builder   common.ProvenanceBuilder    `json:"builder"`
+	Recipe    ProvenanceRecipe            `json:"recipe"`
+	Metadata  *ProvenanceMetadata         `json:"metadata,omitempty"`
+	Materials []common.ProvenanceMaterial `json:"materials,omitempty"`
 }
 
 // ProvenanceRecipe describes the actions performed by the builder.
@@ -41,12 +40,6 @@ type ProvenanceMetadata struct {
 	Reproducible    bool               `json:"reproducible"`
 }
 
-// ProvenanceMaterial defines the materials used to build an artifact.
-type ProvenanceMaterial struct {
-	URI    string    `json:"uri"`
-	Digest DigestSet `json:"digest,omitempty"`
-}
-
 // ProvenanceComplete indicates wheter the claims in build/recipe are complete.
 // For in depth information refer to the specifictaion:
 // https://github.com/in-toto/attestation/blob/v0.1.0/spec/predicates/provenance.md
@@ -55,7 +48,3 @@ type ProvenanceComplete struct {
 	Environment bool `json:"environment"`
 	Materials   bool `json:"materials"`
 }
-
-// DigestSet contains a set of digests. It is represented as a map from
-// algorithm name to lowercase hex-encoded value.
-type DigestSet map[string]string
