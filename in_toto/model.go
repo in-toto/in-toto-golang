@@ -15,7 +15,9 @@ import (
 	"strings"
 	"time"
 
-	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
+	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
+	slsa01 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
+	slsa02 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
 
 	"github.com/secure-systems-lab/go-securesystemslib/cjson"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -964,8 +966,8 @@ func (mb *Metablock) Sign(key Key) error {
 
 // Subject describes the set of software artifacts the statement applies to.
 type Subject struct {
-	Name   string         `json:"name"`
-	Digest slsa.DigestSet `json:"digest"`
+	Name   string           `json:"name"`
+	Digest common.DigestSet `json:"digest"`
 }
 
 // StatementHeader defines the common fields for all statements
@@ -985,10 +987,23 @@ type Statement struct {
 	Predicate interface{} `json:"predicate"`
 }
 
-// ProvenanceStatement is the definition for an entire provenance statement.
+// ProvenanceStatementSLSA01 is the definition for an entire provenance statement with SLSA 0.1 predicate.
+type ProvenanceStatementSLSA01 struct {
+	StatementHeader
+	Predicate slsa01.ProvenancePredicate `json:"predicate"`
+}
+
+// ProvenanceStatementSLSA02 is the definition for an entire provenance statement with SLSA 0.2 predicate.
+type ProvenanceStatementSLSA02 struct {
+	StatementHeader
+	Predicate slsa02.ProvenancePredicate `json:"predicate"`
+}
+
+// ProvenanceStatement is the definition for an entire provenance statement with SLSA 0.2 predicate.
+// Deprecated: Only version-specific provenance structs will be maintained (ProvenanceStatementSLSA01, ProvenanceStatementSLSA02).
 type ProvenanceStatement struct {
 	StatementHeader
-	Predicate slsa.ProvenancePredicate `json:"predicate"`
+	Predicate slsa02.ProvenancePredicate `json:"predicate"`
 }
 
 // LinkStatement is the definition for an entire link statement.
