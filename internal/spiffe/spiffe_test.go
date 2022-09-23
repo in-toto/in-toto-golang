@@ -17,7 +17,7 @@ import (
 
 var (
 	td    = spiffeid.RequireTrustDomainFromString("example.org")
-	fooID = td.NewID("foo")
+	fooID = spiffeid.RequireFromPath(td, "/foo")
 )
 
 func assertX509SVID(tb testing.TB, sd SVIDDetails, spiffeID spiffeid.ID, certificates []*x509.Certificate, intermediates []*x509.Certificate) {
