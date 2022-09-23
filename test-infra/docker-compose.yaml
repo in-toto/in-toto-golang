@@ -2,19 +2,22 @@ version: '2'
 services:
   
   spire-server:
-    image: gcr.io/spiffe-io/spire-server:0.12.0
+    pid: "host"
+    image: gcr.io/spiffe-io/spire-server:1.4.2
     container_name: test-infra_spire-server_1
     hostname: spire-server
     volumes:
         - ./spire/server:/opt/spire/conf/server
         - /tmp/spire/sockets:/run/spire/sockets
     command: ["-config", "/opt/spire/conf/server/server.conf"]
+    ports:
+      - "8081:8081"
 
   spire-agent:
     pid: "host"
     container_name: test-infra_spire-agent_1
     privileged: true
-    image: gcr.io/spiffe-io/spire-agent:0.12.0
+    image: gcr.io/spiffe-io/spire-agent:1.4.2
     depends_on: ["spire-server"]
     hostname: spire-agent
     volumes:

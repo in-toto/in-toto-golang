@@ -2,7 +2,7 @@
 
 docker exec test-infra_spire-server_1 \
 /opt/spire/bin/spire-server x509 mint \
--registrationUDSPath /run/spire/sockets/spire-registration.sock \
+-socketPath /run/spire/sockets/spire-registration.sock \
 -spiffeID spiffe://example.com/$1 \
 -write .
 
