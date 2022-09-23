@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +20,7 @@ func TestDecodeProvenancePredicate(t *testing.T) {
     "invocation": {
       "configSource": {
 		"uri": "git+https://github.com/curl/curl-docker@master",
-        "digest": { "sha1": "d6525c840a62b398424a78d792f457477135d0cf" },   
+        "digest": { "sha1": "d6525c840a62b398424a78d792f457477135d0cf" },
 		"entryPoint": "build.yaml:maketgz"
 	  }
     },
@@ -41,14 +42,14 @@ func TestDecodeProvenancePredicate(t *testing.T) {
 `
 	var testTime = time.Unix(1597826280, 0)
 	var want = ProvenancePredicate{
-		Builder: ProvenanceBuilder{
+		Builder: common.ProvenanceBuilder{
 			ID: "https://github.com/Attestations/GitHubHostedActions@v1",
 		},
 		BuildType: "https://github.com/Attestations/GitHubActionsWorkflow@v1",
 		Invocation: ProvenanceInvocation{
 			ConfigSource: ConfigSource{
 				URI: "git+https://github.com/curl/curl-docker@master",
-				Digest: DigestSet{
+				Digest: common.DigestSet{
 					"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
 				},
 				EntryPoint: "build.yaml:maketgz",
@@ -60,10 +61,10 @@ func TestDecodeProvenancePredicate(t *testing.T) {
 				Environment: true,
 			},
 		},
-		Materials: []ProvenanceMaterial{
+		Materials: []common.ProvenanceMaterial{
 			{
 				URI: "git+https://github.com/curl/curl-docker@master",
-				Digest: DigestSet{
+				Digest: common.DigestSet{
 					"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
 				},
 			},
@@ -90,7 +91,7 @@ func TestDecodeProvenancePredicate(t *testing.T) {
 func TestEncodeProvenancePredicate(t *testing.T) {
 	var testTime = time.Unix(1597826280, 0).In(time.UTC)
 	var p = ProvenancePredicate{
-		Builder: ProvenanceBuilder{
+		Builder: common.ProvenanceBuilder{
 			ID: "https://github.com/Attestations/GitHubHostedActions@v1",
 		},
 		BuildType: "https://github.com/Attestations/GitHubActionsWorkflow@v1",
@@ -98,7 +99,7 @@ func TestEncodeProvenancePredicate(t *testing.T) {
 			ConfigSource: ConfigSource{
 				EntryPoint: "build.yaml:maketgz",
 				URI:        "git+https://github.com/curl/curl-docker@master",
-				Digest: DigestSet{
+				Digest: common.DigestSet{
 					"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
 				},
 			},
@@ -113,10 +114,10 @@ func TestEncodeProvenancePredicate(t *testing.T) {
 				Materials:   true,
 			},
 		},
-		Materials: []ProvenanceMaterial{
+		Materials: []common.ProvenanceMaterial{
 			{
 				URI: "git+https://github.com/curl/curl-docker@master",
-				Digest: DigestSet{
+				Digest: common.DigestSet{
 					"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
 				},
 			},
