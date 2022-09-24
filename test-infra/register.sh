@@ -16,4 +16,3 @@ docker exec test-infra_spire-server_1 \
 -socketPath /run/spire/sockets/spire-registration.sock \
 -spiffeID spiffe://example.com/package \
 -parentID spiffe://example.com/spire/agent/sshpop/21Aic_muK032oJMhLfU1_CMNcGmfAnvESeuH5zyFw_g
-
