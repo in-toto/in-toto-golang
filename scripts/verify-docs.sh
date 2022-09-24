@@ -6,6 +6,6 @@ set -e
 tmpdir=$(mktemp -d)
 go run main.go gendoc --dir "$tmpdir"
 echo "###########################################"
-echo "If diffs are found, run: go run ./cmd gendoc"
+echo "If diffs are found, run: go run main.go gendoc"
 echo "###########################################"
 diff -Naur "$tmpdir" doc/

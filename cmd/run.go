@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
@@ -25,7 +24,7 @@ execution) and stores them together with other information (executed command,
 return value, stdout, stderr, ...) to a link metadata file, which is signed
 with the passed key.  Returns nonzero value on failure and zero otherwise.`,
 	Args:    cobra.MinimumNArgs(1),
-	PreRunE: runPreRun,
+	PreRunE: getKeyCert,
 	RunE:    run,
 }
 
@@ -131,37 +130,14 @@ in environment variables or config files. See Config docs for details.`,
 operating systems. It is done by replacing all line separators
 with a new line character.`,
 	)
-}
 
-func runPreRun(cmd *cobra.Command, args []string) error {
-	key = intoto.Key{}
-	cert = intoto.Key{}
+	runCmd.Flags().StringVar(
+		&spiffeUDS,
+		"spiffe-workload-api-path",
+		"",
+		"UDS path for SPIFFE workload API",
+	)
 
-	if keyPath == "" && certPath == "" {
-		return fmt.Errorf("key or cert must be provided")
-	}
-
-	if len(keyPath) > 0 {
-		if _, err := os.Stat(keyPath); err == nil {
-			if err := key.LoadKeyDefaults(keyPath); err != nil {
-				return fmt.Errorf("invalid key at %s: %w", keyPath, err)
-			}
-		} else {
-			return fmt.Errorf("key not found at %s: %w", keyPath, err)
-		}
-	}
-
-	if len(certPath) > 0 {
-		if _, err := os.Stat(certPath); err == nil {
-			if err := cert.LoadKeyDefaults(certPath); err != nil {
-				return fmt.Errorf("invalid cert at %s: %w", certPath, err)
-			}
-			key.KeyVal.Certificate = cert.KeyVal.Certificate
-		} else {
-			return fmt.Errorf("cert not found at %s: %w", certPath, err)
-		}
-	}
-	return nil
 }
 
 func run(cmd *cobra.Command, args []string) error {

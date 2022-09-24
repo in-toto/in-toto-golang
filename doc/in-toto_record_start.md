@@ -25,25 +25,29 @@ in-toto record start [flags]
 ### Options inherited from parent commands
 
 ```
-  -c, --cert string                 Path to a PEM formatted certificate that corresponds
-                                    with the provided key.
-  -e, --exclude stringArray         Path patterns to match paths that should not be recorded as 
-                                    ‘materials’ or ‘products’. Passed patterns override patterns defined
-                                    in environment variables or config files. See Config docs for details.
-  -k, --key string                  Path to a private key file to sign the resulting link metadata.
-                                    The keyid prefix is used as an infix for the link metadata filename,
-                                    i.e. ‘<name>.<keyid prefix>.link’. See ‘–key-type’ for available
-                                    formats. Passing one of ‘–key’ or ‘–gpg’ is required.
-  -l, --lstrip-paths stringArray    Path prefixes used to left-strip artifact paths before storing
-                                    them to the resulting link metadata. If multiple prefixes
-                                    are specified, only a single prefix can match the path of
-                                    any artifact and that is then left-stripped. All prefixes
-                                    are checked to ensure none of them are a left substring
-                                    of another.
-  -d, --metadata-directory string   Directory to store link metadata (default "./")
-  -n, --name string                 Name for the resulting link metadata file.
-                                    It is also used to associate the link with a step defined
-                                    in an in-toto layout.
+  -c, --cert string                       Path to a PEM formatted certificate that corresponds
+                                          with the provided key.
+  -e, --exclude stringArray               Path patterns to match paths that should not be recorded as 
+                                          ‘materials’ or ‘products’. Passed patterns override patterns defined
+                                          in environment variables or config files. See Config docs for details.
+  -k, --key string                        Path to a private key file to sign the resulting link metadata.
+                                          The keyid prefix is used as an infix for the link metadata filename,
+                                          i.e. ‘<name>.<keyid prefix>.link’. See ‘–key-type’ for available
+                                          formats. Passing one of ‘–key’ or ‘–gpg’ is required.
+  -l, --lstrip-paths stringArray          Path prefixes used to left-strip artifact paths before storing
+                                          them to the resulting link metadata. If multiple prefixes
+                                          are specified, only a single prefix can match the path of
+                                          any artifact and that is then left-stripped. All prefixes
+                                          are checked to ensure none of them are a left substring
+                                          of another.
+  -d, --metadata-directory string         Directory to store link metadata (default "./")
+  -n, --name string                       Name for the resulting link metadata file.
+                                          It is also used to associate the link with a step defined
+                                          in an in-toto layout.
+      --normalize-line-endings            Enable line normalization in order to support different
+                                          operating systems. It is done by replacing all line separators
+                                          with a new line character.
+      --spiffe-workload-api-path string   UDS path for SPIFFE workload API
 ```
 
 ### SEE ALSO
