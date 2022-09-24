@@ -79,6 +79,7 @@ spiffe-test-generate-layout: spiffe-infra-up
 	$(eval rootca := $(shell ./bin/in-toto key layout ./test/tmp/layout-bundle.pem | sed -e 's/\\n/\\\\n/g'))
 	cat $(LAYOUT_TMPL) | sed -e 's#{{ROOTCA}}#$(rootca)#' > ./test/tmp/spiffe.test.layout
 	docker-compose -f ./test-infra/docker-compose.yaml up -d intoto-runner
+	sleep 5 # sleep to ensure the intoto-runner is fully up and connected to spire
 
 spiffe-infra-up: build
 	@mkdir -p ./test/tmp
