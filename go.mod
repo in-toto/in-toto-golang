@@ -10,7 +10,7 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.1.1
 	github.com/stretchr/testify v1.8.0
 	golang.org/x/sys v0.0.0-20211210111614-af8b64212486
-	google.golang.org/grpc v1.49.0
+	google.golang.org/grpc v1.50.0
 )
 
 require (
