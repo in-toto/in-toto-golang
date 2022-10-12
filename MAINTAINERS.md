@@ -23,3 +23,9 @@ All releases have been signed with a GPG signature from one of these people.
     * Email: chris@shibumi.dev
     * Github username: @shibumi
     * PGP fingerprint: 6DAF 7B80 8F9D F251 3962  0000 D214 61E3 DFE2 060D
+
+* Parth Patel
+    * Email: parth.psu@gmail.com
+    * Github username: @pxp928
+    * PGP fingerprint: B6CA 8E4A 5590 99AB 6011  45EE ADF8 9FD0 ADE8 64BC
+    * SSH fingerprint: SHA256:FrUX10rDfEPoDd/y1YKtiu7+jOR4dfmlHpGQ1QlioeQ
