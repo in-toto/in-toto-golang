@@ -304,7 +304,7 @@ func InTotoRun(name string, runDir string, materialPaths []string, productPaths 
 	}
 
 	// make sure that we only run RunCommand if cmdArgs is not nil or empty
-	var byProducts map[string]interface{}
+	byProducts := map[string]interface{}{}
 	if len(cmdArgs) != 0 {
 		byProducts, err = RunCommand(cmdArgs, runDir)
 		if err != nil {
