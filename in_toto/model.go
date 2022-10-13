@@ -414,6 +414,7 @@ func validateLink(link Link) error {
 LinkNameFormat represents a format string used to create the filename for a
 signed Link (wrapped in a Metablock). It consists of the name of the link and
 the first 8 characters of the signing key id. E.g.:
+
 	fmt.Sprintf(LinkNameFormat, "package",
 	"2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498")
 	// returns "package.2f89b9272.link"
@@ -423,6 +424,7 @@ const PreliminaryLinkNameFormat = ".%s.%.8s.link-unfinished"
 
 /*
 LinkNameFormatShort is for links that are not signed, e.g.:
+
 	fmt.Sprintf(LinkNameFormatShort, "unsigned")
 	// returns "unsigned.link"
 */
