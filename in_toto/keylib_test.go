@@ -130,9 +130,9 @@ func TestValidSignatures(t *testing.T) {
 
 // TestLoadKeyErrors tests the LoadKey functions for the most popular errors:
 //
-//	* os.ErrNotExist (triggered, when the file does not exist)
-//	* ErrNoPEMBlock (for example if the passed file is not a PEM block)
-//  * ErrFailedPEMParsing (for example if we pass an EC key, instead a key in PKCS8 format)
+//   - os.ErrNotExist (triggered, when the file does not exist)
+//   - ErrNoPEMBlock (for example if the passed file is not a PEM block)
+//   - ErrFailedPEMParsing (for example if we pass an EC key, instead a key in PKCS8 format)
 func TestLoadKeyErrors(t *testing.T) {
 	invalidTables := []struct {
 		name           string
@@ -163,9 +163,9 @@ func TestLoadKeyErrors(t *testing.T) {
 
 // TestLoadKeyDefaultsErrors tests the LoadKeyDefaults functions for the most popular errors:
 //
-//	* os.ErrNotExist (triggered, when the file does not exist)
-//	* ErrNoPEMBlock (for example if the passed file is not a PEM block)
-//  * ErrFailedPEMParsing (for example if we pass an EC key, instead a key in PKCS8 format)
+//   - os.ErrNotExist (triggered, when the file does not exist)
+//   - ErrNoPEMBlock (for example if the passed file is not a PEM block)
+//   - ErrFailedPEMParsing (for example if we pass an EC key, instead a key in PKCS8 format)
 func TestLoadKeyDefaultsErrors(t *testing.T) {
 	invalidTables := []struct {
 		name string
