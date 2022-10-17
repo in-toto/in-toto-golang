@@ -82,7 +82,7 @@ const (
 	// version.
 	PredicateSPDX = "https://spdx.dev/Document"
 	// PredicateCycloneDX represents a CycloneDX SBOM
-	PredicateCycloneDX = "https://cyclonedx.org/schema"
+	PredicateCycloneDX = "https://cyclonedx.org/bom"
 	// PredicateLinkV1 represents an in-toto 0.9 link.
 	PredicateLinkV1 = "https://in-toto.io/Link/v1"
 )
