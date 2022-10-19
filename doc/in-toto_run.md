@@ -37,6 +37,7 @@ in-toto run [flags]
   -d, --metadata-directory string         Directory to store link metadata (default "./")
   -n, --name string                       Name used to associate the resulting link metadata
                                           with the corresponding step defined in an in-toto layout.
+  -x, --no-command                        Indicate that there is no command to be executed for the step.
       --normalize-line-endings            Enable line normalization in order to support different
                                           operating systems. It is done by replacing all line separators
                                           with a new line character.

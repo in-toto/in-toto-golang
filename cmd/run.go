@@ -13,6 +13,7 @@ var (
 	runDir         string
 	materialsPaths []string
 	productsPaths  []string
+	noCommand      bool
 )
 
 var runCmd = &cobra.Command{
@@ -23,7 +24,7 @@ files before command execution) and 'products' (i.e. files after command
 execution) and stores them together with other information (executed command,
 return value, stdout, stderr, ...) to a link metadata file, which is signed
 with the passed key.  Returns nonzero value on failure and zero otherwise.`,
-	Args:    cobra.MinimumNArgs(1),
+	Args:    cobra.MinimumNArgs(0),
 	PreRunE: getKeyCert,
 	RunE:    run,
 }
@@ -131,6 +132,14 @@ operating systems. It is done by replacing all line separators
 with a new line character.`,
 	)
 
+	runCmd.Flags().BoolVarP(
+		&noCommand,
+		"no-command",
+		"x",
+		false,
+		`Indicate that there is no command to be executed for the step.`,
+	)
+
 	runCmd.Flags().StringVar(
 		&spiffeUDS,
 		"spiffe-workload-api-path",
@@ -141,6 +150,14 @@ with a new line character.`,
 }
 
 func run(cmd *cobra.Command, args []string) error {
+	if noCommand && len(args) > 0 {
+		return fmt.Errorf("command arguments passed with --no-command/-x flag")
+	}
+
+	if !noCommand && len(args) == 0 {
+		return fmt.Errorf("no command arguments passed, please specify or use --no-command option")
+	}
+
 	block, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization)
 	if err != nil {
 		return fmt.Errorf("failed to create link metadata: %w", err)

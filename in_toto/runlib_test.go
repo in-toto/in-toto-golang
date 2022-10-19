@@ -377,6 +377,23 @@ func TestRunCommand(t *testing.T) {
 	}
 }
 
+func TestRunCommandErrors(t *testing.T) {
+	tables := []struct {
+		CmdArgs       []string
+		RunDir        string
+		ExpectedError error
+	}{
+		{nil, "", ErrEmptyCommandArgs},
+		{[]string{}, "", ErrEmptyCommandArgs},
+	}
+	for _, table := range tables {
+		_, err := RunCommand(table.CmdArgs, table.RunDir)
+		if !errors.Is(err, ErrEmptyCommandArgs) {
+			t.Errorf("RunCommand did not provoke expected error. Got: %s, want: %s", err, ErrEmptyCommandArgs)
+		}
+	}
+}
+
 func TestInTotoRun(t *testing.T) {
 	// Successfully run InTotoRun
 	linkName := "Name"
@@ -417,6 +434,30 @@ func TestInTotoRun(t *testing.T) {
 			Signatures: []Signature{{
 				KeyID: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
 				Sig:   "71dfec1af747d02f6463d4baf3bb2c1d903c107470be86c12349433f780b1030e5ca36a10ee5c5d74de16344fe16b459154fd2be05a58fb556dff934d6682403",
+			}},
+		},
+		},
+		{[]string{"alice.pub"}, []string{"foo.tar.gz"}, []string{}, validKey, []string{"sha256"}, Metablock{
+			Signed: Link{
+				Name: linkName,
+				Type: "link",
+				Materials: map[string]interface{}{
+					"alice.pub": map[string]interface{}{
+						"sha256": "f051e8b561835b7b2aa7791db7bc72f2613411b0b7d428a0ac33d45b8c518039",
+					},
+				},
+				Products: map[string]interface{}{
+					"foo.tar.gz": map[string]interface{}{
+						"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+					},
+				},
+				ByProducts:  map[string]interface{}{},
+				Command:     []string{},
+				Environment: map[string]interface{}{},
+			},
+			Signatures: []Signature{{
+				KeyID: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+				Sig:   "f4a2d468965d595b4d29615fb2083ef7ac22a948e1530925612d73ba580ce9765d93db7b7ed1b9755d96f13a6a1e858c64693c2f7adcb311afb28cb57fbadc0c",
 			}},
 		},
 		},
