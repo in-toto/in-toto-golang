@@ -8,7 +8,7 @@ require (
 	github.com/shibumi/go-pathspec v1.3.0
 	github.com/spf13/cobra v1.6.0
 	github.com/spiffe/go-spiffe/v2 v2.1.1
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	golang.org/x/sys v0.0.0-20211210111614-af8b64212486
 	google.golang.org/grpc v1.50.1
 )
