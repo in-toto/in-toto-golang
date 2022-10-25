@@ -6,7 +6,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0
 	github.com/shibumi/go-pathspec v1.3.0
-	github.com/spf13/cobra v1.6.0
+	github.com/spf13/cobra v1.6.1
 	github.com/spiffe/go-spiffe/v2 v2.1.1
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/sys v0.0.0-20211210111614-af8b64212486
