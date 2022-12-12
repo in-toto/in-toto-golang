@@ -104,7 +104,7 @@ func TestGitPathSpec(t *testing.T) {
 		"*.pub",           // Match all .pub files (even the ones in subdirectories)
 		"beta/foo.tar.gz", // Match full path
 		"alpha/**",        // Match all directories and files beneath alpha
-	}, nil, testOSisWindows())
+	}, nil, testOSisWindows(), false)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
@@ -128,11 +128,11 @@ func TestSymlinkToFile(t *testing.T) {
 	}
 
 	expected := map[string]interface{}{
-		"foo.tar.gz": map[string]interface{}{
+		"foo.tar.gz.sym": map[string]interface{}{
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 		},
 	}
-	result, err := RecordArtifacts([]string{"foo.tar.gz.sym"}, []string{"sha256"}, nil, nil, testOSisWindows())
+	result, err := RecordArtifacts([]string{"foo.tar.gz.sym"}, []string{"sha256"}, nil, nil, testOSisWindows(), false)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
 			result, err, expected)
@@ -171,7 +171,7 @@ func TestIndirectSymlinkCycles(t *testing.T) {
 	}
 
 	// provoke "symlink cycle detected" error
-	_, err = RecordArtifacts([]string{"symTestA/linkToB.sym", "symTestB/linkToA.sym", "foo.tar.gz"}, []string{"sha256"}, nil, nil, testOSisWindows())
+	_, err = RecordArtifacts([]string{"symTestA/linkToB.sym", "symTestB/linkToA.sym", "foo.tar.gz"}, []string{"sha256"}, nil, nil, testOSisWindows(), true)
 	if !errors.Is(err, ErrSymCycle) {
 		t.Errorf("we expected: %s, we got: %s", ErrSymCycle, err)
 	}
@@ -214,13 +214,13 @@ func TestSymlinkToFolder(t *testing.T) {
 		t.Errorf("could not write symTmpfile: %s", err)
 	}
 
-	result, err := RecordArtifacts([]string{"symTmpfile.sym"}, []string{"sha256"}, nil, nil, testOSisWindows())
+	result, err := RecordArtifacts([]string{"symTmpfile.sym"}, []string{"sha256"}, nil, nil, testOSisWindows(), true)
 	if err != nil {
 		t.Error(err)
 	}
 
 	expected := map[string]interface{}{
-		p: map[string]interface{}{
+		filepath.Join("symTmpfile.sym", "symTmpfile"): map[string]interface{}{
 			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
 		},
 	}
@@ -266,7 +266,7 @@ func TestSymlinkCycle(t *testing.T) {
 	}
 
 	// provoke "symlink cycle detected" error
-	_, err = RecordArtifacts([]string{"symlinkCycle/symCycle.sym", "foo.tar.gz"}, []string{"sha256"}, nil, nil, testOSisWindows())
+	_, err = RecordArtifacts([]string{"symlinkCycle/symCycle.sym", "foo.tar.gz"}, []string{"sha256"}, nil, nil, testOSisWindows(), true)
 	if !errors.Is(err, ErrSymCycle) {
 		t.Errorf("we expected: %s, we got: %s", ErrSymCycle, err)
 	}
@@ -289,7 +289,7 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("could not write tmpfile: %s", err)
 	}
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
-		"tmpdir/tmpfile"}, []string{"sha256"}, nil, []string{"tmpdir/"}, testOSisWindows())
+		"tmpdir/tmpfile"}, []string{"sha256"}, nil, []string{"tmpdir/"}, testOSisWindows(), false)
 	expected := map[string]interface{}{
 		"foo.tar.gz": map[string]interface{}{
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
@@ -307,7 +307,7 @@ func TestRecordArtifacts(t *testing.T) {
 		t.Errorf("could not write tmpfile: %s", err)
 	}
 	_, err = RecordArtifacts([]string{"foo.tar.gz",
-		"tmpdir/foo.tar.gz"}, []string{"sha256"}, nil, []string{"tmpdir/"}, testOSisWindows())
+		"tmpdir/foo.tar.gz"}, []string{"sha256"}, nil, []string{"tmpdir/"}, testOSisWindows(), false)
 	if err == nil {
 		t.Error("duplicated path error expected")
 	}
@@ -317,7 +317,7 @@ func TestRecordArtifacts(t *testing.T) {
 	}
 
 	// Test error by recording nonexistent artifact
-	result, err = RecordArtifacts([]string{"file-does-not-exist"}, []string{"sha256"}, nil, nil, testOSisWindows())
+	result, err = RecordArtifacts([]string{"file-does-not-exist"}, []string{"sha256"}, nil, nil, testOSisWindows(), false)
 	if !os.IsNotExist(err) {
 		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(nil, %s)'",
 			result, err, os.ErrNotExist)
@@ -464,7 +464,7 @@ func TestInTotoRun(t *testing.T) {
 	}
 
 	for _, table := range tablesCorrect {
-		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil, testOSisWindows())
+		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false)
 		if !reflect.DeepEqual(result, table.result) {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result)
 		} else {
@@ -508,7 +508,7 @@ func TestInTotoRun(t *testing.T) {
 	}
 
 	for _, table := range tablesInvalid {
-		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil, testOSisWindows())
+		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false)
 		if err == nil {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected error",
 				result, err)
@@ -578,10 +578,10 @@ func TestInTotoRecord(t *testing.T) {
 	}
 
 	for _, table := range tablesCorrect {
-		result, err := InTotoRecordStart(linkName, table.materialPaths, table.key, table.hashAlgorithms, nil, nil, testOSisWindows())
+		result, err := InTotoRecordStart(linkName, table.materialPaths, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false)
 		assert.Nil(t, err, "unexpected error while running record start")
 		assert.Equal(t, table.startResult, result, "result from record start did not match expected result")
-		stopResult, err := InTotoRecordStop(result, table.productPaths, table.key, table.hashAlgorithms, nil, nil, testOSisWindows())
+		stopResult, err := InTotoRecordStop(result, table.productPaths, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false)
 		assert.Nil(t, err, "unexpected error while running record stop")
 		assert.Equal(t, table.stopResult, stopResult, "result from record stop did not match expected result")
 	}

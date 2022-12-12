@@ -18,6 +18,9 @@ failure and zero otherwise.
   -e, --exclude stringArray               Path patterns to match paths that should not be recorded as 
                                           ‘materials’ or ‘products’. Passed patterns override patterns defined
                                           in environment variables or config files. See Config docs for details.
+      --follow-symlink-dirs               Follow symlinked directories to their targets. Note: this parameter
+                                          toggles following linked directories only, linked files are always
+                                          recorded independently of this parameter.
   -h, --help                              help for record
   -k, --key string                        Path to a private key file to sign the resulting link metadata.
                                           The keyid prefix is used as an infix for the link metadata filename,

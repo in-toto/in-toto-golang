@@ -23,6 +23,7 @@ var (
 	exclude           []string
 	outDir            string
 	lineNormalization bool
+	followSymlinkDirs bool
 )
 
 var rootCmd = &cobra.Command{

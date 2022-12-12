@@ -22,6 +22,9 @@ in-toto run [flags]
   -e, --exclude stringArray               Path patterns to match paths that should not be recorded as 0
                                           ‘materials’ or ‘products’. Passed patterns override patterns defined
                                           in environment variables or config files. See Config docs for details.
+      --follow-symlink-dirs               Follow symlinked directories to their targets. Note: this parameter
+                                          toggles following linked directories only, linked files are always
+                                          recorded independently of this parameter.
   -h, --help                              help for run
   -k, --key string                        Path to a PEM formatted private key file used to sign
                                           the resulting link metadata.
