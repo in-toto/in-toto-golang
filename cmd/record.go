@@ -126,6 +126,15 @@ operating systems. It is done by replacing all line separators
 with a new line character.`,
 	)
 
+	recordCmd.PersistentFlags().BoolVar(
+		&followSymlinkDirs,
+		"follow-symlink-dirs",
+		false,
+		`Follow symlinked directories to their targets. Note: this parameter
+toggles following linked directories only, linked files are always
+recorded independently of this parameter.`,
+	)
+
 	recordCmd.MarkPersistentFlagRequired("name")
 
 	// Record Start Command
@@ -156,7 +165,7 @@ command is executed. Symlinks are followed.`,
 }
 
 func recordStart(cmd *cobra.Command, args []string) error {
-	block, err := intoto.InTotoRecordStart(recordStepName, recordMaterialsPaths, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization)
+	block, err := intoto.InTotoRecordStart(recordStepName, recordMaterialsPaths, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization, followSymlinkDirs)
 	if err != nil {
 		return fmt.Errorf("failed to create start link file: %w", err)
 	}
@@ -179,7 +188,7 @@ func recordStop(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load start link file at %s: %w", prelimLinkName, err)
 	}
 
-	linkMb, err := intoto.InTotoRecordStop(prelimLinkMb, recordProductsPaths, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization)
+	linkMb, err := intoto.InTotoRecordStop(prelimLinkMb, recordProductsPaths, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization, followSymlinkDirs)
 	if err != nil {
 		return fmt.Errorf("failed to create stop link file: %w", err)
 	}
