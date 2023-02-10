@@ -46,7 +46,7 @@ type ProvenanceBuildDefinition struct {
 	// verification. Consumers SHOULD have an expectation of what “good” looks
 	// like; the more information that they need to check, the harder that task
 	// becomes.
-	ExternalParameters interface{} `json:"externalParamaters"`
+	ExternalParameters interface{} `json:"externalParameters"`
 
 	// The parameters that are under the control of the builder. The primary
 	// intention of this field is for debugging, incident response, and
