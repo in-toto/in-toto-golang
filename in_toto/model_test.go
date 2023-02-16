@@ -2,6 +2,7 @@ package in_toto
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -1995,11 +1996,11 @@ func TestLinkStatement(t *testing.T) {
 
 type nilsigner int
 
-func (n nilsigner) Sign(data []byte) ([]byte, error) {
+func (n nilsigner) Sign(ctx context.Context, data []byte) ([]byte, error) {
 	return data, nil
 }
 
-func (n nilsigner) Verify(data, sig []byte) error {
+func (n nilsigner) Verify(ctx context.Context, data, sig []byte) error {
 	if len(data) != len(sig) {
 		return errLength
 	}
@@ -2030,26 +2031,28 @@ func TestDSSESigner(t *testing.T) {
 	})
 
 	t.Run("Sign verify ok", func(t *testing.T) {
+		ctx := context.Background()
 		s, err := NewDSSESigner(nilsigner(0))
 		assert.Nil(t, err, "unexpected error")
-		e, err := s.SignPayload([]byte("test data"))
+		e, err := s.SignPayload(ctx, []byte("test data"))
 		assert.NotNil(t, e, "envelope expected")
 		assert.Nil(t, err, "unexpected error when creating signature")
-		err = s.Verify(e)
+		err = s.Verify(ctx, e)
 		assert.Nil(t, err, "unexpected error when validating signature")
 	})
 
 	t.Run("Sign verify bad payload", func(t *testing.T) {
+		ctx := context.Background()
 		s, err := NewDSSESigner(nilsigner(0))
 		assert.Nil(t, err, "unexpected error")
-		e, err := s.SignPayload([]byte("test data"))
+		e, err := s.SignPayload(ctx, []byte("test data"))
 		assert.NotNil(t, e, "envelope expected")
 		assert.Nil(t, err, "unexpected error when creating signature")
 
 		// Change payload type
 		e.PayloadType = "application/json; charset=utf-8"
 
-		err = s.Verify(e)
+		err = s.Verify(ctx, e)
 		assert.Equal(t, ErrInvalidPayloadType, err, "wrong error returned")
 	})
 }
