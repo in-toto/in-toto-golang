@@ -39,7 +39,7 @@ func TestDecodeProvenancePredicate(t *testing.T) {
 	var want = ProvenancePredicate{
 		BuildDefinition: ProvenanceBuildDefinition{
 			BuildType: "https://github.com/Attestations/GitHubActionsWorkflow@v1",
-			ResolvedDependencies: []ArtifactReference{
+			ResolvedDependencies: []ResourceDescriptor{
 				{
 					URI: "git+https://github.com/curl/curl-docker@master",
 					Digest: common.DigestSet{
@@ -84,10 +84,10 @@ func TestEncodeProvenancePredicate(t *testing.T) {
 				"entryPoint": "build.yaml:maketgz",
 				"source":     "git+https://github.com/curl/curl-docker@master",
 			},
-			SystemParameters: map[string]string{
+			InternalParameters: map[string]string{
 				"GITHUB_RUNNER": "github_hosted_vm:ubuntu-18.04:20210123.1",
 			},
-			ResolvedDependencies: []ArtifactReference{
+			ResolvedDependencies: []ResourceDescriptor{
 				{
 					URI: "git+https://github.com/curl/curl-docker@master",
 					Digest: common.DigestSet{
@@ -112,7 +112,7 @@ func TestEncodeProvenancePredicate(t *testing.T) {
 			},
 		},
 	}
-	var want = `{"buildDefinition":{"buildType":"https://github.com/Attestations/GitHubActionsWorkflow@v1","externalParameters":{"entryPoint":"build.yaml:maketgz","source":"git+https://github.com/curl/curl-docker@master"},"systemParameters":{"GITHUB_RUNNER":"github_hosted_vm:ubuntu-18.04:20210123.1"},"resolvedDependencies":[{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"}},{"uri":"github_hosted_vm:ubuntu-18.04:20210123.1"},{"uri":"git+https://github.com/curl/"}]},"runDetails":{"builder":{"id":"https://github.com/Attestations/GitHubHostedActions@v1"},"metadata":{"startedOn":"2020-08-19T08:38:00Z","finishedOn":"2020-08-19T08:38:00Z"}}}`
+	var want = `{"buildDefinition":{"buildType":"https://github.com/Attestations/GitHubActionsWorkflow@v1","externalParameters":{"entryPoint":"build.yaml:maketgz","source":"git+https://github.com/curl/curl-docker@master"},"internalParameters":{"GITHUB_RUNNER":"github_hosted_vm:ubuntu-18.04:20210123.1"},"resolvedDependencies":[{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"}},{"uri":"github_hosted_vm:ubuntu-18.04:20210123.1"},{"uri":"git+https://github.com/curl/"}]},"runDetails":{"builder":{"id":"https://github.com/Attestations/GitHubHostedActions@v1"},"metadata":{"startedOn":"2020-08-19T08:38:00Z","finishedOn":"2020-08-19T08:38:00Z"}}}`
 	b, err := json.Marshal(&p)
 	assert.Nil(t, err, "Error during JSON marshal")
 	if d := cmp.Diff(want, string(b)); d != "" {

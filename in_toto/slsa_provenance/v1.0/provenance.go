@@ -8,7 +8,7 @@ import (
 
 const (
 	// PredicateSLSAProvenance represents a build provenance for an artifact.
-	PredicateSLSAProvenance = "https://slsa.dev/provenance/v1?draft"
+	PredicateSLSAProvenance = "https://slsa.dev/provenance/v1"
 )
 
 // ProvenancePredicate is the provenance predicate definition.
@@ -48,20 +48,20 @@ type ProvenanceBuildDefinition struct {
 	// becomes.
 	ExternalParameters interface{} `json:"externalParameters"`
 
-	// The parameters that are under the control of the builder. The primary
-	// intention of this field is for debugging, incident response, and
-	// vulnerability management. The values here MAY be necessary for
-	// reproducing the build. There is no need to verify these parameters
-	// because the build system is already trusted, and in many cases it is not
-	// practical to do so.
-	SystemParameters interface{} `json:"systemParameters,omitempty"`
+	// The parameters that are under the control of the entity represented by
+	// builder.id. The primary intention of this field is for debugging,
+	// incident response, and vulnerability management. The values here MAY be
+	// necessary for reproducing the build. There is no need to verify these
+	// parameters because the build system is already trusted, and in many cases
+	// it is not practical to do so.
+	InternalParameters interface{} `json:"internalParameters,omitempty"`
 
 	// Unordered collection of artifacts needed at build time. Completeness is
 	// best effort, at least through SLSA Build L3. For example, if the build
 	// script fetches and executes “example.com/foo.sh”, which in turn fetches
 	// “example.com/bar.tar.gz”, then both “foo.sh” and “bar.tar.gz” SHOULD be
 	// listed here.
-	ResolvedDependencies []ArtifactReference `json:"resolvedDependencies,omitempty"`
+	ResolvedDependencies []ResourceDescriptor `json:"resolvedDependencies,omitempty"`
 }
 
 // ProvenanceRunDetails includes details specific to a particular execution of a
@@ -86,29 +86,39 @@ type ProvenanaceRunDetails struct {
 	// In most cases, this SHOULD NOT contain all intermediate files generated
 	// during the build. Instead, this SHOULD only contain files that are
 	// likely to be useful later and that cannot be easily reproduced.
-	Byproducts []ArtifactReference `json:"byproducts,omitempty"`
+	Byproducts []ResourceDescriptor `json:"byproducts,omitempty"`
 }
 
-// ArtifactReference describes a particular artifact. At least one of URI or
-// digest MUST be specified.
-type ArtifactReference struct {
-	// URI describing where this artifact came from. When possible, this SHOULD
-	// be a universal and stable identifier, such as a source location or
-	// Package URL (purl).
+// ResourceDescriptor describes a particular software artifact or resource
+// (mutable or immutable).
+// See https://github.com/in-toto/attestation/blob/main/spec/v1.0/resource_descriptor.md
+type ResourceDescriptor struct {
+	// A URI used to identify the resource or artifact globally. This field is
+	// REQUIRED unless either digest or content is set.
 	URI string `json:"uri,omitempty"`
 
-	// One or more cryptographic digests of the contents of this artifact.
+	// A set of cryptographic digests of the contents of the resource or
+	// artifact. This field is REQUIRED unless either uri or content is set.
 	Digest common.DigestSet `json:"digest,omitempty"`
 
-	// The name for this artifact local to the build.
-	LocalName string `json:"localName,omitempty"`
+	// TMachine-readable identifier for distinguishing between descriptors.
+	Name string `json:"name,omitempty"`
 
-	// URI identifying the location that this artifact was downloaded from, if
-	// different and not derivable from uri.
+	// The location of the described resource or artifact, if different from the
+	// uri.
 	DownloadLocation string `json:"downloadLocation,omitempty"`
 
-	// Media type (aka MIME type) of this artifact was interpreted.
+	// The MIME Type (i.e., media type) of the described resource or artifact.
 	MediaType string `json:"mediaType,omitempty"`
+
+	// The contents of the resource or artifact. This field is REQUIRED unless
+	// either uri or digest is set.
+	Content []byte `json:"content,omitempty"`
+
+	// This field MAY be used to provide additional information or metadata
+	// about the resource or artifact that may be useful to the consumer when
+	// evaluating the attestation against a policy.
+	Annotations map[string]interface{} `json:"annotations,omitempty"`
 }
 
 // Builder represents the transitive closure of all the entities that are, by
@@ -123,7 +133,7 @@ type Builder struct {
 	// Dependencies used by the orchestrator that are not run within the
 	// workload and that do not affect the build, but might affect the
 	// provenance generation or security guarantees.
-	BuilderDependencies []ArtifactReference `json:"builderDependencies,omitempty"`
+	BuilderDependencies []ResourceDescriptor `json:"builderDependencies,omitempty"`
 }
 
 type BuildMetadata struct {
