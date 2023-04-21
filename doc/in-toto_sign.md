@@ -18,7 +18,8 @@ in-toto sign [flags]
   -k, --key string      Path to PEM formatted private key used to sign the passed 
                         root layout's signature(s). Passing exactly one key using
                         '--key' is required.
-  -o, --output string   Path to store metadata file to be signed
+  -o, --output string   Path to store metadata file after signing
+      --verify          Verify signature of signed file
 ```
 
 ### SEE ALSO

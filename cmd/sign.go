@@ -9,6 +9,7 @@ import (
 
 var (
 	outputPath string
+	verifyFile bool
 )
 
 var signCmd = &cobra.Command{
@@ -26,7 +27,7 @@ func init() {
 		"output",
 		"o",
 		"",
-		`Path to store metadata file to be signed`,
+		`Path to store metadata file after signing`,
 	)
 
 	signCmd.Flags().StringVarP(
@@ -47,9 +48,15 @@ root layout's signature(s). Passing exactly one key using
 '--key' is required.`,
 	)
 
+	signCmd.Flags().BoolVar(
+		&verifyFile,
+		"verify",
+		false,
+		"Verify signature of signed file",
+	)
+
 	signCmd.MarkFlagRequired("file")
 	signCmd.MarkFlagRequired("key")
-	signCmd.MarkFlagRequired("output")
 }
 
 func sign(cmd *cobra.Command, args []string) error {
@@ -64,6 +71,16 @@ func sign(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid key at %s: %w", keyPath, err)
 	}
 
+	if verifyFile {
+		if err := layoutMb.VerifySignature(key); err != nil {
+			return fmt.Errorf("signature verification failed: %w", err)
+		}
+		return nil
+	}
+
+	if len(outputPath) == 0 {
+		outputPath = layoutPath
+	}
 	layoutMb.Sign(key)
 	layoutMb.Dump(outputPath)
 
