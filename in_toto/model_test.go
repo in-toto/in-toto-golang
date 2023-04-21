@@ -2128,8 +2128,8 @@ func TestStepCheckCertConstraints(t *testing.T) {
 func TestRootCAIDs(t *testing.T) {
 	layout := Layout{
 		RootCas: map[string]Key{
-			"123123": Key{},
-			"456456": Key{},
+			"123123": {},
+			"456456": {},
 		},
 	}
 

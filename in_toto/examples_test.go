@@ -42,9 +42,9 @@ func ExampleInTotoVerify() {
 	}
 	if _, err := InTotoVerify(layoutMb, layoutKeys, LinkDirectory, "",
 		make(map[string]string), [][]byte{}, testOSisWindows()); err != nil {
-		fmt.Printf("In-toto verification failed: %s", err)
+		fmt.Printf("in-toto verification failed: %s", err)
 	} else {
-		fmt.Println("In-toto verification succeeded!")
+		fmt.Println("in-toto verification succeeded!")
 	}
 
 	// During verification the inspection "untar" was executed, generating a
@@ -53,5 +53,5 @@ func ExampleInTotoVerify() {
 	if err != nil {
 		fmt.Printf("Unable to remove untar.link: %s", err)
 	}
-	// Output: In-toto verification succeeded!
+	// Output: in-toto verification succeeded!
 }
