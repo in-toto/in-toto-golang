@@ -18,6 +18,7 @@ import (
 	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 	slsa01 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
 	slsa02 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
+	slsa1 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1.0"
 
 	"github.com/secure-systems-lab/go-securesystemslib/cjson"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -999,6 +1000,12 @@ type ProvenanceStatementSLSA01 struct {
 type ProvenanceStatementSLSA02 struct {
 	StatementHeader
 	Predicate slsa02.ProvenancePredicate `json:"predicate"`
+}
+
+// ProvenanceStatementSLSA1 is the definition for an entire provenance statement with SLSA 1.0 predicate.
+type ProvenanceStatementSLSA1 struct {
+	StatementHeader
+	Predicate slsa1.ProvenancePredicate `json:"predicate"`
 }
 
 // ProvenanceStatement is the definition for an entire provenance statement with SLSA 0.2 predicate.
