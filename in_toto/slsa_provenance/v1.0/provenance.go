@@ -21,7 +21,7 @@ type ProvenancePredicate struct {
 	BuildDefinition ProvenanceBuildDefinition `json:"buildDefinition"`
 
 	// Details specific to this particular execution of the build.
-	RunDetails ProvenanaceRunDetails `json:"runDetails"`
+	RunDetails ProvenanceRunDetails `json:"runDetails"`
 }
 
 // ProvenanceBuildDefinition describes the inputs to the build.
@@ -66,7 +66,7 @@ type ProvenanceBuildDefinition struct {
 
 // ProvenanceRunDetails includes details specific to a particular execution of a
 // build.
-type ProvenanaceRunDetails struct {
+type ProvenanceRunDetails struct {
 	// Identifies the entity that executed the invocation, which is trusted to
 	// have correctly performed the operation and populated this provenance.
 	//

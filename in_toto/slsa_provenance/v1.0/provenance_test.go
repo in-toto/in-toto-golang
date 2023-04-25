@@ -51,7 +51,7 @@ func TestDecodeProvenancePredicate(t *testing.T) {
 				},
 			},
 		},
-		RunDetails: ProvenanaceRunDetails{
+		RunDetails: ProvenanceRunDetails{
 			Builder: Builder{
 				ID: "https://github.com/Attestations/GitHubHostedActions@v1",
 			},
@@ -102,7 +102,7 @@ func TestEncodeProvenancePredicate(t *testing.T) {
 				},
 			},
 		},
-		RunDetails: ProvenanaceRunDetails{
+		RunDetails: ProvenanceRunDetails{
 			Builder: Builder{
 				ID: "https://github.com/Attestations/GitHubHostedActions@v1",
 			},
