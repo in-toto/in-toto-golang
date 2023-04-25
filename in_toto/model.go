@@ -19,7 +19,7 @@ import (
 	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 	slsa01 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
 	slsa02 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
-	slsa1 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1.0"
+	slsa1 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1"
 
 	"github.com/secure-systems-lab/go-securesystemslib/cjson"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
