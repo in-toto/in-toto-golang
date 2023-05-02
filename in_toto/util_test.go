@@ -1,7 +1,6 @@
 package in_toto
 
 import (
-	"io/ioutil"
 	"os"
 	"reflect"
 	"sort"
@@ -115,11 +114,11 @@ func TestSubsetCheck(t *testing.T) {
 }
 
 func TestIsWritable(t *testing.T) {
-	notWritable, err := ioutil.TempDir("", "")
+	notWritable, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Error(err)
 	}
-	writable, err := ioutil.TempDir("", "")
+	writable, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Error(err)
 	}

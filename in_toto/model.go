@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"regexp"
@@ -771,15 +770,8 @@ object on which it was called.  It returns an error if it cannot parse
 a valid JSON formatted Metablock that contains a Link or Layout.
 */
 func (mb *Metablock) Load(path string) error {
-	// Open file and close before returning
-	jsonFile, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer jsonFile.Close()
-
 	// Read entire file
-	jsonBytes, err := ioutil.ReadAll(jsonFile)
+	jsonBytes, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -852,7 +844,7 @@ func (mb *Metablock) Load(path string) error {
 			" metadata must be one of 'link' or 'layout'")
 	}
 
-	return jsonFile.Close()
+	return nil
 }
 
 /*
@@ -868,7 +860,7 @@ func (mb *Metablock) Dump(path string) error {
 	}
 
 	// Write JSON bytes to the passed path with permissions (-rw-r--r--)
-	err = ioutil.WriteFile(path, jsonBytes, 0644)
+	err = os.WriteFile(path, jsonBytes, 0644)
 	if err != nil {
 		return err
 	}

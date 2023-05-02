@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -210,7 +209,7 @@ func TestSymlinkToFolder(t *testing.T) {
 	// not work correctly on Windows
 	p := filepath.FromSlash("symTest/symTest2/symTmpfile")
 
-	if err := ioutil.WriteFile(p, []byte("abc"), 0400); err != nil {
+	if err := os.WriteFile(p, []byte("abc"), 0400); err != nil {
 		t.Errorf("could not write symTmpfile: %s", err)
 	}
 
@@ -285,7 +284,7 @@ func TestRecordArtifacts(t *testing.T) {
 	if err := os.Mkdir("tmpdir", 0700); err != nil {
 		t.Errorf("could not create tmpdir: %s", err)
 	}
-	if err := ioutil.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400); err != nil {
+	if err := os.WriteFile("tmpdir/tmpfile", []byte("abc"), 0400); err != nil {
 		t.Errorf("could not write tmpfile: %s", err)
 	}
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
@@ -303,7 +302,7 @@ func TestRecordArtifacts(t *testing.T) {
 			result, err, expected)
 	}
 	// Test duplicated artifact after left strip
-	if err := ioutil.WriteFile("tmpdir/foo.tar.gz", []byte("abc"), 0400); err != nil {
+	if err := os.WriteFile("tmpdir/foo.tar.gz", []byte("abc"), 0400); err != nil {
 		t.Errorf("could not write tmpfile: %s", err)
 	}
 	_, err = RecordArtifacts([]string{"foo.tar.gz",
