@@ -24,9 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var errLength = errors.New("invalid length")
-var errVerify = errors.New("invalid signature")
-
 func init() {
 	// Make sure all strings formatted are in tz Zulu
 	os.Setenv("TZ", "UTC")
