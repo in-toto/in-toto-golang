@@ -1,7 +1,6 @@
 package in_toto
 
 import (
-	"context"
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
@@ -44,9 +43,6 @@ type Key struct {
 	Scheme              string   `json:"scheme"`
 }
 
-// PayloadType is the payload type used for links and layouts.
-const PayloadType = "application/vnd.in-toto+json"
-
 // ErrEmptyKeyField will be thrown if a field in our Key struct is empty.
 var ErrEmptyKeyField = errors.New("empty field in key")
 
@@ -68,9 +64,6 @@ var ErrNoPublicKey = errors.New("the given key is not a public key")
 // ErrCurveSizeSchemeMismatch gets returned, when the scheme and curve size are incompatible
 // for example: curve size = "521" and scheme = "ecdsa-sha2-nistp224"
 var ErrCurveSizeSchemeMismatch = errors.New("the scheme does not match the curve size")
-
-// ErrInvalidPayloadType indicates that the envelope used an unkown payload type
-var ErrInvalidPayloadType = errors.New("unknown payload type")
 
 /*
 matchEcdsaScheme checks if the scheme suffix, matches the ecdsa key
@@ -684,6 +677,67 @@ func validateLayout(layout Layout) error {
 	return nil
 }
 
+type Metadata interface {
+	Sign(Key) error
+	VerifySignature(Key) error
+	GetPayload() any
+	Sigs() []Signature
+	GetSignatureForKeyID(string) (Signature, error)
+	Dump(string) error
+}
+
+func LoadMetadata(path string) (Metadata, error) {
+	jsonBytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var rawData map[string]*json.RawMessage
+	if err := json.Unmarshal(jsonBytes, &rawData); err != nil {
+		return nil, err
+	}
+
+	if _, ok := rawData["payloadType"]; ok {
+		dsseEnv := &dsse.Envelope{}
+		if rawData["payload"] == nil || rawData["signatures"] == nil {
+			return nil, fmt.Errorf("in-toto metadata envelope requires 'payload' and 'signatures' parts")
+		}
+
+		if err := json.Unmarshal(jsonBytes, dsseEnv); err != nil {
+			return nil, err
+		}
+
+		if dsseEnv.PayloadType != PayloadType {
+			return nil, ErrInvalidPayloadType
+		}
+
+		return loadEnvelope(dsseEnv)
+	}
+
+	mb := &Metablock{}
+
+	// Error out on missing `signed` or `signatures` field or if
+	// one of them has a `null` value, which would lead to a nil pointer
+	// dereference in Unmarshal below.
+	if rawData["signed"] == nil || rawData["signatures"] == nil {
+		return nil, fmt.Errorf("in-toto metadata requires 'signed' and 'signatures' parts")
+	}
+
+	// Fully unmarshal signatures part
+	if err := json.Unmarshal(*rawData["signatures"], &mb.Signatures); err != nil {
+		return nil, err
+	}
+
+	payload, err := loadPayload(*rawData["signed"])
+	if err != nil {
+		return nil, err
+	}
+
+	mb.Signed = payload
+
+	return mb, nil
+}
+
 /*
 Metablock is a generic container for signable in-toto objects such as Layout
 or Link.  It has two fields, one that contains the signable object and one that
@@ -749,6 +803,9 @@ func checkRequiredJSONFields(obj map[string]interface{},
 Load parses JSON formatted metadata at the passed path into the Metablock
 object on which it was called.  It returns an error if it cannot parse
 a valid JSON formatted Metablock that contains a Link or Layout.
+
+Deprecated: Use LoadMetadata for a signature wrapper agnostic way to load an
+envelope.
 */
 func (mb *Metablock) Load(path string) error {
 	// Read entire file
@@ -778,52 +835,12 @@ func (mb *Metablock) Load(path string) error {
 		return err
 	}
 
-	// Temporarily copy signed to opaque map to inspect the `_type` of signed
-	// and create link or layout accordingly
-	var signed map[string]interface{}
-	if err := json.Unmarshal(*rawMb["signed"], &signed); err != nil {
+	payload, err := loadPayload(*rawMb["signed"])
+	if err != nil {
 		return err
 	}
 
-	if signed["_type"] == "link" {
-		var link Link
-		if err := checkRequiredJSONFields(signed, reflect.TypeOf(link)); err != nil {
-			return err
-		}
-
-		data, err := rawMb["signed"].MarshalJSON()
-		if err != nil {
-			return err
-		}
-		decoder := json.NewDecoder(strings.NewReader(string(data)))
-		decoder.DisallowUnknownFields()
-		if err := decoder.Decode(&link); err != nil {
-			return err
-		}
-		mb.Signed = link
-
-	} else if signed["_type"] == "layout" {
-		var layout Layout
-		if err := checkRequiredJSONFields(signed, reflect.TypeOf(layout)); err != nil {
-			return err
-		}
-
-		data, err := rawMb["signed"].MarshalJSON()
-		if err != nil {
-			return err
-		}
-		decoder := json.NewDecoder(strings.NewReader(string(data)))
-		decoder.DisallowUnknownFields()
-		if err := decoder.Decode(&layout); err != nil {
-			return err
-		}
-
-		mb.Signed = layout
-
-	} else {
-		return fmt.Errorf("the '_type' field of the 'signed' part of in-toto" +
-			" metadata must be one of 'link' or 'layout'")
-	}
+	mb.Signed = payload
 
 	return nil
 }
@@ -856,6 +873,14 @@ fails the first return value is nil and the second return value is the error.
 */
 func (mb *Metablock) GetSignableRepresentation() ([]byte, error) {
 	return cjson.EncodeCanonical(mb.Signed)
+}
+
+func (mb *Metablock) GetPayload() any {
+	return mb.Signed
+}
+
+func (mb *Metablock) Sigs() []Signature {
+	return mb.Signatures
 }
 
 /*

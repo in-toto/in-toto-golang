@@ -33,11 +33,11 @@ func ExampleInTotoVerify() {
 
 	// Perform in-toto software supply chain verification, using the provided
 	// test data.
-	var layoutMb Metablock
-	if err := layoutMb.Load(LayoutPath); err != nil {
+	layoutMb, err := LoadMetadata(LayoutPath)
+	if err != nil {
 		fmt.Printf("Unable to load layout metadata: %s", err)
 	}
-	if err := validateLayout(layoutMb.Signed.(Layout)); err != nil {
+	if err := validateLayout(layoutMb.GetPayload().(Layout)); err != nil {
 		fmt.Printf("Invalid metadata found: %s", err)
 	}
 	if _, err := InTotoVerify(layoutMb, layoutKeys, LinkDirectory, "",

@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -408,9 +409,10 @@ func TestInTotoRun(t *testing.T) {
 		cmdArgs        []string
 		key            Key
 		hashAlgorithms []string
-		result         Metablock
+		useDSSE        bool
+		result         Metadata
 	}{
-		{[]string{"alice.pub"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, validKey, []string{"sha256"}, Metablock{
+		{[]string{"alice.pub"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, validKey, []string{"sha256"}, false, &Metablock{
 			Signed: Link{
 				Name: linkName,
 				Type: "link",
@@ -436,7 +438,7 @@ func TestInTotoRun(t *testing.T) {
 			}},
 		},
 		},
-		{[]string{"alice.pub"}, []string{"foo.tar.gz"}, []string{}, validKey, []string{"sha256"}, Metablock{
+		{[]string{"alice.pub"}, []string{"foo.tar.gz"}, []string{}, validKey, []string{"sha256"}, false, &Metablock{
 			Signed: Link{
 				Name: linkName,
 				Type: "link",
@@ -460,27 +462,42 @@ func TestInTotoRun(t *testing.T) {
 			}},
 		},
 		},
+		{[]string{"alice.pub"}, []string{"foo.tar.gz"}, []string{}, validKey, []string{"sha256"}, true, &Envelope{
+			envelope: &dsse.Envelope{
+				Payload:     "eyJfdHlwZSI6ImxpbmsiLCJieXByb2R1Y3RzIjp7fSwiY29tbWFuZCI6W10sImVudmlyb25tZW50Ijp7fSwibWF0ZXJpYWxzIjp7ImFsaWNlLnB1YiI6eyJzaGEyNTYiOiJmMDUxZThiNTYxODM1YjdiMmFhNzc5MWRiN2JjNzJmMjYxMzQxMWIwYjdkNDI4YTBhYzMzZDQ1YjhjNTE4MDM5In19LCJuYW1lIjoiTmFtZSIsInByb2R1Y3RzIjp7ImZvby50YXIuZ3oiOnsic2hhMjU2IjoiNTI5NDdjYjc4YjkxYWQwMWZlODFjZDZhZWY0MmQxZjY4MTdlOTJiOWU2OTM2YzFlNWFhYmI3Yzk4NTE0ZjM1NSJ9fX0=",
+				PayloadType: PayloadType,
+				Signatures: []dsse.Signature{{
+					KeyID: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+					Sig:   "XgNp1Q5N/ivFxNyuUNHcjOarMIj3WXZpb00/ZVy2pxdiAeOZYKpJkXPa7wRAM5auuwrVph9TrwoJQuDpJrZaCw==",
+				}},
+			},
+		}},
 	}
 
 	for _, table := range tablesCorrect {
-		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false)
-		if !reflect.DeepEqual(result, table.result) {
-			t.Errorf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result)
+		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false, table.useDSSE)
+		if table.useDSSE {
+			assert.Equal(t, table.result.(*Envelope).envelope, result.(*Envelope).envelope, fmt.Sprintf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result))
 		} else {
-			// we do not need to check if result == nil here, because our reflect.DeepEqual was successful
+			assert.True(t, reflect.DeepEqual(result.(*Metablock), table.result.(*Metablock)), fmt.Sprintf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result))
+		}
+
+		if result != nil {
 			if err := result.Dump(linkName + ".link"); err != nil {
 				t.Errorf("error while dumping link metablock to file")
 			}
-			var loadedResult Metablock
-			if err := loadedResult.Load(linkName + ".link"); err != nil {
+			loadedResult, err := LoadMetadata(linkName + ".link")
+			if err != nil {
 				t.Errorf("error while loading link metablock from file")
 			}
-			if !reflect.DeepEqual(loadedResult, result) {
-				t.Errorf("dump and loading of signed Link failed. Loaded result: '%s', dumped result '%s'", loadedResult, result)
+			if table.useDSSE {
+				assert.Equal(t, result.(*Envelope).envelope, loadedResult.(*Envelope).envelope, fmt.Sprintf("dump and loading of signed Link failed. Loaded result: '%s', dumped result '%s'", loadedResult, result))
 			} else {
-				if err := os.Remove(linkName + ".link"); err != nil {
-					t.Errorf("removing created link file failed")
-				}
+				assert.True(t, reflect.DeepEqual(loadedResult, result), fmt.Sprintf("dump and loading of signed Link failed. Loaded result: '%s', dumped result '%s'", loadedResult, result))
+			}
+
+			if err := os.Remove(linkName + ".link"); err != nil {
+				t.Errorf("removing created link file failed")
 			}
 		}
 	}
@@ -507,7 +524,7 @@ func TestInTotoRun(t *testing.T) {
 	}
 
 	for _, table := range tablesInvalid {
-		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false)
+		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false, false)
 		if err == nil {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected error",
 				result, err)
@@ -529,10 +546,11 @@ func TestInTotoRecord(t *testing.T) {
 		productPaths   []string
 		key            Key
 		hashAlgorithms []string
-		startResult    Metablock
-		stopResult     Metablock
+		useDSSE        bool
+		startResult    Metadata
+		stopResult     Metadata
 	}{
-		{[]string{"alice.pub"}, []string{"foo.tar.gz"}, validKey, []string{"sha256"}, Metablock{
+		{[]string{"alice.pub"}, []string{"foo.tar.gz"}, validKey, []string{"sha256"}, false, &Metablock{
 			Signed: Link{
 				Name: linkName,
 				Type: "link",
@@ -550,7 +568,7 @@ func TestInTotoRecord(t *testing.T) {
 				KeyID: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
 				Sig:   "f02db2e08d065840f266df850eaef7cfb5364bbe1808708945eb45373f4757cfe70c86f7ad5e4d5f746d41489410e0407921b4480788cfae5a7d695e3aa62f06",
 			}},
-		}, Metablock{
+		}, &Metablock{
 			Signed: Link{
 				Name: linkName,
 				Type: "link",
@@ -574,15 +592,43 @@ func TestInTotoRecord(t *testing.T) {
 			}},
 		},
 		},
+		{[]string{"alice.pub"}, []string{"foo.tar.gz"}, validKey, []string{"sha256"}, true, &Envelope{
+			envelope: &dsse.Envelope{
+				PayloadType: PayloadType,
+				Payload:     "eyJfdHlwZSI6ImxpbmsiLCJieXByb2R1Y3RzIjp7fSwiY29tbWFuZCI6W10sImVudmlyb25tZW50Ijp7fSwibWF0ZXJpYWxzIjp7ImFsaWNlLnB1YiI6eyJzaGEyNTYiOiJmMDUxZThiNTYxODM1YjdiMmFhNzc5MWRiN2JjNzJmMjYxMzQxMWIwYjdkNDI4YTBhYzMzZDQ1YjhjNTE4MDM5In19LCJuYW1lIjoiTmFtZSIsInByb2R1Y3RzIjp7fX0=",
+				Signatures: []dsse.Signature{{
+					KeyID: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+					Sig:   "1u46q3nVmmvqKz/exUviEBPyfRndXwxouG+Jk1GadqKvhyfZv8to//xLPQWC+zy4bPQTicOp1yIBHqFO0bNeBw==",
+				}},
+			},
+		}, &Envelope{
+			envelope: &dsse.Envelope{
+				PayloadType: PayloadType,
+				Payload:     "eyJfdHlwZSI6ImxpbmsiLCJieXByb2R1Y3RzIjp7fSwiY29tbWFuZCI6W10sImVudmlyb25tZW50Ijp7fSwibWF0ZXJpYWxzIjp7ImFsaWNlLnB1YiI6eyJzaGEyNTYiOiJmMDUxZThiNTYxODM1YjdiMmFhNzc5MWRiN2JjNzJmMjYxMzQxMWIwYjdkNDI4YTBhYzMzZDQ1YjhjNTE4MDM5In19LCJuYW1lIjoiTmFtZSIsInByb2R1Y3RzIjp7ImZvby50YXIuZ3oiOnsic2hhMjU2IjoiNTI5NDdjYjc4YjkxYWQwMWZlODFjZDZhZWY0MmQxZjY4MTdlOTJiOWU2OTM2YzFlNWFhYmI3Yzk4NTE0ZjM1NSJ9fX0=",
+				Signatures: []dsse.Signature{{
+					KeyID: "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6",
+					Sig:   "XgNp1Q5N/ivFxNyuUNHcjOarMIj3WXZpb00/ZVy2pxdiAeOZYKpJkXPa7wRAM5auuwrVph9TrwoJQuDpJrZaCw==",
+				}},
+			},
+		},
+		},
 	}
 
 	for _, table := range tablesCorrect {
-		result, err := InTotoRecordStart(linkName, table.materialPaths, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false)
+		result, err := InTotoRecordStart(linkName, table.materialPaths, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false, table.useDSSE)
 		assert.Nil(t, err, "unexpected error while running record start")
-		assert.Equal(t, table.startResult, result, "result from record start did not match expected result")
-		stopResult, err := InTotoRecordStop(result, table.productPaths, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false)
+		if table.useDSSE {
+			assert.Equal(t, table.startResult.(*Envelope).envelope, result.(*Envelope).envelope, "result from record start did not match expected result")
+		} else {
+			assert.Equal(t, table.startResult.(*Metablock), result.(*Metablock), "result from record start did not match expected result")
+		}
+		stopResult, err := InTotoRecordStop(result, table.productPaths, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false, table.useDSSE)
 		assert.Nil(t, err, "unexpected error while running record stop")
-		assert.Equal(t, table.stopResult, stopResult, "result from record stop did not match expected result")
+		if table.useDSSE {
+			assert.Equal(t, table.stopResult.(*Envelope).envelope, stopResult.(*Envelope).envelope, "result from record stop did not match expected result")
+		} else {
+			assert.Equal(t, table.stopResult.(*Metablock), stopResult.(*Metablock), "result from record stop did not match expected result")
+		}
 	}
 }
 
