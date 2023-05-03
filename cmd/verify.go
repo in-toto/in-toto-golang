@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
@@ -102,22 +101,12 @@ func verify(cmd *cobra.Command, args []string) error {
 
 	intermediatePems := make([][]byte, 0, len(intermediatePaths))
 	for _, intermediate := range intermediatePaths {
-		f, err := os.Open(intermediate)
-		if err != nil {
-			return fmt.Errorf("failed to open intermediate %s: %w", intermediate, err)
-		}
-		defer f.Close()
-
-		pemBytes, err := ioutil.ReadAll(f)
+		pemBytes, err := os.ReadFile(intermediate)
 		if err != nil {
 			return fmt.Errorf("failed to read intermediate %s: %w", intermediate, err)
 		}
 
 		intermediatePems = append(intermediatePems, pemBytes)
-
-		if err := f.Close(); err != nil {
-			return fmt.Errorf("could not close intermediate cert: %w", err)
-		}
 	}
 
 	_, err := intoto.InTotoVerify(layoutMb, layoutKeys, linkDir, "", make(map[string]string), intermediatePems, lineNormalization)

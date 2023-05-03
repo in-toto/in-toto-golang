@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -44,7 +44,7 @@ normalized to Unix-style line separators (LF) before hashing file contents.
 func RecordArtifact(path string, hashAlgorithms []string, lineNormalization bool) (map[string]interface{}, error) {
 	supportedHashMappings := getHashMapping()
 	// Read file from passed path
-	contents, err := ioutil.ReadFile(path)
+	contents, err := os.ReadFile(path)
 	hashedContentsMap := make(map[string]interface{})
 	if err != nil {
 		return nil, err
@@ -289,8 +289,8 @@ func RunCommand(cmdArgs []string, runDir string) (map[string]interface{}, error)
 	}
 
 	// TODO: duplicate stdout, stderr
-	stdout, _ := ioutil.ReadAll(stdoutPipe)
-	stderr, _ := ioutil.ReadAll(stderrPipe)
+	stdout, _ := io.ReadAll(stdoutPipe)
+	stderr, _ := io.ReadAll(stderrPipe)
 
 	retVal := waitErrToExitCode(cmd.Wait())
 

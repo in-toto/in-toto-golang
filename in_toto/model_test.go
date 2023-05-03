@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
@@ -135,7 +134,7 @@ func TestMetablockLoad(t *testing.T) {
 
 	for i := 0; i < len(invalidJSONBytes); i++ {
 		fn := fmt.Sprintf("invalid-metadata-%v.tmp", i)
-		if err := ioutil.WriteFile(fn, invalidJSONBytes[i], 0644); err != nil {
+		if err := os.WriteFile(fn, invalidJSONBytes[i], 0644); err != nil {
 			fmt.Printf("Could not write file: %s", err)
 		}
 		var mb Metablock
