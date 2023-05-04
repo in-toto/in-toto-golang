@@ -52,6 +52,7 @@ in-toto record stop [flags]
                                           operating systems. It is done by replacing all line separators
                                           with a new line character.
       --spiffe-workload-api-path string   UDS path for SPIFFE workload API
+      --use-dsse                          Create metadata using DSSE instead of the legacy signature wrapper.
 ```
 
 ### SEE ALSO

@@ -52,6 +52,7 @@ in-toto run [flags]
                                           calling process's current directory. The runDir directory must
                                           exist, be writable, and not be a symlink.
       --spiffe-workload-api-path string   UDS path for SPIFFE workload API
+      --use-dsse                          Create metadata using DSSE instead of the legacy signature wrapper.
 ```
 
 ### SEE ALSO

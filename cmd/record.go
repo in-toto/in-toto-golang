@@ -127,6 +127,13 @@ with a new line character.`,
 	)
 
 	recordCmd.PersistentFlags().BoolVar(
+		&useDSSE,
+		"use-dsse",
+		false,
+		"Create metadata using DSSE instead of the legacy signature wrapper.",
+	)
+
+	recordCmd.PersistentFlags().BoolVar(
 		&followSymlinkDirs,
 		"follow-symlink-dirs",
 		false,
@@ -165,7 +172,7 @@ command is executed. Symlinks are followed.`,
 }
 
 func recordStart(cmd *cobra.Command, args []string) error {
-	block, err := intoto.InTotoRecordStart(recordStepName, recordMaterialsPaths, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization, followSymlinkDirs)
+	block, err := intoto.InTotoRecordStart(recordStepName, recordMaterialsPaths, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization, followSymlinkDirs, useDSSE)
 	if err != nil {
 		return fmt.Errorf("failed to create start link file: %w", err)
 	}
@@ -181,14 +188,14 @@ func recordStart(cmd *cobra.Command, args []string) error {
 }
 
 func recordStop(cmd *cobra.Command, args []string) error {
-	var prelimLinkMb intoto.Metablock
 	prelimLinkName := fmt.Sprintf(intoto.PreliminaryLinkNameFormat, recordStepName, key.KeyID)
 	prelimLinkPath := filepath.Join(outDir, prelimLinkName)
-	if err := prelimLinkMb.Load(prelimLinkPath); err != nil {
+	prelimLinkMb, err := intoto.LoadMetadata(prelimLinkPath)
+	if err != nil {
 		return fmt.Errorf("failed to load start link file at %s: %w", prelimLinkName, err)
 	}
 
-	linkMb, err := intoto.InTotoRecordStop(prelimLinkMb, recordProductsPaths, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization, followSymlinkDirs)
+	linkMb, err := intoto.InTotoRecordStop(prelimLinkMb, recordProductsPaths, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization, followSymlinkDirs, useDSSE)
 	if err != nil {
 		return fmt.Errorf("failed to create stop link file: %w", err)
 	}

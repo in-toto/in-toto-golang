@@ -24,6 +24,7 @@ var (
 	outDir            string
 	lineNormalization bool
 	followSymlinkDirs bool
+	useDSSE           bool
 )
 
 var rootCmd = &cobra.Command{

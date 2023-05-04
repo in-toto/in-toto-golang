@@ -2,12 +2,9 @@ package in_toto
 
 import (
 	"bytes"
-	"context"
-	"crypto"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -16,16 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
-	slsa01 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
-	slsa02 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
-
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
 )
-
-var errLength = errors.New("invalid length")
-var errVerify = errors.New("invalid signature")
 
 func init() {
 	// Make sure all strings formatted are in tz Zulu
@@ -114,7 +103,7 @@ func TestMetablockLoad(t *testing.T) {
 		"requires 'signed' and 'signatures' parts",
 		"cannot unmarshal string into Go value of type []in_toto.Signature",
 		"cannot unmarshal array into Go value of type map[string]interface {}",
-		"metadata must be one of 'link' or 'layout'",
+		ErrUnknownMetadataType.Error(),
 		"cannot unmarshal string into Go struct field Link.materials",
 		"cannot unmarshal string into Go struct field Layout.steps",
 		"required field steps missing",
@@ -1520,542 +1509,6 @@ func TestValidatePublicKey(t *testing.T) {
 	}
 }
 
-func TestDecodeProvenanceStatementSLSA02(t *testing.T) {
-	// Data from example in specification for generalized link format,
-	// subject and materials trimmed.
-	var data = `
-{
-  "_type": "https://in-toto.io/Statement/v0.1",
-  "subject": [
-    { "name": "curl-7.72.0.tar.bz2",
-      "digest": { "sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef" }},
-    { "name": "curl-7.72.0.tar.gz",
-      "digest": { "sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2" }}
-  ],
-  "predicateType": "https://slsa.dev/provenance/v0.2",
-  "predicate": {
-    "builder": { "id": "https://github.com/Attestations/GitHubHostedActions@v1" },
-    "buildType": "https://github.com/Attestations/GitHubActionsWorkflow@v1",
-    "invocation": {
-	  "configSource": {
-		"uri": "git+https://github.com/curl/curl-docker@master",
-		"digest": { "sha1": "d6525c840a62b398424a78d792f457477135d0cf" },
-		"entryPoint": "build.yaml:maketgz"
-	  }
-    },
-    "metadata": {
-      "buildStartedOn": "2020-08-19T08:38:00Z",
-      "completeness": {
-          "environment": true
-      }
-    },
-    "materials": [
-      {
-        "uri": "git+https://github.com/curl/curl-docker@master",
-        "digest": { "sha1": "d6525c840a62b398424a78d792f457477135d0cf" }
-      }, {
-        "uri": "github_hosted_vm:ubuntu-18.04:20210123.1"
-      }
-    ]
-  }
-}
-`
-
-	var testTime = time.Unix(1597826280, 0)
-	var want = ProvenanceStatement{
-		StatementHeader: StatementHeader{
-			Type:          StatementInTotoV01,
-			PredicateType: slsa02.PredicateSLSAProvenance,
-			Subject: []Subject{
-				{
-					Name: "curl-7.72.0.tar.bz2",
-					Digest: common.DigestSet{
-						"sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef",
-					},
-				},
-				{
-					Name: "curl-7.72.0.tar.gz",
-					Digest: common.DigestSet{
-						"sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2",
-					},
-				},
-			},
-		},
-		Predicate: slsa02.ProvenancePredicate{
-			Builder: common.ProvenanceBuilder{
-				ID: "https://github.com/Attestations/GitHubHostedActions@v1",
-			},
-			BuildType: "https://github.com/Attestations/GitHubActionsWorkflow@v1",
-			Invocation: slsa02.ProvenanceInvocation{
-				ConfigSource: slsa02.ConfigSource{
-					EntryPoint: "build.yaml:maketgz",
-					URI:        "git+https://github.com/curl/curl-docker@master",
-					Digest: common.DigestSet{
-						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
-					},
-				},
-			},
-			Metadata: &slsa02.ProvenanceMetadata{
-				BuildStartedOn: &testTime,
-				Completeness: slsa02.ProvenanceComplete{
-					Environment: true,
-				},
-			},
-			Materials: []common.ProvenanceMaterial{
-				{
-					URI: "git+https://github.com/curl/curl-docker@master",
-					Digest: common.DigestSet{
-						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
-					},
-				},
-				{
-					URI: "github_hosted_vm:ubuntu-18.04:20210123.1",
-				},
-			},
-		},
-	}
-	var got ProvenanceStatement
-
-	if err := json.Unmarshal([]byte(data), &got); err != nil {
-		t.Errorf("failed to unmarshal json: %s\n", err)
-		return
-	}
-
-	// Make sure parsed time have same location set, location is only used
-	// for display purposes.
-	loc := want.Predicate.Metadata.BuildStartedOn.Location()
-	tmp := got.Predicate.Metadata.BuildStartedOn.In(loc)
-	got.Predicate.Metadata.BuildStartedOn = &tmp
-
-	assert.Equal(t, want, got, "Unexpexted object after decoding")
-}
-
-func TestEncodeProvenanceStatementSLSA02(t *testing.T) {
-	var testTime = time.Unix(1597826280, 0)
-	var p = ProvenanceStatement{
-		StatementHeader: StatementHeader{
-			Type:          StatementInTotoV01,
-			PredicateType: slsa02.PredicateSLSAProvenance,
-			Subject: []Subject{
-				{
-					Name: "curl-7.72.0.tar.bz2",
-					Digest: common.DigestSet{
-						"sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef",
-					},
-				},
-				{
-					Name: "curl-7.72.0.tar.gz",
-					Digest: common.DigestSet{
-						"sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2",
-					},
-				},
-			},
-		},
-		Predicate: slsa02.ProvenancePredicate{
-			Builder: common.ProvenanceBuilder{
-				ID: "https://github.com/Attestations/GitHubHostedActions@v1",
-			},
-			BuildType: "https://github.com/Attestations/GitHubActionsWorkflow@v1",
-			Invocation: slsa02.ProvenanceInvocation{
-				ConfigSource: slsa02.ConfigSource{
-					URI: "git+https://github.com/curl/curl-docker@master",
-					Digest: common.DigestSet{
-						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
-					},
-					EntryPoint: "build.yaml:maketgz",
-				},
-			},
-			Metadata: &slsa02.ProvenanceMetadata{
-				BuildStartedOn:  &testTime,
-				BuildFinishedOn: &testTime,
-				Completeness: slsa02.ProvenanceComplete{
-					Parameters:  true,
-					Environment: false,
-					Materials:   true,
-				},
-			},
-			Materials: []common.ProvenanceMaterial{
-				{
-					URI: "git+https://github.com/curl/curl-docker@master",
-					Digest: common.DigestSet{
-						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
-					},
-				},
-				{
-					URI: "github_hosted_vm:ubuntu-18.04:20210123.1",
-				},
-				{
-					URI: "git+https://github.com/curl/",
-				},
-			},
-		},
-	}
-	var want = `{"_type":"https://in-toto.io/Statement/v0.1","predicateType":"https://slsa.dev/provenance/v0.2","subject":[{"name":"curl-7.72.0.tar.bz2","digest":{"sha256":"ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef"}},{"name":"curl-7.72.0.tar.gz","digest":{"sha256":"d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2"}}],"predicate":{"builder":{"id":"https://github.com/Attestations/GitHubHostedActions@v1"},"buildType":"https://github.com/Attestations/GitHubActionsWorkflow@v1","invocation":{"configSource":{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"},"entryPoint":"build.yaml:maketgz"}},"metadata":{"buildStartedOn":"2020-08-19T08:38:00Z","buildFinishedOn":"2020-08-19T08:38:00Z","completeness":{"parameters":true,"environment":false,"materials":true},"reproducible":false},"materials":[{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"}},{"uri":"github_hosted_vm:ubuntu-18.04:20210123.1"},{"uri":"git+https://github.com/curl/"}]}}`
-
-	b, err := json.Marshal(&p)
-	assert.Nil(t, err, "Error during JSON marshal")
-	assert.Equal(t, want, string(b), "Wrong JSON produced")
-}
-
-func TestDecodeProvenanceStatementSLSA01(t *testing.T) {
-	// Data from example in specification for generalized link format,
-	// subject and materials trimmed.
-	var data = `
-{
-  "_type": "https://in-toto.io/Statement/v0.1",
-  "subject": [
-    { "name": "curl-7.72.0.tar.bz2",
-      "digest": { "sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef" }},
-    { "name": "curl-7.72.0.tar.gz",
-      "digest": { "sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2" }}
-  ],
-  "predicateType": "https://slsa.dev/provenance/v0.1",
-  "predicate": {
-    "builder": { "id": "https://github.com/Attestations/GitHubHostedActions@v1" },
-    "recipe": {
-      "type": "https://github.com/Attestations/GitHubActionsWorkflow@v1",
-      "definedInMaterial": 0,
-      "entryPoint": "build.yaml:maketgz"
-    },
-    "metadata": {
-      "buildStartedOn": "2020-08-19T08:38:00Z",
-      "completeness": {
-          "environment": true
-      }
-    },
-    "materials": [
-      {
-        "uri": "git+https://github.com/curl/curl-docker@master",
-        "digest": { "sha1": "d6525c840a62b398424a78d792f457477135d0cf" }
-      }, {
-        "uri": "github_hosted_vm:ubuntu-18.04:20210123.1"
-      }
-    ]
-  }
-}
-`
-
-	var testTime = time.Unix(1597826280, 0)
-	var want = ProvenanceStatementSLSA01{
-		StatementHeader: StatementHeader{
-			Type:          StatementInTotoV01,
-			PredicateType: slsa01.PredicateSLSAProvenance,
-			Subject: []Subject{
-				{
-					Name: "curl-7.72.0.tar.bz2",
-					Digest: common.DigestSet{
-						"sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef",
-					},
-				},
-				{
-					Name: "curl-7.72.0.tar.gz",
-					Digest: common.DigestSet{
-						"sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2",
-					},
-				},
-			},
-		},
-		Predicate: slsa01.ProvenancePredicate{
-			Builder: common.ProvenanceBuilder{
-				ID: "https://github.com/Attestations/GitHubHostedActions@v1",
-			},
-			Recipe: slsa01.ProvenanceRecipe{
-				Type:              "https://github.com/Attestations/GitHubActionsWorkflow@v1",
-				DefinedInMaterial: new(int),
-				EntryPoint:        "build.yaml:maketgz",
-			},
-			Metadata: &slsa01.ProvenanceMetadata{
-				BuildStartedOn: &testTime,
-				Completeness: slsa01.ProvenanceComplete{
-					Environment: true,
-				},
-			},
-			Materials: []common.ProvenanceMaterial{
-				{
-					URI: "git+https://github.com/curl/curl-docker@master",
-					Digest: common.DigestSet{
-						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
-					},
-				},
-				{
-					URI: "github_hosted_vm:ubuntu-18.04:20210123.1",
-				},
-			},
-		},
-	}
-	var got ProvenanceStatementSLSA01
-
-	if err := json.Unmarshal([]byte(data), &got); err != nil {
-		t.Errorf("failed to unmarshal json: %s\n", err)
-		return
-	}
-
-	// Make sure parsed time have same location set, location is only used
-	// for display purposes.
-	loc := want.Predicate.Metadata.BuildStartedOn.Location()
-	tmp := got.Predicate.Metadata.BuildStartedOn.In(loc)
-	got.Predicate.Metadata.BuildStartedOn = &tmp
-
-	assert.Equal(t, want, got, "Unexpexted object after decoding")
-}
-
-func TestEncodeProvenanceStatementSLSA01(t *testing.T) {
-	var testTime = time.Unix(1597826280, 0)
-	var p = ProvenanceStatementSLSA01{
-		StatementHeader: StatementHeader{
-			Type:          StatementInTotoV01,
-			PredicateType: slsa01.PredicateSLSAProvenance,
-			Subject: []Subject{
-				{
-					Name: "curl-7.72.0.tar.bz2",
-					Digest: common.DigestSet{
-						"sha256": "ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef",
-					},
-				},
-				{
-					Name: "curl-7.72.0.tar.gz",
-					Digest: common.DigestSet{
-						"sha256": "d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2",
-					},
-				},
-			},
-		},
-		Predicate: slsa01.ProvenancePredicate{
-			Builder: common.ProvenanceBuilder{
-				ID: "https://github.com/Attestations/GitHubHostedActions@v1",
-			},
-			Recipe: slsa01.ProvenanceRecipe{
-				Type:              "https://github.com/Attestations/GitHubActionsWorkflow@v1",
-				DefinedInMaterial: new(int),
-				EntryPoint:        "build.yaml:maketgz",
-			},
-			Metadata: &slsa01.ProvenanceMetadata{
-				BuildStartedOn:  &testTime,
-				BuildFinishedOn: &testTime,
-				Completeness: slsa01.ProvenanceComplete{
-					Arguments:   true,
-					Environment: false,
-					Materials:   true,
-				},
-			},
-			Materials: []common.ProvenanceMaterial{
-				{
-					URI: "git+https://github.com/curl/curl-docker@master",
-					Digest: common.DigestSet{
-						"sha1": "d6525c840a62b398424a78d792f457477135d0cf",
-					},
-				},
-				{
-					URI: "github_hosted_vm:ubuntu-18.04:20210123.1",
-				},
-				{
-					URI: "git+https://github.com/curl/",
-				},
-			},
-		},
-	}
-	var want = `{"_type":"https://in-toto.io/Statement/v0.1","predicateType":"https://slsa.dev/provenance/v0.1","subject":[{"name":"curl-7.72.0.tar.bz2","digest":{"sha256":"ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef"}},{"name":"curl-7.72.0.tar.gz","digest":{"sha256":"d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2"}}],"predicate":{"builder":{"id":"https://github.com/Attestations/GitHubHostedActions@v1"},"recipe":{"type":"https://github.com/Attestations/GitHubActionsWorkflow@v1","definedInMaterial":0,"entryPoint":"build.yaml:maketgz"},"metadata":{"buildStartedOn":"2020-08-19T08:38:00Z","buildFinishedOn":"2020-08-19T08:38:00Z","completeness":{"arguments":true,"environment":false,"materials":true},"reproducible":false},"materials":[{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"}},{"uri":"github_hosted_vm:ubuntu-18.04:20210123.1"},{"uri":"git+https://github.com/curl/"}]}}`
-
-	b, err := json.Marshal(&p)
-	assert.Nil(t, err, "Error during JSON marshal")
-	assert.Equal(t, want, string(b), "Wrong JSON produced")
-}
-
-// Test that the default date (January 1, year 1, 00:00:00 UTC) is
-// not marshalled
-func TestMetadataNoTime(t *testing.T) {
-	var md = slsa02.ProvenanceMetadata{
-		Completeness: slsa02.ProvenanceComplete{
-			Parameters: true,
-		},
-		Reproducible: true,
-	}
-	var want = `{"completeness":{"parameters":true,"environment":false,"materials":false},"reproducible":true}`
-	var got slsa02.ProvenanceMetadata
-	b, err := json.Marshal(&md)
-
-	t.Run("Marshal", func(t *testing.T) {
-		assert.Nil(t, err, "Error during JSON marshal")
-		assert.Equal(t, want, string(b), "Wrong JSON produced")
-	})
-
-	t.Run("Unmashal", func(t *testing.T) {
-		err := json.Unmarshal(b, &got)
-		assert.Nil(t, err, "Error during JSON unmarshal")
-		assert.Equal(t, md, got, "Wrong struct after JSON unmarshal")
-	})
-}
-
-// Verify that the behaviour of definedInMaterial can be controlled,
-// as there is a semantic difference in value present or 0.
-func TestRecipe(t *testing.T) {
-	var r = slsa01.ProvenanceRecipe{
-		Type:       "testType",
-		EntryPoint: "testEntry",
-	}
-	var want = `{"type":"testType","entryPoint":"testEntry"}`
-	var got slsa01.ProvenanceRecipe
-	b, err := json.Marshal(&r)
-
-	t.Run("No time/marshal", func(t *testing.T) {
-		assert.Nil(t, err, "Error during JSON marshal")
-		assert.Equal(t, want, string(b), "Wrong JSON produced")
-	})
-
-	t.Run("No time/unmarshal", func(t *testing.T) {
-		err = json.Unmarshal(b, &got)
-		assert.Nil(t, err, "Error during JSON unmarshal")
-		assert.Equal(t, r, got, "Wrong struct after JSON unmarshal")
-	})
-
-	// Set time to zero and run test again
-	r.DefinedInMaterial = new(int)
-	want = `{"type":"testType","definedInMaterial":0,"entryPoint":"testEntry"}`
-	b, err = json.Marshal(&r)
-
-	t.Run("With time/marshal", func(t *testing.T) {
-		assert.Nil(t, err, "Error during JSON marshal")
-		assert.Equal(t, want, string(b), "Wrong JSON produced")
-	})
-
-	t.Run("With time/unmarshal", func(t *testing.T) {
-		err = json.Unmarshal(b, &got)
-		assert.Nil(t, err, "Error during JSON unmarshal")
-		assert.Equal(t, r, got, "Wrong struct after JSON unmarshal")
-	})
-}
-
-func TestLinkStatement(t *testing.T) {
-	var data = `
-{
-  "subject": [
-     {"name": "baz",
-      "digest": { "sha256": "hash1" }}
-  ],
-  "predicateType": "https://in-toto.io/Link/v1",
-  "predicate": {
-    "_type": "link",
-    "name": "name",
-    "command": ["cc", "-o", "baz", "baz.z"],
-    "materials": {
-       "kv": "vv"
-    },
-    "products": {
-       "kp": "vp"
-    },
-    "byproducts": {
-       "kb": "vb"
-    },
-    "environment": {
-       "FOO": "BAR"
-    }
-  }
-}
-`
-
-	var want = LinkStatement{
-		StatementHeader: StatementHeader{
-			PredicateType: PredicateLinkV1,
-			Subject: []Subject{
-				{
-					Name: "baz",
-					Digest: common.DigestSet{
-						"sha256": "hash1",
-					},
-				},
-			},
-		},
-		Predicate: Link{
-			Type: "link",
-			Name: "name",
-			Materials: map[string]interface{}{
-				"kv": "vv",
-			},
-			Products: map[string]interface{}{
-				"kp": "vp",
-			},
-			ByProducts: map[string]interface{}{
-				"kb": "vb",
-			},
-			Environment: map[string]interface{}{
-				"FOO": "BAR",
-			},
-			Command: []string{"cc", "-o", "baz", "baz.z"},
-		},
-	}
-	var got LinkStatement
-
-	if err := json.Unmarshal([]byte(data), &got); err != nil {
-		t.Errorf("failed to unmarshal json: %s\n", err)
-		return
-	}
-
-	assert.Equal(t, want, got, "Unexpexted object after decoding")
-}
-
-type nilsigner int
-
-func (n nilsigner) Sign(ctx context.Context, data []byte) ([]byte, error) {
-	return data, nil
-}
-
-func (n nilsigner) Verify(ctx context.Context, data, sig []byte) error {
-	if len(data) != len(sig) {
-		return errLength
-	}
-
-	for i := range data {
-		if data[i] != sig[i] {
-			return errVerify
-		}
-	}
-	return nil
-}
-
-// KeyID implements dsse.SignVerifier
-func (n nilsigner) KeyID() (string, error) {
-	return "nil", nil
-}
-
-// Public implements dsse.SignVerifier
-func (n nilsigner) Public() crypto.PublicKey {
-	return nil
-}
-
-func TestDSSESigner(t *testing.T) {
-	t.Run("No signers provided", func(t *testing.T) {
-		s, err := NewDSSESigner([]dsse.SignVerifier{}...)
-		assert.Nil(t, s, "unexpected signer returned")
-		assert.NotNil(t, err, "error expected")
-	})
-
-	t.Run("Sign verify ok", func(t *testing.T) {
-		ctx := context.Background()
-		s, err := NewDSSESigner(nilsigner(0))
-		assert.Nil(t, err, "unexpected error")
-		e, err := s.SignPayload(ctx, []byte("test data"))
-		assert.NotNil(t, e, "envelope expected")
-		assert.Nil(t, err, "unexpected error when creating signature")
-		err = s.Verify(ctx, e)
-		assert.Nil(t, err, "unexpected error when validating signature")
-	})
-
-	t.Run("Sign verify bad payload", func(t *testing.T) {
-		ctx := context.Background()
-		s, err := NewDSSESigner(nilsigner(0))
-		assert.Nil(t, err, "unexpected error")
-		e, err := s.SignPayload(ctx, []byte("test data"))
-		assert.NotNil(t, e, "envelope expected")
-		assert.Nil(t, err, "unexpected error when creating signature")
-
-		// Change payload type
-		e.PayloadType = "application/json; charset=utf-8"
-
-		err = s.Verify(ctx, e)
-		assert.Equal(t, ErrInvalidPayloadType, err, "wrong error returned")
-	})
-}
-
 func TestSignatureGetCertificate(t *testing.T) {
 	sig := Signature{}
 	_, err := sig.GetCertificate()
@@ -2135,4 +1588,119 @@ func TestRootCAIDs(t *testing.T) {
 	expectedCAIDs := []string{"123123", "456456"}
 	rootCAIDs := layout.RootCAIDs()
 	assert.ElementsMatch(t, expectedCAIDs, rootCAIDs, "expected root ca ids don't match")
+}
+
+func TestLoadMetadata(t *testing.T) {
+	// Create a bunch of tmp json files with invalid format and test load errors:
+	// - invalid json
+	// - missing signatures and signed field
+	// - invalid signatures field
+	// - invalid signed field
+	// - invalid signed type
+	// - invalid signed field for type link
+	// - invalid signed field for type layout
+	invalidJSONBytes := [][]byte{
+		[]byte("{"),
+		[]byte("{}"),
+		[]byte(`{"signatures": null, "signed": {}}`),
+		[]byte(`{"signatures": "string", "signed": {}}`),
+		[]byte(`{"signatures": [], "signed": []}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "something else"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"materials": "invalid", "name": "some name", "products": "invalid",
+			"byproducts": "invalid", "command": "some command",
+			"environment": "some list"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
+			"keys": "some keys", "expires": "some date", "rootcas": [], "intermediatecas": []}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"inspect": "invalid", "readme": "some readme", "keys": "some keys",
+			"expires": "some date", "rootcas": [], "intermediatecas": []}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "readme": "some readme", "keys": "some keys",
+			"expires": "some date", "rootcas": [], "intermediatecas": []}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
+			"expires": "some date", "rootcas": [], "intermediatecas": []}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "inspect": "invalid", "readme": "some readme",
+			"keys": "some keys", "rootcas": [], "intermediatecas": []}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout",
+			"steps": "invalid", "inspect": "invalid",
+			"keys": "some keys", "expires": "some date", "rootcas": [], "intermediatecas": []}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "layout", "steps": [],
+			"inspect": [], "readme": "some readme", "keys": {},
+			"expires": "some date", "foo": "bar", "rootcas": [], "intermediatecas": []}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"materials": "invalid", "products": "invalid",
+			"byproducts": "invalid", "command": "some command",
+			"environment": "some list"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"name": "some name", "products": "invalid",
+			"byproducts": "invalid", "command": "some command",
+			"environment": "some list"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"materials": "invalid", "name": "some name",
+			"byproducts": "invalid", "command": "some command",
+			"environment": "some list"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"materials": "invalid", "name": "some name", "products": "invalid",
+			"command": "some command",
+			"environment": "some list"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"materials": "invalid", "name": "some name", "products": "invalid",
+			"byproducts": "invalid", "environment": "some list"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link",
+			"materials": "invalid", "name": "some name", "products": "invalid",
+			"byproducts": "invalid", "command": "some command"}}`),
+		[]byte(`{"signatures": [], "signed": {"_type": "link", "materials": {},
+			"name": "some name", "products": {}, "byproducts": {},
+			"command": [], "environment": {}, "foo": "bar"}}`),
+		[]byte(`{"payloadType": "invalid", "payload": "eyJfdHlwZSI6ICJsaW5rIiwgIm1hdGVyaWFscyI6ICJpbnZhbGlkIiwgIm5hbWUiOiAic29tZSBuYW1lIiwgInByb2R1Y3RzIjogImludmFsaWQiLCAiYnlwcm9kdWN0cyI6ICJpbnZhbGlkIiwgImNvbW1hbmQiOiAic29tZSBjb21tYW5kIn0=", "signatures": []}`),
+		[]byte(`{"payloadType": "application/vnd.in-toto+json", "payload": "eyJfdHlwZSI6ICJsaW5rIiwgIm1hdGVyaWFscyI6ICJpbnZhbGlkIiwgIm5hbWUiOiAic29tZSBuYW1lIiwgInByb2R1Y3RzIjogImludmFsaWQiLCAiYnlwcm9kdWN0cyI6ICJpbnZhbGlkIiwgImNvbW1hbmQiOiAic29tZSBjb21tYW5kIn0="}`),
+		[]byte(`{"payloadType": "application/vnd.in-toto+json", "signatures": []}`),
+	}
+
+	expectedErrors := []string{
+		"unexpected end",
+		"requires 'signed' and 'signatures' parts",
+		"requires 'signed' and 'signatures' parts",
+		"cannot unmarshal string into Go value of type []in_toto.Signature",
+		"cannot unmarshal array into Go value of type map[string]interface {}",
+		ErrUnknownMetadataType.Error(),
+		"cannot unmarshal string into Go struct field Link.materials",
+		"cannot unmarshal string into Go struct field Layout.steps",
+		"required field steps missing",
+		"required field inspect missing",
+		"required field keys missing",
+		"required field expires missing",
+		"required field readme missing",
+		"json: unknown field \"foo\"",
+		"required field name missing",
+		"required field materials missing",
+		"required field products missing",
+		"required field byproducts missing",
+		"required field command missing",
+		"required field environment missing",
+		"json: unknown field \"foo\"",
+		ErrInvalidPayloadType.Error(),
+		"in-toto metadata envelope requires 'payload' and 'signatures' parts",
+		"in-toto metadata envelope requires 'payload' and 'signatures' parts",
+	}
+
+	for i := 0; i < len(invalidJSONBytes); i++ {
+		fn := fmt.Sprintf("invalid-metadata-%v.tmp", i)
+		if err := os.WriteFile(fn, invalidJSONBytes[i], 0644); err != nil {
+			fmt.Printf("Could not write file: %s", err)
+		}
+		_, err := LoadMetadata(fn)
+		if err == nil || !strings.Contains(err.Error(), expectedErrors[i]) {
+			t.Log(err)
+			t.Errorf("LoadMetadata returned '%s', expected '%s' error", err,
+				expectedErrors[i])
+		}
+		if err := os.Remove(fn); err != nil {
+			t.Errorf("unable to remove directory %s: %s", fn, err)
+		}
+	}
 }

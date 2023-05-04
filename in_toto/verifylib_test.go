@@ -18,85 +18,138 @@ import (
 )
 
 func TestInTotoVerifyPass(t *testing.T) {
-	layoutPath := "demo.layout"
-	pubKeyPath := "alice.pub"
-	linkDir := "."
+	t.Run("metablock layout", func(t *testing.T) {
+		layoutPath := "demo.layout"
+		pubKeyPath := "alice.pub"
+		linkDir := "."
 
-	var layoutMb Metablock
-	if err := layoutMb.Load(layoutPath); err != nil {
-		t.Error(err)
-	}
+		layoutMb, err := LoadMetadata(layoutPath)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	var pubKey Key
-	if err := pubKey.LoadKey(pubKeyPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
-		t.Error(err)
-	}
+		var pubKey Key
+		if err := pubKey.LoadKey(pubKeyPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
+			t.Error(err)
+		}
 
-	var layouKeys = map[string]Key{
-		pubKey.KeyID: pubKey,
-	}
+		var layoutKeys = map[string]Key{
+			pubKey.KeyID: pubKey,
+		}
 
-	// No error should occur
-	if _, err := InTotoVerify(layoutMb, layouKeys, linkDir, "",
-		make(map[string]string), [][]byte{}, testOSisWindows()); err != nil {
-		t.Error(err)
-	}
+		// No error should occur
+		if _, err := InTotoVerify(layoutMb, layoutKeys, linkDir, "",
+			make(map[string]string), [][]byte{}, testOSisWindows()); err != nil {
+			t.Error(err)
+		}
+	})
+
+	t.Run("DSSE layout", func(t *testing.T) {
+		layoutPath := "demo.dsse.layout" // This layout is identical to demo.layout minus the signature wrapper
+		pubKeyPath := "alice.pub"
+		linkDir := "."
+
+		layoutEnv, err := LoadMetadata(layoutPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var pubKey Key
+		if err := pubKey.LoadKey(pubKeyPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
+			t.Error(err)
+		}
+
+		var layoutKeys = map[string]Key{
+			pubKey.KeyID: pubKey,
+		}
+
+		// No error should occur, verification is using a DSSE layout and Metablock links
+		if _, err := InTotoVerify(layoutEnv, layoutKeys, linkDir, "",
+			make(map[string]string), [][]byte{}, testOSisWindows()); err != nil {
+			t.Error(err)
+		}
+	})
+
+	t.Run("verifying with only DSSE metadata", func(t *testing.T) {
+		layoutPath := "dsse-only.root.layout" // This layout is from in-toto/demo but skips the inspection
+		pubKeyPath := "alice.pub"
+		linkDir := "."
+
+		layoutEnv, err := LoadMetadata(layoutPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var pubKey Key
+		if err := pubKey.LoadKey(pubKeyPath, "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
+			t.Error(err)
+		}
+
+		var layoutKeys = map[string]Key{
+			pubKey.KeyID: pubKey,
+		}
+
+		// No error should occur, verification is using a DSSE layout and links
+		if _, err := InTotoVerify(layoutEnv, layoutKeys, linkDir, "",
+			make(map[string]string), [][]byte{}, testOSisWindows()); err != nil {
+			t.Error(err)
+		}
+	})
 }
 
 func TestGetSummaryLink(t *testing.T) {
-	var demoLayout Metablock
-	if err := demoLayout.Load("demo.layout"); err != nil {
+	demoLayout, err := LoadMetadata("demo.layout")
+	if err != nil {
+		t.Fatal(err)
+	}
+	codeLink, err := LoadMetadata("write-code.b7d643de.link")
+	if err != nil {
 		t.Error(err)
 	}
-	var codeLink Metablock
-	if err := codeLink.Load("write-code.b7d643de.link"); err != nil {
+	packageLink, err := LoadMetadata("package.d3ffd108.link")
+	if err != nil {
 		t.Error(err)
 	}
-	var packageLink Metablock
-	if err := packageLink.Load("package.d3ffd108.link"); err != nil {
-		t.Error(err)
-	}
-	demoLink := make(map[string]Metablock)
+	demoLink := make(map[string]Metadata)
 	demoLink["write-code"] = codeLink
 	demoLink["package"] = packageLink
 
-	var summaryLink Metablock
-	var err error
-	if summaryLink, err = GetSummaryLink(demoLayout.Signed.(Layout),
-		demoLink, ""); err != nil {
+	var summaryLink Metadata
+	if summaryLink, err = GetSummaryLink(demoLayout.GetPayload().(Layout),
+		demoLink, "", false); err != nil {
 		t.Error(err)
 	}
-	if summaryLink.Signed.(Link).Type != codeLink.Signed.(Link).Type {
+	if summaryLink.GetPayload().(Link).Type != codeLink.GetPayload().(Link).Type {
 		t.Errorf("summary Link isn't of type Link")
 	}
-	if summaryLink.Signed.(Link).Name != "" {
+	if summaryLink.GetPayload().(Link).Name != "" {
 		t.Errorf("summary Link name doesn't match. Expected '%s', returned "+
-			"'%s", codeLink.Signed.(Link).Name, summaryLink.Signed.(Link).Name)
+			"'%s", codeLink.GetPayload().(Link).Name, summaryLink.GetPayload().(Link).Name)
 	}
-	if !reflect.DeepEqual(summaryLink.Signed.(Link).Materials,
-		codeLink.Signed.(Link).Materials) {
+	if !reflect.DeepEqual(summaryLink.GetPayload().(Link).Materials,
+		codeLink.GetPayload().(Link).Materials) {
 		t.Errorf("summary Link materials don't match. Expected '%s', "+
-			"returned '%s", codeLink.Signed.(Link).Materials,
-			summaryLink.Signed.(Link).Materials)
+			"returned '%s", codeLink.GetPayload().(Link).Materials,
+			summaryLink.GetPayload().(Link).Materials)
 	}
 
-	if !reflect.DeepEqual(summaryLink.Signed.(Link).Products,
-		packageLink.Signed.(Link).Products) {
+	if !reflect.DeepEqual(summaryLink.GetPayload().(Link).Products,
+		packageLink.GetPayload().(Link).Products) {
 		t.Errorf("summary Link products don't match. Expected '%s', "+
-			"returned '%s", packageLink.Signed.(Link).Products,
-			summaryLink.Signed.(Link).Products)
+			"returned '%s", packageLink.GetPayload().(Link).Products,
+			summaryLink.GetPayload().(Link).Products)
 	}
-	if !reflect.DeepEqual(summaryLink.Signed.(Link).Command,
-		packageLink.Signed.(Link).Command) {
+	if !reflect.DeepEqual(summaryLink.GetPayload().(Link).Command,
+		packageLink.GetPayload().(Link).Command) {
 		t.Errorf("summary Link command doesn't match. Expected '%s', "+
-			"returned '%s", packageLink.Signed.(Link).Command,
-			summaryLink.Signed.(Link).Command)
+			"returned '%s", packageLink.GetPayload().(Link).Command,
+			summaryLink.GetPayload().(Link).Command)
 	}
-	if !reflect.DeepEqual(summaryLink.Signed.(Link).ByProducts,
-		packageLink.Signed.(Link).ByProducts) {
+	if !reflect.DeepEqual(summaryLink.GetPayload().(Link).ByProducts,
+		packageLink.GetPayload().(Link).ByProducts) {
 		t.Errorf("summary Link by-products don't match. Expected '%s', "+
-			"returned '%s", packageLink.Signed.(Link).ByProducts,
-			summaryLink.Signed.(Link).ByProducts)
+			"returned '%s", packageLink.GetPayload().(Link).ByProducts,
+			summaryLink.GetPayload().(Link).ByProducts)
 	}
 }
 
@@ -126,28 +179,28 @@ func TestVerifySublayouts(t *testing.T) {
 		t.Errorf("unable to link package metadata")
 	}
 
-	var superLayoutMb Metablock
-	if err := superLayoutMb.Load("super.layout"); err != nil {
+	superLayoutMb, err := LoadMetadata("super.layout")
+	if err != nil {
 		t.Errorf("unable to load super layout")
 	}
 
-	stepsMetadata, err := LoadLinksForLayout(superLayoutMb.Signed.(Layout), ".")
+	stepsMetadata, err := LoadLinksForLayout(superLayoutMb.GetPayload().(Layout), ".")
 	if err != nil {
 		t.Errorf("unable to load link metadata for super layout")
 	}
 
-	rootCertPool, intermediateCertPool, err := LoadLayoutCertificates(superLayoutMb.Signed.(Layout), [][]byte{})
+	rootCertPool, intermediateCertPool, err := LoadLayoutCertificates(superLayoutMb.GetPayload().(Layout), [][]byte{})
 	if err != nil {
 		t.Errorf("unable to load layout certificates")
 	}
 
 	stepsMetadataVerified, err := VerifyLinkSignatureThesholds(
-		superLayoutMb.Signed.(Layout), stepsMetadata, rootCertPool, intermediateCertPool)
+		superLayoutMb.GetPayload().(Layout), stepsMetadata, rootCertPool, intermediateCertPool)
 	if err != nil {
 		t.Errorf("unable to verify link threshold values: %v", err)
 	}
 
-	result, err := VerifySublayouts(superLayoutMb.Signed.(Layout),
+	result, err := VerifySublayouts(superLayoutMb.GetPayload().(Layout),
 		stepsMetadataVerified, ".", [][]byte{}, testOSisWindows())
 	if err != nil {
 		t.Errorf("unable to verify sublayouts: %v", err)
@@ -155,7 +208,7 @@ func TestVerifySublayouts(t *testing.T) {
 
 	for _, stepData := range result {
 		for _, metadata := range stepData {
-			if _, ok := metadata.Signed.(Link); !ok {
+			if _, ok := metadata.GetPayload().(Link); !ok {
 				t.Errorf("sublayout expansion error: found non link")
 			}
 		}
@@ -164,11 +217,11 @@ func TestVerifySublayouts(t *testing.T) {
 
 func TestRunInspections(t *testing.T) {
 	// Load layout template used as basis for all tests
-	var mb Metablock
-	if err := mb.Load("demo.layout"); err != nil {
+	mb, err := LoadMetadata("demo.layout")
+	if err != nil {
 		t.Errorf("unable to parse template file: %s", err)
 	}
-	layout := mb.Signed.(Layout)
+	layout := mb.GetPayload().(Layout)
 
 	// Test 1
 	// Successfully run two inspections foo and bar, testing that each generates
@@ -186,7 +239,7 @@ func TestRunInspections(t *testing.T) {
 
 	// Make a list of files in current dir (all must be recorded as artifacts)
 	availableFiles, _ := filepath.Glob("*")
-	result, err := RunInspections(layout, "", testOSisWindows())
+	result, err := RunInspections(layout, "", testOSisWindows(), false)
 
 	// Error must be nil
 	if err != nil {
@@ -201,8 +254,8 @@ func TestRunInspections(t *testing.T) {
 		sort.Strings(availableFiles)
 		// Compare material and products (only file names) to files that were
 		// in the directory before calling RunInspections
-		materialNames := InterfaceKeyStrings(result[inspectionName].Signed.(Link).Materials)
-		productNames := InterfaceKeyStrings(result[inspectionName].Signed.(Link).Products)
+		materialNames := InterfaceKeyStrings(result[inspectionName].GetPayload().(Link).Materials)
+		productNames := InterfaceKeyStrings(result[inspectionName].GetPayload().(Link).Products)
 		sort.Strings(materialNames)
 		sort.Strings(productNames)
 		if !reflect.DeepEqual(materialNames, availableFiles) ||
@@ -232,7 +285,7 @@ func TestRunInspections(t *testing.T) {
 		},
 	}
 
-	result, err = RunInspections(layout, "", testOSisWindows())
+	result, err = RunInspections(layout, "", testOSisWindows(), false)
 	if result != nil || err == nil {
 		t.Errorf("RunInspections returned '(%s, %s)', expected"+
 			" '(nil, *exec.Error)'", result, err)
@@ -246,7 +299,7 @@ func TestRunInspections(t *testing.T) {
 			Run:             []string{"sh", "-c", "false"},
 		},
 	}
-	result, err = RunInspections(layout, "", testOSisWindows())
+	result, err = RunInspections(layout, "", testOSisWindows(), false)
 	if result != nil || err == nil {
 		t.Errorf("RunInspections returned '(%s, %s)', expected"+
 			" '(nil, *exec.Error)'", result, err)
@@ -257,7 +310,7 @@ func TestVerifyArtifact(t *testing.T) {
 	var testCases = []struct {
 		name      string
 		item      []interface{}
-		metadata  map[string]Metablock
+		metadata  map[string]Metadata
 		expectErr string
 	}{
 		{
@@ -284,8 +337,8 @@ func TestVerifyArtifact(t *testing.T) {
 					},
 				},
 			},
-			metadata: map[string]Metablock{
-				"foo": {
+			metadata: map[string]Metadata{
+				"foo": &Metablock{
 					Signed: Link{
 						Name: "foo",
 						Materials: map[string]interface{}{
@@ -318,8 +371,8 @@ func TestVerifyArtifact(t *testing.T) {
 					},
 				},
 			},
-			metadata: map[string]Metablock{
-				"foo": {
+			metadata: map[string]Metadata{
+				"foo": &Metablock{
 					Signed: Link{
 						Name: "foo",
 						Materials: map[string]interface{}{
@@ -328,7 +381,7 @@ func TestVerifyArtifact(t *testing.T) {
 						},
 					},
 				},
-				"bar": {
+				"bar": &Metablock{
 					Signed: Link{
 						Name: "bar",
 						Products: map[string]interface{}{
@@ -353,8 +406,8 @@ func TestVerifyArtifact(t *testing.T) {
 					},
 				},
 			},
-			metadata: map[string]Metablock{
-				"foo": {
+			metadata: map[string]Metadata{
+				"foo": &Metablock{
 					Signed: Link{
 						Name: "foo",
 						Materials: map[string]interface{}{
@@ -363,7 +416,7 @@ func TestVerifyArtifact(t *testing.T) {
 						},
 					},
 				},
-				"bar": {
+				"bar": &Metablock{
 					Signed: Link{
 						Name: "bar",
 						Products: map[string]interface{}{
@@ -378,139 +431,139 @@ func TestVerifyArtifact(t *testing.T) {
 		{
 			name:      "Item must be one of step or inspection",
 			item:      []interface{}{nil},
-			metadata:  map[string]Metablock{},
+			metadata:  map[string]Metadata{},
 			expectErr: "item of invalid type",
 		},
 		{
 			name:      "Can't find link metadata for step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo"}}},
-			metadata:  map[string]Metablock{},
+			metadata:  map[string]Metadata{},
 			expectErr: "could not find metadata",
 		},
 		{
 			name:      "Can't find link metadata for inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo"}}},
-			metadata:  map[string]Metablock{},
+			metadata:  map[string]Metadata{},
 			expectErr: "could not find metadata",
 		},
 		{
 			name:      "Wrong step expected material",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"INVALID", "rule"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo"}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo"}}},
 			expectErr: "rule format",
 		},
 		{
 			name:      "Wrong step expected product",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"INVALID", "rule"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo"}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo"}}},
 			expectErr: "rule format",
 		},
 		{
 			name:      "Wrong inspection expected material",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"INVALID", "rule"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo"}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo"}}},
 			expectErr: "rule format",
 		},
 		{
 			name:      "Wrong inspection expected product",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"INVALID", "rule"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo"}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo"}}},
 			expectErr: "rule format",
 		},
 		{
 			name:      "Disallowed material in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "materials [foo.py] disallowed by rule",
 		},
 		{
 			name:      "Disallowed product in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "products [foo.py] disallowed by rule",
 		},
 		{
 			name:      "Disallowed material in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "materials [foo.py] disallowed by rule",
 		},
 		{
 			name:      "Disallowed product in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "products [foo.py] disallowed by rule",
 		},
 		{
 			name:      "Required but missing material in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"REQUIRE", "foo"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "materials in REQUIRE 'foo'",
 		},
 		{
 			name:      "Required but missing product in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"REQUIRE", "foo"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "products in REQUIRE 'foo'",
 		},
 		{
 			name:      "Required but missing material in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"REQUIRE", "foo"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "materials in REQUIRE 'foo'",
 		},
 		{
 			name:      "Required but missing product in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"REQUIRE", "foo"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "products in REQUIRE 'foo'",
 		},
 		{
 			name:      "Disallowed subdirectory material in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"dir/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"dir/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "materials [dir/foo.py] disallowed by rule",
 		},
 		{
 			name:      "Disallowed subdirectory product in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Products: map[string]interface{}{"dir/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"dir/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "products [dir/foo.py] disallowed by rule",
 		},
 		{
 			name:      "Disallowed subdirectory material in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"dir/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"dir/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "materials [dir/foo.py] disallowed by rule",
 		},
 		{
 			name:      "Disallowed subdirectory product in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Products: map[string]interface{}{"dir/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"dir/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "products [dir/foo.py] disallowed by rule",
 		},
 		{
 			name:      "Consuming filename material in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"ALLOW", "foo.py"}, {"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"./bar/..//foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"./bar/..//foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "",
 		},
 		{
 			name:      "Consuming filename product in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"ALLOW", "foo.py"}, {"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Products: map[string]interface{}{"./bar/..//foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"./bar/..//foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "",
 		},
 		{
 			name:      "Consuming filename material in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"ALLOW", "foo.py"}, {"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"./bar/..//foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"./bar/..//foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "",
 		},
 		{
 			name:      "Consuming filename product in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"ALLOW", "foo.py"}, {"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metablock{"foo": {Signed: Link{Name: "foo", Products: map[string]interface{}{"./bar/..//foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"./bar/..//foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectErr: "",
 		},
 	}
@@ -533,63 +586,63 @@ func TestVerifyMatchRule(t *testing.T) {
 		name        string
 		rule        map[string]string
 		srcArtifact map[string]interface{}
-		item        map[string]Metablock
+		item        map[string]Metadata
 		expectSet   Set
 	}{
 		{
 			name:        "Can't find destination link (invalid rule)",
 			rule:        map[string]string{},
 			srcArtifact: map[string]interface{}{},
-			item:        map[string]Metablock{},
+			item:        map[string]Metadata{},
 			expectSet:   NewSet(),
 		},
 		{
 			name:        "Can't find destination link (empty metadata map)",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials"},
 			srcArtifact: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}},
-			item:        map[string]Metablock{},
+			item:        map[string]Metadata{},
 			expectSet:   NewSet(),
 		},
 		{
 			name:        "Match material foo.py",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials"},
 			srcArtifact: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}},
-			item:        map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectSet:   NewSet("foo.py"),
 		},
 		{
 			name:        "Match material foo.py with foo.d/foo.py",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials", "dstPrefix": "foo.d"},
 			srcArtifact: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}},
-			item:        map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.d/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.d/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectSet:   NewSet("foo.py"),
 		},
 		{
 			name:        "Match material foo.d/foo.py with foo.py",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials", "srcPrefix": "foo.d"},
 			srcArtifact: map[string]interface{}{"foo.d/foo.py": map[string]interface{}{"sha265": "abc"}},
-			item:        map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectSet:   NewSet("foo.d/foo.py"),
 		},
 		{
 			name:        "Don't match material (different name)",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials"},
 			srcArtifact: map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "abc"}},
-			item:        map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectSet:   NewSet(),
 		},
 		{
 			name:        "Don't match material (different hash)",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials"},
 			srcArtifact: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "dead"}},
-			item:        map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectSet:   NewSet(),
 		},
 		{
 			name:        "Match material in sub-directories dir/foo.py",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials"},
 			srcArtifact: map[string]interface{}{"bar/foo.py": map[string]interface{}{"sha265": "abc"}},
-			item:        map[string]Metablock{"foo": {Signed: Link{Name: "foo", Materials: map[string]interface{}{"bar/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"bar/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
 			expectSet:   NewSet("bar/foo.py"),
 		},
 	}
@@ -606,23 +659,23 @@ func TestVerifyMatchRule(t *testing.T) {
 }
 
 func TestReduceStepsMetadata(t *testing.T) {
-	var mb Metablock
-	if err := mb.Load("demo.layout"); err != nil {
+	mb, err := LoadMetadata("demo.layout")
+	if err != nil {
 		t.Errorf("unable to parse template file: %s", err)
 	}
-	layout := mb.Signed.(Layout)
+	layout := mb.GetPayload().(Layout)
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{Name: "foo"}}}
 
 	// Test 1: Successful reduction of multiple links for one step (foo)
-	stepsMetadata := map[string]map[string]Metablock{
+	stepsMetadata := map[string]map[string]Metadata{
 		"foo": {
-			"a": Metablock{Signed: Link{
+			"a": &Metablock{Signed: Link{
 				Type:      "link",
 				Name:      "foo",
 				Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}},
 				Products:  map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "cde"}},
 			}},
-			"b": Metablock{Signed: Link{
+			"b": &Metablock{Signed: Link{
 				Type:      "link",
 				Name:      "foo",
 				Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}},
@@ -643,22 +696,22 @@ func TestReduceStepsMetadata(t *testing.T) {
 	// - Different materials (name)
 	// - Different products (hash)
 	// - Different products (name)
-	stepsMetadataList := []map[string]map[string]Metablock{
+	stepsMetadataList := []map[string]map[string]Metadata{
 		{"foo": {
-			"a": Metablock{Signed: Link{Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
-			"b": Metablock{Signed: Link{Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "def"}}}},
+			"a": &Metablock{Signed: Link{Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
+			"b": &Metablock{Signed: Link{Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "def"}}}},
 		}},
 		{"foo": {
-			"a": Metablock{Signed: Link{Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
-			"b": Metablock{Signed: Link{Materials: map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "abc"}}}},
+			"a": &Metablock{Signed: Link{Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
+			"b": &Metablock{Signed: Link{Materials: map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "abc"}}}},
 		}},
 		{"foo": {
-			"a": Metablock{Signed: Link{Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
-			"b": Metablock{Signed: Link{Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "def"}}}},
+			"a": &Metablock{Signed: Link{Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
+			"b": &Metablock{Signed: Link{Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "def"}}}},
 		}},
 		{"foo": {
-			"a": Metablock{Signed: Link{Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
-			"b": Metablock{Signed: Link{Products: map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "abc"}}}},
+			"a": &Metablock{Signed: Link{Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
+			"b": &Metablock{Signed: Link{Products: map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "abc"}}}},
 		}},
 	}
 
@@ -685,11 +738,11 @@ func TestReduceStepsMetadata(t *testing.T) {
 }
 
 func TestVerifyStepCommandAlignment(t *testing.T) {
-	var mb Metablock
-	if err := mb.Load("demo.layout"); err != nil {
+	mb, err := LoadMetadata("demo.layout")
+	if err != nil {
 		t.Errorf("unable to load template file: %s", err)
 	}
-	layout := mb.Signed.(Layout)
+	layout := mb.GetPayload().(Layout)
 	layout.Steps = []Step{
 		{
 			SupplyChainItem: SupplyChainItem{Name: "foo"},
@@ -697,8 +750,8 @@ func TestVerifyStepCommandAlignment(t *testing.T) {
 		},
 	}
 
-	stepsMetadata := map[string]map[string]Metablock{
-		"foo": {"a": Metablock{Signed: Link{Command: []string{"rm", "-rf", "/"}}}},
+	stepsMetadata := map[string]map[string]Metadata{
+		"foo": {"a": &Metablock{Signed: Link{Command: []string{"rm", "-rf", "/"}}}},
 	}
 	// Test warning due to non-aligning commands
 	// FIXME: Assert warning?
@@ -723,30 +776,30 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 	keyID2 := "d3ffd1086938b3698618adf088bf14b13db4c8ae19e4e78d73da49ee88492710"
 	keyID3 := "abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca"
 
-	var mb Metablock
-	if err := mb.Load("demo.layout"); err != nil {
+	mb, err := LoadMetadata("demo.layout")
+	if err != nil {
 		t.Errorf("unable to load template file: %s", err)
 	}
-	layout := mb.Signed.(Layout)
+	layout := mb.GetPayload().(Layout)
 
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{
 		Name: "foo"},
 		Threshold: 2,
 		PubKeys:   []string{keyID1, keyID2, keyID3}}}
 
-	var mbLink1 Metablock
-	if err := mbLink1.Load("foo.b7d643de.link"); err != nil {
+	mbLink1, err := LoadMetadata("foo.b7d643de.link")
+	if err != nil {
 		t.Errorf("unable to load link file: %s", err)
 	}
-	var mbLink2 Metablock
-	if err := mbLink2.Load("foo.d3ffd108.link"); err != nil {
+	mbLink2, err := LoadMetadata("foo.d3ffd108.link")
+	if err != nil {
 		t.Errorf("unable to load link file: %s", err)
 	}
-	var mbLinkBroken Metablock
-	if err := mbLinkBroken.Load("foo.d3ffd108.link"); err != nil {
+	mbLinkBroken, err := LoadMetadata("foo.d3ffd108.link")
+	if err != nil {
 		t.Errorf("unable to load link file: %s", err)
 	}
-	mbLinkBroken.Signatures[0].Sig = "breaksignature"
+	mbLinkBroken.Sigs()[0].Sig = "breaksignature"
 
 	// Test less then threshold distinct valid links errors:
 	// - Missing step name in step metadata map
@@ -754,7 +807,7 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 	// - Less than threshold links for step
 	// - Less than threshold distinct links for step
 	// - Less than threshold validly signed links for step
-	stepsMetadata := []map[string]map[string]Metablock{
+	stepsMetadata := []map[string]map[string]Metadata{
 		{"bar": nil},
 		{"foo": nil},
 		{"foo": {keyID1: mbLink1}},
@@ -772,7 +825,7 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 	// Test successfully return threshold distinct valid links:
 	// - Threshold 2, two valid links
 	// - Threshold 2, two valid links, one invalid link ignored
-	stepsMetadata = []map[string]map[string]Metablock{
+	stepsMetadata = []map[string]map[string]Metadata{
 		{"foo": {keyID1: mbLink1, keyID2: mbLink2}},
 		{"foo": {keyID1: mbLink1, keyID2: mbLink2, keyID3: mbLinkBroken}},
 	}
@@ -789,11 +842,11 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 func TestLoadLinksForLayout(t *testing.T) {
 	keyID1 := "d3ffd1086938b3698618adf088bf14b13db4c8ae19e4e78d73da49ee88492710"
 	keyID2 := "b7d643dec0a051096ee5d87221b5d91a33daa658699d30903e1cefb90c418401"
-	var mb Metablock
-	if err := mb.Load("demo.layout"); err != nil {
+	mb, err := LoadMetadata("demo.layout")
+	if err != nil {
 		t.Errorf("unable to load template file: %s", err)
 	}
-	layout := mb.Signed.(Layout)
+	layout := mb.GetPayload().(Layout)
 
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{
 		Name: "foo"},
@@ -822,11 +875,11 @@ func TestLoadLinksForLayout(t *testing.T) {
 }
 
 func TestVerifyLayoutExpiration(t *testing.T) {
-	var mb Metablock
-	if err := mb.Load("demo.layout"); err != nil {
+	mb, err := LoadMetadata("demo.layout")
+	if err != nil {
 		t.Errorf("unable to load template file: %s", err)
 	}
-	layout := mb.Signed.(Layout)
+	layout := mb.GetPayload().(Layout)
 
 	// Test layout expiration check failure:
 	// - invalid date
@@ -845,15 +898,15 @@ func TestVerifyLayoutExpiration(t *testing.T) {
 
 	// Test not (yet) expired layout :)
 	layout.Expires = "3000-01-01T00:00:00Z"
-	err := VerifyLayoutExpiration(layout)
+	err = VerifyLayoutExpiration(layout)
 	if err != nil {
 		t.Errorf("VerifyLayoutExpiration returned '%s', expected nil", err)
 	}
 }
 
 func TestVerifyLayoutSignatures(t *testing.T) {
-	var mbLayout Metablock
-	if err := mbLayout.Load("demo.layout"); err != nil {
+	mbLayout, err := LoadMetadata("demo.layout")
+	if err != nil {
 		t.Errorf("unable to load template file: %s", err)
 	}
 	var layoutKey Key
@@ -876,7 +929,7 @@ func TestVerifyLayoutSignatures(t *testing.T) {
 	}
 
 	// Test successful layout signature verification
-	err := VerifyLayoutSignatures(mbLayout, map[string]Key{layoutKey.KeyID: layoutKey})
+	err = VerifyLayoutSignatures(mbLayout, map[string]Key{layoutKey.KeyID: layoutKey})
 	if err != nil {
 		t.Errorf("VerifyLayoutSignatures returned '%s', expected nil",
 			err)
@@ -978,8 +1031,8 @@ func TestInTotoVerifyWithDirectory(t *testing.T) {
 	pubKeyPath := "alice.pub"
 	linkDir := "."
 
-	var layoutMb Metablock
-	if err := layoutMb.Load(layoutPath); err != nil {
+	layoutMb, err := LoadMetadata(layoutPath)
+	if err != nil {
 		t.Error(err)
 	}
 

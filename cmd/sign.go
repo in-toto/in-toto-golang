@@ -60,9 +60,8 @@ root layout's signature(s). Passing exactly one key using
 }
 
 func sign(cmd *cobra.Command, args []string) error {
-	var layoutMb intoto.Metablock
-
-	if err := layoutMb.Load(layoutPath); err != nil {
+	layoutEnv, err := intoto.LoadMetadata(layoutPath)
+	if err != nil {
 		return fmt.Errorf("failed to load layout at %s: %w", layoutPath, err)
 	}
 
@@ -72,7 +71,7 @@ func sign(cmd *cobra.Command, args []string) error {
 	}
 
 	if verifyFile {
-		if err := layoutMb.VerifySignature(key); err != nil {
+		if err := layoutEnv.VerifySignature(key); err != nil {
 			return fmt.Errorf("signature verification failed: %w", err)
 		}
 		return nil
@@ -81,8 +80,9 @@ func sign(cmd *cobra.Command, args []string) error {
 	if len(outputPath) == 0 {
 		outputPath = layoutPath
 	}
-	layoutMb.Sign(key)
-	layoutMb.Dump(outputPath)
 
-	return nil
+	if err := layoutEnv.Sign(key); err != nil {
+		return err
+	}
+	return layoutEnv.Dump(outputPath)
 }

@@ -149,6 +149,13 @@ toggles following linked directories only, linked files are always
 recorded independently of this parameter.`,
 	)
 
+	runCmd.PersistentFlags().BoolVar(
+		&useDSSE,
+		"use-dsse",
+		false,
+		"Create metadata using DSSE instead of the legacy signature wrapper.",
+	)
+
 	runCmd.Flags().StringVar(
 		&spiffeUDS,
 		"spiffe-workload-api-path",
@@ -167,15 +174,15 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no command arguments passed, please specify or use --no-command option")
 	}
 
-	block, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization, followSymlinkDirs)
+	metadata, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization, followSymlinkDirs, useDSSE)
 	if err != nil {
 		return fmt.Errorf("failed to create link metadata: %w", err)
 	}
 
-	linkName := fmt.Sprintf(intoto.LinkNameFormat, block.Signed.(intoto.Link).Name, key.KeyID)
+	linkName := fmt.Sprintf(intoto.LinkNameFormat, metadata.GetPayload().(intoto.Link).Name, key.KeyID)
 
 	linkPath := filepath.Join(outDir, linkName)
-	err = block.Dump(linkPath)
+	err = metadata.Dump(linkPath)
 	if err != nil {
 		return fmt.Errorf("failed to write link metadata to %s: %w", linkPath, err)
 	}

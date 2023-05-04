@@ -81,9 +81,8 @@ with a new line character.`,
 }
 
 func verify(cmd *cobra.Command, args []string) error {
-	var layoutMb intoto.Metablock
-
-	if err := layoutMb.Load(layoutPath); err != nil {
+	layoutMb, err := intoto.LoadMetadata(layoutPath)
+	if err != nil {
 		return fmt.Errorf("failed to load layout at %s: %w", layoutPath, err)
 	}
 
@@ -109,7 +108,7 @@ func verify(cmd *cobra.Command, args []string) error {
 		intermediatePems = append(intermediatePems, pemBytes)
 	}
 
-	_, err := intoto.InTotoVerify(layoutMb, layoutKeys, linkDir, "", make(map[string]string), intermediatePems, lineNormalization)
+	_, err = intoto.InTotoVerify(layoutMb, layoutKeys, linkDir, "", make(map[string]string), intermediatePems, lineNormalization)
 	if err != nil {
 		return fmt.Errorf("inspection failed: %w", err)
 	}
