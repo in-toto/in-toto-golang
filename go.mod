@@ -9,7 +9,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spiffe/go-spiffe/v2 v2.1.3
 	github.com/stretchr/testify v1.8.2
-	golang.org/x/sys v0.7.0
+	golang.org/x/sys v0.8.0
 	google.golang.org/grpc v1.54.0
 )
 
