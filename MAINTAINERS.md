@@ -1,8 +1,9 @@
 # Maintainers
 
-This document lists all maintainers and their GPG fingerprints.
-All releases have been signed with a GPG signature from one of these people.
-
+This project is managed by the
+[in-toto Steering Committee](https://github.com/in-toto/community/blob/main/GOVERNANCE.md).
+It is maintained by the following developers. All releases have been signed with
+a GPG signature from one of these people.
 
 * Santiago Torres
     * Email: santiagotorres@purdue.edu
