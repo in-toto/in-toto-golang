@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"sort"
 	"testing"
 
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -742,5 +743,90 @@ func TestLineNormalizationFlag(t *testing.T) {
 				t.Errorf("RecordArtifact() got = %v, want %v", got, expected)
 			}
 		})
+	}
+}
+
+func TestInTotoMatchProducts(t *testing.T) {
+	link := &Link{
+		Products: map[string]any{
+			"foo": map[string]string{
+				"sha256": "8a51c03f1ff77c2b8e76da512070c23c5e69813d5c61732b3025199e5f0c14d5",
+			},
+			"bar": map[string]string{
+				"sha256": "bb97edb3507a35b119539120526d00da595f14575da261cd856389ecd89d3186",
+			},
+			"baz": map[string]string{
+				"sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			},
+		},
+	}
+	if _, err := os.Create("bar"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Create("baz"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Create("quux"); err != nil {
+		t.Fatal(err)
+	}
+
+	testDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		paths                  []string
+		excludePatterns        []string
+		lstripPaths            []string
+		expectedOnlyInProducts []string
+		expectedNotInProducts  []string
+		expectedDiffer         []string
+	}{
+		{
+			paths:                  []string{"bar", "baz", "quux"},
+			expectedOnlyInProducts: []string{"foo"},
+			expectedNotInProducts:  []string{"quux"},
+			expectedDiffer:         []string{"bar"},
+		},
+		{
+			paths:                  []string{"bar", "baz", "quux"},
+			excludePatterns:        []string{"ba*"},
+			expectedOnlyInProducts: []string{"bar", "baz", "foo"},
+			expectedNotInProducts:  []string{"quux"},
+			expectedDiffer:         []string{},
+		},
+		{
+			paths:                  []string{"baz"},
+			expectedOnlyInProducts: []string{"bar", "foo"},
+			expectedNotInProducts:  []string{},
+			expectedDiffer:         []string{},
+		},
+		{
+			paths:                  []string{filepath.Join(testDir, "baz")},
+			lstripPaths:            []string{fmt.Sprintf("%s%s", testDir, string(os.PathSeparator))},
+			expectedOnlyInProducts: []string{"bar", "foo"},
+			expectedNotInProducts:  []string{},
+			expectedDiffer:         []string{},
+		},
+	}
+
+	for _, test := range tests {
+		onlyInProducts, notInProducts, differ, err := InTotoMatchProducts(link, test.paths, []string{"sha256"}, test.excludePatterns, test.lstripPaths)
+		assert.Nil(t, err)
+
+		sort.Slice(onlyInProducts, func(i, j int) bool {
+			return onlyInProducts[i] < onlyInProducts[j]
+		})
+		sort.Slice(notInProducts, func(i, j int) bool {
+			return notInProducts[i] < notInProducts[j]
+		})
+		sort.Slice(differ, func(i, j int) bool {
+			return differ[i] < differ[j]
+		})
+
+		assert.Equal(t, test.expectedOnlyInProducts, onlyInProducts)
+		assert.Equal(t, test.expectedNotInProducts, notInProducts)
+		assert.Equal(t, test.expectedDiffer, differ)
 	}
 }

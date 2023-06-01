@@ -17,6 +17,7 @@ A framework to secure the integrity of software supply chains https://in-toto.io
 * [in-toto completion](in-toto_completion.md)	 - Generate completion script
 * [in-toto gendoc](in-toto_gendoc.md)	 - Generate in-toto-golang's help docs
 * [in-toto key](in-toto_key.md)	 - Key management commands
+* [in-toto match-products](in-toto_match-products.md)	 - Check if local artifacts match products in passed link
 * [in-toto record](in-toto_record.md)	 - Creates a signed link metadata file in two steps, in order to provide
               evidence for supply chain steps that cannot be carried out by a single command
 * [in-toto run](in-toto_run.md)	 - Executes the passed command and records paths and hashes of 'materials'

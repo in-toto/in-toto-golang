@@ -460,3 +460,77 @@ func InTotoRecordStop(prelimLinkEnv Metadata, productPaths []string, key Key, ha
 
 	return linkMb, nil
 }
+
+/*
+InTotoMatchProducts checks if local artifacts match products in passed link.
+
+NOTE: Does not check integrity or authenticity of passed link!
+*/
+func InTotoMatchProducts(link *Link, paths []string, hashAlgorithms []string, excludePatterns []string, lstripPaths []string) ([]string, []string, []string, error) {
+	if len(paths) == 0 {
+		paths = append(paths, ".")
+	}
+
+	artifacts, err := RecordArtifacts(paths, hashAlgorithms, excludePatterns, lstripPaths, false, false)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	artifactNames := []string{}
+	for name := range artifacts {
+		artifactNames = append(artifactNames, name)
+	}
+	artifactsSet := NewSet(artifactNames...)
+
+	productNames := []string{}
+	for name := range link.Products {
+		productNames = append(productNames, name)
+	}
+	productsSet := NewSet(productNames...)
+
+	onlyInProductsSet := productsSet.Difference(artifactsSet)
+	onlyInProducts := []string{}
+	for name := range onlyInProductsSet {
+		onlyInProducts = append(onlyInProducts, name)
+	}
+
+	notInProductsSet := artifactsSet.Difference(productsSet)
+	notInProducts := []string{}
+	for name := range notInProductsSet {
+		notInProducts = append(notInProducts, name)
+	}
+
+	inBothSet := artifactsSet.Intersection(productsSet)
+	differ := []string{}
+	for name := range inBothSet {
+		linkHashes := map[string]string{}
+		switch hashObj := link.Products[name].(type) {
+		case map[string]any:
+			for alg, val := range hashObj {
+				linkHashes[alg] = val.(string)
+			}
+		case map[string]string:
+			for alg, val := range hashObj {
+				linkHashes[alg] = val
+			}
+		}
+
+		artifactHashes := map[string]string{}
+		switch hashObj := artifacts[name].(type) {
+		case map[string]any:
+			for alg, val := range hashObj {
+				artifactHashes[alg] = val.(string)
+			}
+		case map[string]string:
+			for alg, val := range hashObj {
+				artifactHashes[alg] = val
+			}
+		}
+
+		if !reflect.DeepEqual(linkHashes, artifactHashes) {
+			differ = append(differ, name)
+		}
+	}
+
+	return onlyInProducts, notInProducts, differ, nil
+}
