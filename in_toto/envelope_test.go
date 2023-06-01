@@ -30,8 +30,8 @@ func TestEnvelopeSetPayload(t *testing.T) {
 		payload := Link{
 			Type:        "link",
 			Name:        "test",
-			Materials:   map[string]any{},
-			Products:    map[string]any{},
+			Materials:   map[string]HashObj{},
+			Products:    map[string]HashObj{},
 			ByProducts:  map[string]any{},
 			Environment: map[string]any{},
 			Command:     []string{},
@@ -67,8 +67,8 @@ func TestEnvelopeGetPayload(t *testing.T) {
 		payload := Link{
 			Type:        "link",
 			Name:        "test",
-			Materials:   map[string]any{},
-			Products:    map[string]any{},
+			Materials:   map[string]HashObj{},
+			Products:    map[string]HashObj{},
 			ByProducts:  map[string]any{},
 			Environment: map[string]any{},
 			Command:     []string{},
@@ -86,8 +86,8 @@ func TestEnvelopeGetPayload(t *testing.T) {
 		payload := Link{
 			Type:        "link",
 			Name:        "test",
-			Materials:   map[string]any{},
-			Products:    map[string]any{},
+			Materials:   map[string]HashObj{},
+			Products:    map[string]HashObj{},
 			ByProducts:  map[string]any{},
 			Environment: map[string]any{},
 			Command:     []string{},

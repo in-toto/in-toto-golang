@@ -18,6 +18,8 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
+type HashObj = map[string]string
+
 /*
 KeyVal contains the actual values of a key, as opposed to key metadata such as
 a key identifier or key type.  For RSA keys, the key value is a pair of public
@@ -337,8 +339,8 @@ writing to disk.
 type Link struct {
 	Type        string                 `json:"_type"`
 	Name        string                 `json:"name"`
-	Materials   map[string]interface{} `json:"materials"`
-	Products    map[string]interface{} `json:"products"`
+	Materials   map[string]HashObj     `json:"materials"`
+	Products    map[string]HashObj     `json:"products"`
 	ByProducts  map[string]interface{} `json:"byproducts"`
 	Command     []string               `json:"command"`
 	Environment map[string]interface{} `json:"environment"`
@@ -347,7 +349,7 @@ type Link struct {
 /*
 validateArtifacts is a general function used to validate products and materials.
 */
-func validateArtifacts(artifacts map[string]interface{}) error {
+func validateArtifacts(artifacts map[string]HashObj) error {
 	for artifactName, artifact := range artifacts {
 		artifactValue := reflect.ValueOf(artifact).MapRange()
 		for artifactValue.Next() {

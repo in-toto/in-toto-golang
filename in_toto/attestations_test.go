@@ -429,10 +429,10 @@ func TestLinkStatement(t *testing.T) {
     "name": "name",
     "command": ["cc", "-o", "baz", "baz.z"],
     "materials": {
-       "kv": "vv"
+       "kv": {"alg": "vv"}
     },
     "products": {
-       "kp": "vp"
+       "kp": {"alg": "vp"}
     },
     "byproducts": {
        "kb": "vb"
@@ -459,11 +459,11 @@ func TestLinkStatement(t *testing.T) {
 		Predicate: Link{
 			Type: "link",
 			Name: "name",
-			Materials: map[string]interface{}{
-				"kv": "vv",
+			Materials: map[string]HashObj{
+				"kv": {"alg": "vv"},
 			},
-			Products: map[string]interface{}{
-				"kp": "vp",
+			Products: map[string]HashObj{
+				"kp": {"alg": "vp"},
 			},
 			ByProducts: map[string]interface{}{
 				"kb": "vb",

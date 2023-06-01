@@ -254,8 +254,8 @@ func TestRunInspections(t *testing.T) {
 		sort.Strings(availableFiles)
 		// Compare material and products (only file names) to files that were
 		// in the directory before calling RunInspections
-		materialNames := InterfaceKeyStrings(result[inspectionName].GetPayload().(Link).Materials)
-		productNames := InterfaceKeyStrings(result[inspectionName].GetPayload().(Link).Products)
+		materialNames := artifactsDictKeyStrings(result[inspectionName].GetPayload().(Link).Materials)
+		productNames := artifactsDictKeyStrings(result[inspectionName].GetPayload().(Link).Products)
 		sort.Strings(materialNames)
 		sort.Strings(productNames)
 		if !reflect.DeepEqual(materialNames, availableFiles) ||
@@ -341,17 +341,17 @@ func TestVerifyArtifact(t *testing.T) {
 				"foo": &Metablock{
 					Signed: Link{
 						Name: "foo",
-						Materials: map[string]interface{}{
-							"foo-delete": map[string]interface{}{"sha265": "abc"},
-							"foo-modify": map[string]interface{}{"sha265": "abc"},
-							"foo-match":  map[string]interface{}{"sha265": "abc"},
-							"foo-allow":  map[string]interface{}{"sha265": "abc"},
+						Materials: map[string]HashObj{
+							"foo-delete": {"sha265": "abc"},
+							"foo-modify": {"sha265": "abc"},
+							"foo-match":  {"sha265": "abc"},
+							"foo-allow":  {"sha265": "abc"},
 						},
-						Products: map[string]interface{}{
-							"foo-create": map[string]interface{}{"sha265": "abc"},
-							"foo-modify": map[string]interface{}{"sha265": "abcdef"},
-							"foo-match":  map[string]interface{}{"sha265": "abc"},
-							"foo-allow":  map[string]interface{}{"sha265": "abc"},
+						Products: map[string]HashObj{
+							"foo-create": {"sha265": "abc"},
+							"foo-modify": {"sha265": "abcdef"},
+							"foo-match":  {"sha265": "abc"},
+							"foo-allow":  {"sha265": "abc"},
 						},
 					},
 				},
@@ -375,18 +375,18 @@ func TestVerifyArtifact(t *testing.T) {
 				"foo": &Metablock{
 					Signed: Link{
 						Name: "foo",
-						Materials: map[string]interface{}{
-							"./foo.d/foo.py": map[string]interface{}{"sha265": "abc"},
-							"bar.d/bar.py":   map[string]interface{}{"sha265": "abc"},
+						Materials: map[string]HashObj{
+							"./foo.d/foo.py": {"sha265": "abc"},
+							"bar.d/bar.py":   {"sha265": "abc"},
 						},
 					},
 				},
 				"bar": &Metablock{
 					Signed: Link{
 						Name: "bar",
-						Products: map[string]interface{}{
-							"foo.d/foo.py":          map[string]interface{}{"sha265": "abc"},
-							"./baz/../bar.d/bar.py": map[string]interface{}{"sha265": "abc"},
+						Products: map[string]HashObj{
+							"foo.d/foo.py":          {"sha265": "abc"},
+							"./baz/../bar.d/bar.py": {"sha265": "abc"},
 						},
 					},
 				},
@@ -410,18 +410,18 @@ func TestVerifyArtifact(t *testing.T) {
 				"foo": &Metablock{
 					Signed: Link{
 						Name: "foo",
-						Materials: map[string]interface{}{
-							"foo.d/foo.py": map[string]interface{}{"sha265": "abc"},
-							"bar.d/bar.py": map[string]interface{}{"sha265": "def"}, // modified by mitm
+						Materials: map[string]HashObj{
+							"foo.d/foo.py": {"sha265": "abc"},
+							"bar.d/bar.py": {"sha265": "def"}, // modified by mitm
 						},
 					},
 				},
 				"bar": &Metablock{
 					Signed: Link{
 						Name: "bar",
-						Products: map[string]interface{}{
-							"foo.d/foo.py": map[string]interface{}{"sha265": "abc"},
-							"bar.d/bar.py": map[string]interface{}{"sha265": "abc"},
+						Products: map[string]HashObj{
+							"foo.d/foo.py": {"sha265": "abc"},
+							"bar.d/bar.py": {"sha265": "abc"},
 						},
 					},
 				},
@@ -473,97 +473,97 @@ func TestVerifyArtifact(t *testing.T) {
 		{
 			name:      "Disallowed material in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"foo.py": {"sha265": "abc"}}}}},
 			expectErr: "materials [foo.py] disallowed by rule",
 		},
 		{
 			name:      "Disallowed product in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]HashObj{"foo.py": {"sha265": "abc"}}}}},
 			expectErr: "products [foo.py] disallowed by rule",
 		},
 		{
 			name:      "Disallowed material in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"foo.py": {"sha265": "abc"}}}}},
 			expectErr: "materials [foo.py] disallowed by rule",
 		},
 		{
 			name:      "Disallowed product in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]HashObj{"foo.py": {"sha265": "abc"}}}}},
 			expectErr: "products [foo.py] disallowed by rule",
 		},
 		{
 			name:      "Required but missing material in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"REQUIRE", "foo"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"foo.py": {"sha265": "abc"}}}}},
 			expectErr: "materials in REQUIRE 'foo'",
 		},
 		{
 			name:      "Required but missing product in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"REQUIRE", "foo"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]HashObj{"foo.py": {"sha265": "abc"}}}}},
 			expectErr: "products in REQUIRE 'foo'",
 		},
 		{
 			name:      "Required but missing material in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"REQUIRE", "foo"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"foo.py": {"sha265": "abc"}}}}},
 			expectErr: "materials in REQUIRE 'foo'",
 		},
 		{
 			name:      "Required but missing product in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"REQUIRE", "foo"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]HashObj{"foo.py": {"sha265": "abc"}}}}},
 			expectErr: "products in REQUIRE 'foo'",
 		},
 		{
 			name:      "Disallowed subdirectory material in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"dir/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"dir/foo.py": {"sha265": "abc"}}}}},
 			expectErr: "materials [dir/foo.py] disallowed by rule",
 		},
 		{
 			name:      "Disallowed subdirectory product in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"dir/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]HashObj{"dir/foo.py": {"sha265": "abc"}}}}},
 			expectErr: "products [dir/foo.py] disallowed by rule",
 		},
 		{
 			name:      "Disallowed subdirectory material in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"dir/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"dir/foo.py": {"sha265": "abc"}}}}},
 			expectErr: "materials [dir/foo.py] disallowed by rule",
 		},
 		{
 			name:      "Disallowed subdirectory product in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"dir/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]HashObj{"dir/foo.py": {"sha265": "abc"}}}}},
 			expectErr: "products [dir/foo.py] disallowed by rule",
 		},
 		{
 			name:      "Consuming filename material in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"ALLOW", "foo.py"}, {"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"./bar/..//foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"./bar/..//foo.py": {"sha265": "abc"}}}}},
 			expectErr: "",
 		},
 		{
 			name:      "Consuming filename product in step",
 			item:      []interface{}{Step{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"ALLOW", "foo.py"}, {"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"./bar/..//foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]HashObj{"./bar/..//foo.py": {"sha265": "abc"}}}}},
 			expectErr: "",
 		},
 		{
 			name:      "Consuming filename material in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"ALLOW", "foo.py"}, {"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"./bar/..//foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"./bar/..//foo.py": HashObj{"sha265": "abc"}}}}},
 			expectErr: "",
 		},
 		{
 			name:      "Consuming filename product in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedProducts: [][]string{{"ALLOW", "foo.py"}, {"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]interface{}{"./bar/..//foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Products: map[string]HashObj{"./bar/..//foo.py": {"sha265": "abc"}}}}},
 			expectErr: "",
 		},
 	}
@@ -585,71 +585,71 @@ func TestVerifyMatchRule(t *testing.T) {
 	var testCases = []struct {
 		name        string
 		rule        map[string]string
-		srcArtifact map[string]interface{}
+		srcArtifact map[string]HashObj
 		item        map[string]Metadata
 		expectSet   Set
 	}{
 		{
 			name:        "Can't find destination link (invalid rule)",
 			rule:        map[string]string{},
-			srcArtifact: map[string]interface{}{},
+			srcArtifact: map[string]HashObj{},
 			item:        map[string]Metadata{},
 			expectSet:   NewSet(),
 		},
 		{
 			name:        "Can't find destination link (empty metadata map)",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials"},
-			srcArtifact: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}},
+			srcArtifact: map[string]HashObj{"foo.py": {"sha265": "abc"}},
 			item:        map[string]Metadata{},
 			expectSet:   NewSet(),
 		},
 		{
 			name:        "Match material foo.py",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials"},
-			srcArtifact: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}},
-			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			srcArtifact: map[string]HashObj{"foo.py": {"sha265": "abc"}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"foo.py": {"sha265": "abc"}}}}},
 			expectSet:   NewSet("foo.py"),
 		},
 		{
 			name:        "Match material foo.py with foo.d/foo.py",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials", "dstPrefix": "foo.d"},
-			srcArtifact: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}},
-			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.d/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			srcArtifact: map[string]HashObj{"foo.py": {"sha265": "abc"}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"foo.d/foo.py": HashObj{"sha265": "abc"}}}}},
 			expectSet:   NewSet("foo.py"),
 		},
 		{
 			name:        "Match material foo.d/foo.py with foo.py",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials", "srcPrefix": "foo.d"},
-			srcArtifact: map[string]interface{}{"foo.d/foo.py": map[string]interface{}{"sha265": "abc"}},
-			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			srcArtifact: map[string]HashObj{"foo.d/foo.py": {"sha265": "abc"}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"foo.py": HashObj{"sha265": "abc"}}}}},
 			expectSet:   NewSet("foo.d/foo.py"),
 		},
 		{
 			name:        "Don't match material (different name)",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials"},
-			srcArtifact: map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "abc"}},
-			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			srcArtifact: map[string]HashObj{"bar.py": {"sha265": "abc"}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"foo.py": {"sha265": "abc"}}}}},
 			expectSet:   NewSet(),
 		},
 		{
 			name:        "Don't match material (different hash)",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials"},
-			srcArtifact: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "dead"}},
-			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			srcArtifact: map[string]HashObj{"foo.py": {"sha265": "dead"}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"foo.py": {"sha265": "abc"}}}}},
 			expectSet:   NewSet(),
 		},
 		{
 			name:        "Match material in sub-directories dir/foo.py",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials"},
-			srcArtifact: map[string]interface{}{"bar/foo.py": map[string]interface{}{"sha265": "abc"}},
-			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]interface{}{"bar/foo.py": map[string]interface{}{"sha265": "abc"}}}}},
+			srcArtifact: map[string]HashObj{"bar/foo.py": {"sha265": "abc"}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"bar/foo.py": {"sha265": "abc"}}}}},
 			expectSet:   NewSet("bar/foo.py"),
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			queue := NewSet(InterfaceKeyStrings(tt.srcArtifact)...)
+			queue := NewSet(artifactsDictKeyStrings(tt.srcArtifact)...)
 			result := verifyMatchRule(tt.rule, tt.srcArtifact, queue, tt.item)
 			if !reflect.DeepEqual(result, tt.expectSet) {
 				t.Errorf("verifyMatchRule returned '%s', expected '%s'", result, tt.expectSet)
@@ -672,14 +672,14 @@ func TestReduceStepsMetadata(t *testing.T) {
 			"a": &Metablock{Signed: Link{
 				Type:      "link",
 				Name:      "foo",
-				Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}},
-				Products:  map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "cde"}},
+				Materials: map[string]HashObj{"foo.py": {"sha265": "abc"}},
+				Products:  map[string]HashObj{"bar.py": {"sha265": "cde"}},
 			}},
 			"b": &Metablock{Signed: Link{
 				Type:      "link",
 				Name:      "foo",
-				Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}},
-				Products:  map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "cde"}},
+				Materials: map[string]HashObj{"foo.py": {"sha265": "abc"}},
+				Products:  map[string]HashObj{"bar.py": {"sha265": "cde"}},
 			}},
 		},
 	}
@@ -698,20 +698,20 @@ func TestReduceStepsMetadata(t *testing.T) {
 	// - Different products (name)
 	stepsMetadataList := []map[string]map[string]Metadata{
 		{"foo": {
-			"a": &Metablock{Signed: Link{Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
-			"b": &Metablock{Signed: Link{Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "def"}}}},
+			"a": &Metablock{Signed: Link{Materials: map[string]HashObj{"foo.py": {"sha265": "abc"}}}},
+			"b": &Metablock{Signed: Link{Materials: map[string]HashObj{"foo.py": {"sha265": "def"}}}},
 		}},
 		{"foo": {
-			"a": &Metablock{Signed: Link{Materials: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
-			"b": &Metablock{Signed: Link{Materials: map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "abc"}}}},
+			"a": &Metablock{Signed: Link{Materials: map[string]HashObj{"foo.py": {"sha265": "abc"}}}},
+			"b": &Metablock{Signed: Link{Materials: map[string]HashObj{"bar.py": {"sha265": "abc"}}}},
 		}},
 		{"foo": {
-			"a": &Metablock{Signed: Link{Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
-			"b": &Metablock{Signed: Link{Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "def"}}}},
+			"a": &Metablock{Signed: Link{Products: map[string]HashObj{"foo.py": {"sha265": "abc"}}}},
+			"b": &Metablock{Signed: Link{Products: map[string]HashObj{"foo.py": {"sha265": "def"}}}},
 		}},
 		{"foo": {
-			"a": &Metablock{Signed: Link{Products: map[string]interface{}{"foo.py": map[string]interface{}{"sha265": "abc"}}}},
-			"b": &Metablock{Signed: Link{Products: map[string]interface{}{"bar.py": map[string]interface{}{"sha265": "abc"}}}},
+			"a": &Metablock{Signed: Link{Products: map[string]HashObj{"foo.py": {"sha265": "abc"}}}},
+			"b": &Metablock{Signed: Link{Products: map[string]HashObj{"bar.py": {"sha265": "abc"}}}},
 		}},
 	}
 
