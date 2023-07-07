@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
@@ -205,6 +206,11 @@ func recordStop(cmd *cobra.Command, args []string) error {
 	err = linkMb.Dump(linkPath)
 	if err != nil {
 		return fmt.Errorf("failed to write stop link file to %s: %w", prelimLinkName, err)
+	}
+
+	err = os.Remove(prelimLinkPath)
+	if err != nil {
+		return fmt.Errorf("failed to remove start link file at %s: %w", prelimLinkName, err)
 	}
 
 	return nil
