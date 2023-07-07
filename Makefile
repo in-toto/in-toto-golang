@@ -39,6 +39,11 @@ test: go-test test-verify test-spiffe-verify
 go-test:
 	@go test ./...
 
+# Run all the linters
+.PHONY: lint
+lint: 
+	golangci-lint run ./...
+
 test-sign: build generate_layout
 	# Running test-sign
 	cd ./test/tmp; ../../bin/in-toto sign -f ./test.layout -k ../../certs/example.com.layout.key.pem -o ./signed.layout
