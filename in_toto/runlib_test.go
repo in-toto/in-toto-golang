@@ -221,7 +221,7 @@ func TestSymlinkToFolder(t *testing.T) {
 	}
 
 	expected := map[string]interface{}{
-		filepath.Join("symTmpfile.sym", "symTmpfile"): map[string]interface{}{
+		filepath.ToSlash(filepath.Join("symTmpfile.sym", "symTmpfile")): map[string]interface{}{
 			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
 		},
 	}
