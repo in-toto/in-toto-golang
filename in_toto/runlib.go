@@ -96,6 +96,15 @@ func RecordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns 
 	// Make sure to initialize a fresh hashset for every RecordArtifacts call
 	visitedSymlinks = NewSet()
 	evalArtifacts, err = recordArtifacts(paths, hashAlgorithms, gitignorePatterns, lStripPaths, lineNormalization, followSymlinkDirs)
+	// normalize windows paths to unix paths
+	for key, value := range evalArtifacts {
+		delete(evalArtifacts, key)
+		key = filepath.ToSlash(key)
+
+		// Convert windows filepath to unix filepath.
+		evalArtifacts[key] = value
+	}
+
 	// pass result and error through
 	return evalArtifacts, err
 }
