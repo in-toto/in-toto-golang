@@ -95,18 +95,19 @@ return value is the error.
 func RecordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool) (evalArtifacts map[string]interface{}, err error) {
 	// Make sure to initialize a fresh hashset for every RecordArtifacts call
 	visitedSymlinks = NewSet()
-	evalArtifacts, err = recordArtifacts(paths, hashAlgorithms, gitignorePatterns, lStripPaths, lineNormalization, followSymlinkDirs)
-	// normalize windows paths to unix paths
-	for key, value := range evalArtifacts {
-		delete(evalArtifacts, key)
-		key = filepath.ToSlash(key)
-
-		// Convert windows filepath to unix filepath.
-		evalArtifacts[key] = value
+	evalArtifactsUnnormalized, err := recordArtifacts(paths, hashAlgorithms, gitignorePatterns, lStripPaths, lineNormalization, followSymlinkDirs)
+	if err != nil {
+		return nil, err
 	}
 
-	// pass result and error through
-	return evalArtifacts, err
+	// Normalize all paths in evalArtifactsUnnormalized.
+	evalArtifacts = make(map[string]interface{})
+	for key, value := range evalArtifactsUnnormalized {
+		// Convert windows filepath to unix filepath.
+		evalArtifacts[filepath.ToSlash(key)] = value
+	}
+
+	return evalArtifacts, nil
 }
 
 /*
