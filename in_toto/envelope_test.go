@@ -176,6 +176,16 @@ func TestEnvelopeVerifySignature(t *testing.T) {
 		err = env.VerifySignature(key)
 		assert.NotNil(t, err)
 	})
+
+	t.Run("invalid key", func(t *testing.T) {
+		key := Key{
+			KeyID:   "invalid",
+			KeyType: "invalid",
+		}
+
+		err := env.VerifySignature(key)
+		assert.ErrorIs(t, err, ErrUnsupportedKeyType)
+	})
 }
 
 func TestEnvelopeSign(t *testing.T) {
@@ -192,12 +202,31 @@ func TestEnvelopeSign(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := env.Sign(key); err != nil {
-		t.Error(err)
-	}
+	t.Run("valid ed25519 key", func(t *testing.T) {
+		if err := env.Sign(key); err != nil {
+			t.Fatal(err)
+		}
 
-	assert.Equal(t, "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6", env.envelope.Signatures[0].KeyID)
-	assert.Equal(t, "HeacKZDQD+EIYz1dLJ2NpXxcG70tn62BOzcxnAArFSKJcWIL0qcyzvdtpSJQ0pOyq8lBxMk5nIRO0Kr89SZoBA==", env.envelope.Signatures[0].Sig)
+		assert.Equal(t, "be6371bc627318218191ce0780fd3183cce6c36da02938a477d2e4dfae1804a6", env.envelope.Signatures[0].KeyID)
+		assert.Equal(t, "HeacKZDQD+EIYz1dLJ2NpXxcG70tn62BOzcxnAArFSKJcWIL0qcyzvdtpSJQ0pOyq8lBxMk5nIRO0Kr89SZoBA==", env.envelope.Signatures[0].Sig)
+	})
+
+	t.Run("invalid key", func(t *testing.T) {
+		key := Key{
+			KeyID:   "invalid",
+			KeyType: "invalid",
+		}
+
+		err := env.Sign(key)
+		assert.ErrorIs(t, err, ErrUnsupportedKeyType)
+	})
+
+	t.Run("invalid payload", func(t *testing.T) {
+		env.envelope.Payload = "abcdef"
+
+		err := env.Sign(key)
+		assert.ErrorContains(t, err, "unable to base64 decode payload")
+	})
 }
 
 func TestEnvelopeGetSignatureForKeyID(t *testing.T) {
