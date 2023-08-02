@@ -101,7 +101,7 @@ func RecordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns 
 	}
 
 	// Normalize all paths in evalArtifactsUnnormalized.
-	evalArtifacts = make(map[string]interface{})
+	evalArtifacts = make(map[string]interface{}, len(evalArtifactsUnnormalized))
 	for key, value := range evalArtifactsUnnormalized {
 		// Convert windows filepath to unix filepath.
 		evalArtifacts[filepath.ToSlash(key)] = value
