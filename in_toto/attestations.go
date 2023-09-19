@@ -1,6 +1,7 @@
 package in_toto
 
 import (
+	ita1 "github.com/in-toto/attestation/go/v1"
 	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 	slsa01 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
 	slsa02 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
@@ -11,6 +12,11 @@ const (
 	// StatementInTotoV01 is the statement type for the generalized link format
 	// containing statements. This is constant for all predicate types.
 	StatementInTotoV01 = "https://in-toto.io/Statement/v0.1"
+
+	// StatementInTotoV1 is the type URI for ITE-6 v1 Statements.
+	// This is constant for all predicate types.
+	StatementInTotoV1 = ita1.StatementTypeUri
+	
 	// PredicateSPDX represents a SBOM using the SPDX standard.
 	// The SPDX mandates 'spdxVersion' field, so predicate type can omit
 	// version.
