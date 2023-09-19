@@ -16,7 +16,7 @@ const (
 	// StatementInTotoV1 is the type URI for ITE-6 v1 Statements.
 	// This is constant for all predicate types.
 	StatementInTotoV1 = ita1.StatementTypeUri
-	
+
 	// PredicateSPDX represents a SBOM using the SPDX standard.
 	// The SPDX mandates 'spdxVersion' field, so predicate type can omit
 	// version.
