@@ -3,6 +3,7 @@ package v1
 import (
 	"time"
 
+	provpb "github.com/in-toto/attestation/predicates/provenance/v1"
 	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 )
 
@@ -180,4 +181,23 @@ type BuildMetadata struct {
 
 	// The timestamp of when the build completed.
 	FinishedOn *time.Time `json:"finishedOn,omitempty"`
+}
+
+func GenSLSAProvenance() (*provpb.Provenance, error) {
+	return nil, fmt.Errorf("Not implemented")
+}
+
+func GenSLSAStatement(subject []*ita1.ResourceDescriptor, provenance *provpb.Provenance) (*ita1.Statement, error) {
+
+	provStruct, err := PredicatePbToStruct(provenance)
+	if err != nil {
+		return nil, fmt.Errorf("Error converting Provenance to Struct: %w", err)
+	}
+
+	st, err := GenStatementV1(subject, PredicateSLSAProvenance, provStruct)
+	if err != nil {
+		return nil, err
+	}
+
+	return st, nil
 }
