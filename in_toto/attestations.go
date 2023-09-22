@@ -1,27 +1,16 @@
 package in_toto
 
 import (
-	"fmt"
-
-	ita1 "github.com/in-toto/attestation/go/v1"
 	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 	slsa01 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
 	slsa02 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
 	slsa1 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1"
-
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const (
 	// StatementInTotoV01 is the statement type for the generalized link format
 	// containing statements. This is constant for all predicate types.
 	StatementInTotoV01 = "https://in-toto.io/Statement/v0.1"
-
-	// StatementInTotoV1 is the type URI for ITE-6 v1 Statements.
-	// This is constant for all predicate types.
-	StatementInTotoV1 = ita1.StatementTypeUri
 
 	// PredicateSPDX represents a SBOM using the SPDX standard.
 	// The SPDX mandates 'spdxVersion' field, so predicate type can omit
@@ -136,75 +125,4 @@ interface, like the generic Statement.
 type CycloneDXStatement struct {
 	StatementHeader
 	Predicate interface{} `json:"predicate"`
-}
-
-func GenResourceDescriptor(name string, uri string, digestSet map[string]string, content []byte, downloadLocation string, mediaType string, annotations *structpb.Struct) (*ita1.ResourceDescriptor, error) {
-	rd := &ita1.ResourceDescriptor{
-		Name:             name,
-		Uri:              uri,
-		Digest:           digestSet,
-		Content:          content,
-		DownloadLocation: downloadLocation,
-		MediaType:        mediaType,
-		Annotations:      annotations,
-	}
-
-	err := rd.Validate()
-	if err != nil {
-		return nil, fmt.Errorf("Invalid resource descriptor: %w", err)
-	}
-
-	return rd, nil
-}
-
-func GenStatementV1(subject []*ita1.ResourceDescriptor, predicateType string, predicate *structpb.Struct) (*ita1.Statement, error) {
-	st := &ita1.Statement{
-		Type:          StatementInTotoV1,
-		Subject:       subject,
-		PredicateType: predicateType,
-		Predicate:     predicate,
-	}
-
-	err := st.Validate()
-	if err != nil {
-		return nil, fmt.Errorf("Invalid in-toto Statement: %w", err)
-	}
-
-	return st, nil
-}
-
-func PredicatePbToStruct(predicatePb proto.Message) (*structpb.Struct, error) {
-	predJson, err := protojson.Marshal(predicatePb)
-	if err != nil {
-		return nil, err
-	}
-
-	predStruct := &structpb.Struct{}
-	err = protojson.Unmarshal(predJson, predStruct)
-	if err != nil {
-		return nil, err
-	}
-
-	return predStruct, nil
-}
-
-/*
-RDListFromRecord converts a map of artifacts as collected
-by RecordArtifacts() in runlib.go and converts it into a list
-of ITE-6 ResourceDescriptors to be used in v1 Statements.
-*/
-func RDListFromRecord(evalArtifacts map[string]interface{}) ([]*ita1.ResourceDescriptor, error) {
-	var rds []*ita1.ResourceDescriptor
-	for name, digestSet := range evalArtifacts {
-
-		rd, err := GenResourceDescriptor(name, "", digestSet, nil, "", "", nil)
-
-		if err != nil {
-			return nil, err
-		}
-
-		rds = append(rds, rd)
-	}
-
-	return rds, nil
 }

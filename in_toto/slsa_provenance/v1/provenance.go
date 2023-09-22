@@ -1,9 +1,13 @@
 package v1
 
 import (
+	"fmt"
 	"time"
 
-	provpb "github.com/in-toto/attestation/predicates/provenance/v1"
+	provpb "github.com/in-toto/attestation/go/predicates/provenance/v1"
+	ita1 "github.com/in-toto/attestation/go/v1"
+	acommon "github.com/in-toto/in-toto-golang/in_toto/attestation/common"
+	alib1 "github.com/in-toto/in-toto-golang/in_toto/attestation/v1"
 	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 )
 
@@ -189,12 +193,12 @@ func GenSLSAProvenance() (*provpb.Provenance, error) {
 
 func GenSLSAStatement(subject []*ita1.ResourceDescriptor, provenance *provpb.Provenance) (*ita1.Statement, error) {
 
-	provStruct, err := PredicatePbToStruct(provenance)
+	provStruct, err := acommon.PredicatePbToStruct(provenance)
 	if err != nil {
 		return nil, fmt.Errorf("Error converting Provenance to Struct: %w", err)
 	}
 
-	st, err := GenStatementV1(subject, PredicateSLSAProvenance, provStruct)
+	st, err := alib1.GenStatement(subject, PredicateSLSAProvenance, provStruct)
 	if err != nil {
 		return nil, err
 	}
