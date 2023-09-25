@@ -178,13 +178,13 @@ func TestMetablockLoadDumpLoad(t *testing.T) {
 				"foo.tar.gz",
 				"foo.py",
 			},
-			Materials: map[string]interface{}{
-				"foo.py": map[string]interface{}{
+			Materials: map[string]HashObj{
+				"foo.py": {
 					"sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549",
 				},
 			},
-			Products: map[string]interface{}{
-				"foo.tar.gz": map[string]interface{}{
+			Products: map[string]HashObj{
+				"foo.tar.gz": {
 					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 				},
 			},
@@ -314,13 +314,13 @@ func TestValidateLink(t *testing.T) {
 				"foo.tar.gz",
 				"foo.py",
 			},
-			Materials: map[string]interface{}{
-				"foo.py": map[string]interface{}{
+			Materials: map[string]HashObj{
+				"foo.py": {
 					"sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549",
 				},
 			},
-			Products: map[string]interface{}{
-				"foo.tar.gz": map[string]interface{}{
+			Products: map[string]HashObj{
+				"foo.tar.gz": {
 					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 				},
 			},
@@ -348,13 +348,13 @@ func TestValidateLink(t *testing.T) {
 				"foo.tar.gz",
 				"foo.py",
 			},
-			Materials: map[string]interface{}{
-				"foo.py": map[string]interface{}{
+			Materials: map[string]HashObj{
+				"foo.py": {
 					"sha256": "!@#$%",
 				},
 			},
-			Products: map[string]interface{}{
-				"foo.tar.gz": map[string]interface{}{
+			Products: map[string]HashObj{
+				"foo.tar.gz": {
 					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e69" +
 						"36c1e5aabb7c98514f355",
 				},
@@ -384,13 +384,13 @@ func TestValidateLink(t *testing.T) {
 				"foo.tar.gz",
 				"foo.py",
 			},
-			Materials: map[string]interface{}{
-				"foo.py": map[string]interface{}{
+			Materials: map[string]HashObj{
+				"foo.py": {
 					"sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549",
 				},
 			},
-			Products: map[string]interface{}{
-				"foo.tar.gz": map[string]interface{}{
+			Products: map[string]HashObj{
+				"foo.tar.gz": {
 					"sha256": "!@#$%",
 				},
 			},
@@ -863,14 +863,14 @@ func TestValidateMetablock(t *testing.T) {
 				"foo.tar.gz",
 				"foo.py",
 			},
-			Materials: map[string]interface{}{
-				"foo.py": map[string]interface{}{
+			Materials: map[string]HashObj{
+				"foo.py": {
 					"sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a" +
 						"27c013544a60502549",
 				},
 			},
-			Products: map[string]interface{}{
-				"foo.tar.gz": map[string]interface{}{
+			Products: map[string]HashObj{
+				"foo.tar.gz": {
 					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c" +
 						"1e5aabb7c98514f355",
 				},
@@ -954,14 +954,14 @@ func TestValidateMetablock(t *testing.T) {
 				"foo.tar.gz",
 				"foo.py",
 			},
-			Materials: map[string]interface{}{
-				"foo.py": map[string]interface{}{
+			Materials: map[string]HashObj{
+				"foo.py": {
 					"sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a" +
 						"27c013544a60502549",
 				},
 			},
-			Products: map[string]interface{}{
-				"foo.tar.gz": map[string]interface{}{
+			Products: map[string]HashObj{
+				"foo.tar.gz": {
 					"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c" +
 						"1e5aabb7c98514f355",
 				},

@@ -25,7 +25,7 @@ func testOSisWindows() bool {
 func TestRecordArtifact(t *testing.T) {
 	// Test successfully record one artifact
 	result, err := RecordArtifact("foo.tar.gz", []string{"sha256"}, testOSisWindows())
-	expected := map[string]interface{}{
+	expected := HashObj{
 		"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 	}
 	if !reflect.DeepEqual(result, expected) || err != nil {
@@ -100,7 +100,7 @@ func TestGitPathSpec(t *testing.T) {
 		}
 	}
 
-	expected := map[string]interface{}{}
+	expected := map[string]HashObj{}
 	// Let's start our test in the test/data directory
 	result, err := RecordArtifacts([]string{"pathSpecTest"}, []string{"sha256"}, []string{
 		"*.pub",           // Match all .pub files (even the ones in subdirectories)
@@ -129,8 +129,8 @@ func TestSymlinkToFile(t *testing.T) {
 		t.Errorf("could not create a symlink: %s", err)
 	}
 
-	expected := map[string]interface{}{
-		"foo.tar.gz.sym": map[string]interface{}{
+	expected := map[string]HashObj{
+		"foo.tar.gz.sym": {
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 		},
 	}
@@ -221,8 +221,8 @@ func TestSymlinkToFolder(t *testing.T) {
 		t.Error(err)
 	}
 
-	expected := map[string]interface{}{
-		path.Join("symTmpfile.sym", "symTmpfile"): map[string]interface{}{
+	expected := map[string]HashObj{
+		path.Join("symTmpfile.sym", "symTmpfile"): {
 			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
 		},
 	}
@@ -292,11 +292,11 @@ func TestRecordArtifacts(t *testing.T) {
 	}
 	result, err := RecordArtifacts([]string{"foo.tar.gz",
 		"tmpdir/tmpfile"}, []string{"sha256"}, nil, []string{"tmpdir/"}, testOSisWindows(), false)
-	expected := map[string]interface{}{
-		"foo.tar.gz": map[string]interface{}{
+	expected := map[string]HashObj{
+		"foo.tar.gz": {
 			"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 		},
-		"tmpfile": map[string]interface{}{
+		"tmpfile": {
 			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
 		},
 	}
@@ -418,13 +418,13 @@ func TestInTotoRun(t *testing.T) {
 			Signed: Link{
 				Name: linkName,
 				Type: "link",
-				Materials: map[string]interface{}{
-					"alice.pub": map[string]interface{}{
+				Materials: map[string]HashObj{
+					"alice.pub": {
 						"sha256": "f051e8b561835b7b2aa7791db7bc72f2613411b0b7d428a0ac33d45b8c518039",
 					},
 				},
-				Products: map[string]interface{}{
-					"foo.tar.gz": map[string]interface{}{
+				Products: map[string]HashObj{
+					"foo.tar.gz": {
 						"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 					},
 				},
@@ -444,13 +444,13 @@ func TestInTotoRun(t *testing.T) {
 			Signed: Link{
 				Name: linkName,
 				Type: "link",
-				Materials: map[string]interface{}{
-					"alice.pub": map[string]interface{}{
+				Materials: map[string]HashObj{
+					"alice.pub": {
 						"sha256": "f051e8b561835b7b2aa7791db7bc72f2613411b0b7d428a0ac33d45b8c518039",
 					},
 				},
-				Products: map[string]interface{}{
-					"foo.tar.gz": map[string]interface{}{
+				Products: map[string]HashObj{
+					"foo.tar.gz": HashObj{
 						"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 					},
 				},
@@ -556,12 +556,12 @@ func TestInTotoRecord(t *testing.T) {
 			Signed: Link{
 				Name: linkName,
 				Type: "link",
-				Materials: map[string]interface{}{
-					"alice.pub": map[string]interface{}{
+				Materials: map[string]HashObj{
+					"alice.pub": {
 						"sha256": "f051e8b561835b7b2aa7791db7bc72f2613411b0b7d428a0ac33d45b8c518039",
 					},
 				},
-				Products:    map[string]interface{}{},
+				Products:    map[string]HashObj{},
 				ByProducts:  map[string]interface{}{},
 				Command:     []string{},
 				Environment: map[string]interface{}{},
@@ -574,13 +574,13 @@ func TestInTotoRecord(t *testing.T) {
 			Signed: Link{
 				Name: linkName,
 				Type: "link",
-				Materials: map[string]interface{}{
-					"alice.pub": map[string]interface{}{
+				Materials: map[string]HashObj{
+					"alice.pub": {
 						"sha256": "f051e8b561835b7b2aa7791db7bc72f2613411b0b7d428a0ac33d45b8c518039",
 					},
 				},
-				Products: map[string]interface{}{
-					"foo.tar.gz": map[string]interface{}{
+				Products: map[string]HashObj{
+					"foo.tar.gz": {
 						"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 					},
 				},
@@ -643,7 +643,7 @@ func TestRecordArtifactWithBlobs(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    map[string]interface{}
+		want    HashObj
 		wantErr error
 	}{
 		{
@@ -652,7 +652,7 @@ func TestRecordArtifactWithBlobs(t *testing.T) {
 				path:           "foo.tar.gz",
 				hashAlgorithms: []string{"sha256", "sha384", "sha512"},
 			},
-			want: map[string]interface{}{"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+			want: HashObj{"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 				"sha384": "ce17464027a7d7c15b15032b404fc76fdbadfa1fa566d7f7747020df2542a293b3098873a98dbbda6e461f7767b8ff6c",
 				"sha512": "bb040966a5a6aefb646909f636f7f99c9e16b684a1f0e83a87dc30c3ab4d9dec2f9b0091d8be74bbc78ba29cb0c2dd027c223579028cf9822b0bccc49d493a6d"},
 			wantErr: nil,
@@ -663,7 +663,7 @@ func TestRecordArtifactWithBlobs(t *testing.T) {
 				path:           "helloworld",
 				hashAlgorithms: []string{"sha256", "sha384", "sha512"},
 			},
-			want: map[string]interface{}{"sha256": "fd895747460401ca62d81f310538110734ff5401f8ef86c3ab27168598225db8",
+			want: HashObj{"sha256": "fd895747460401ca62d81f310538110734ff5401f8ef86c3ab27168598225db8",
 				"sha384": "ddc3ac40ca8d04929e13c42d555a5a6774d35bfac9e2f4cde5847ab3f12f36831faa3baf1b33922b53d288b352ae4b9a",
 				"sha512": "46f0e37e72879843f95ddecc4d511c9ba90241c34b471c2f2caca2784abe185da50ddc5252562b2a911b7cfedafa3e878f0e6b7aa843c136915da5306061e501"},
 			wantErr: nil,
@@ -728,7 +728,7 @@ func TestLineNormalizationFlag(t *testing.T) {
 			wantErr: nil,
 		},
 	}
-	expected := map[string]interface{}{
+	expected := HashObj{
 		"sha256": "efb929dfabd55c93796fc61cbf1fe6157445f093167dbee82e8b069842a4fceb",
 		"sha384": "936e88775dfd17c24ed41e3a896dfdf3395707acee1b6f16a52ae144bdcd8611fd17e817f5b75e5a3cf7a1dacf187bae",
 		"sha512": "1d7a485cb2c3cf22c11b4be9afbf1745e053e21a40301d3e8143350d6d2873117c12acef49d4b3650b5262e8a26ffe809b177f968845bd268f26ffd978d314bd",
@@ -749,14 +749,14 @@ func TestLineNormalizationFlag(t *testing.T) {
 
 func TestInTotoMatchProducts(t *testing.T) {
 	link := &Link{
-		Products: map[string]any{
-			"foo": map[string]string{
+		Products: map[string]HashObj{
+			"foo": {
 				"sha256": "8a51c03f1ff77c2b8e76da512070c23c5e69813d5c61732b3025199e5f0c14d5",
 			},
-			"bar": map[string]string{
+			"bar": {
 				"sha256": "bb97edb3507a35b119539120526d00da595f14575da261cd856389ecd89d3186",
 			},
-			"baz": map[string]string{
+			"baz": {
 				"sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 			},
 		},

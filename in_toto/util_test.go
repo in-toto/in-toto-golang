@@ -84,10 +84,10 @@ func TestSetFilter(t *testing.T) {
 	}
 }
 
-func TestInterfaceKeyStrings(t *testing.T) {
+func TestArtifactsDictKeyStrings(t *testing.T) {
 	expected := []string{"a", "b", "c"}
-	testMap := map[string]interface{}{"a": nil, "b": nil, "c": nil}
-	res := InterfaceKeyStrings(testMap)
+	testMap := map[string]HashObj{"a": nil, "b": nil, "c": nil}
+	res := artifactsDictKeyStrings(testMap)
 	sort.Strings(res)
 	if !reflect.DeepEqual(res, expected) {
 		t.Errorf("expected: %s, got: %s", expected, res)

@@ -41,11 +41,11 @@ value is the error.
 NOTE: For cross-platform consistency Windows-style line separators (CRLF) are
 normalized to Unix-style line separators (LF) before hashing file contents.
 */
-func RecordArtifact(path string, hashAlgorithms []string, lineNormalization bool) (map[string]interface{}, error) {
+func RecordArtifact(path string, hashAlgorithms []string, lineNormalization bool) (HashObj, error) {
 	supportedHashMappings := getHashMapping()
 	// Read file from passed path
 	contents, err := os.ReadFile(path)
-	hashedContentsMap := make(map[string]interface{})
+	hashedContentsMap := make(HashObj)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ the following format:
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
-func RecordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool) (evalArtifacts map[string]interface{}, err error) {
+func RecordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool) (evalArtifacts map[string]HashObj, err error) {
 	// Make sure to initialize a fresh hashset for every RecordArtifacts call
 	visitedSymlinks = NewSet()
 	evalArtifactsUnnormalized, err := recordArtifacts(paths, hashAlgorithms, gitignorePatterns, lStripPaths, lineNormalization, followSymlinkDirs)
@@ -101,7 +101,7 @@ func RecordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns 
 	}
 
 	// Normalize all paths in evalArtifactsUnnormalized.
-	evalArtifacts = make(map[string]interface{}, len(evalArtifactsUnnormalized))
+	evalArtifacts = make(map[string]HashObj, len(evalArtifactsUnnormalized))
 	for key, value := range evalArtifactsUnnormalized {
 		// Convert windows filepath to unix filepath.
 		evalArtifacts[filepath.ToSlash(key)] = value
@@ -128,8 +128,8 @@ the following format:
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
-func recordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool) (map[string]interface{}, error) {
-	artifacts := make(map[string]interface{})
+func recordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool) (map[string]HashObj, error) {
+	artifacts := make(map[string]HashObj)
 	for _, path := range paths {
 		err := filepath.Walk(path,
 			func(path string, info os.FileInfo, err error) error {
@@ -390,7 +390,7 @@ func InTotoRecordStart(name string, materialPaths []string, key Key, hashAlgorit
 		Type:        "link",
 		Name:        name,
 		Materials:   materials,
-		Products:    map[string]interface{}{},
+		Products:    map[string]HashObj{},
 		ByProducts:  map[string]interface{}{},
 		Command:     []string{},
 		Environment: map[string]interface{}{},
@@ -513,28 +513,14 @@ func InTotoMatchProducts(link *Link, paths []string, hashAlgorithms []string, ex
 	inBothSet := artifactsSet.Intersection(productsSet)
 	differ := []string{}
 	for name := range inBothSet {
-		linkHashes := map[string]string{}
-		switch hashObj := link.Products[name].(type) {
-		case map[string]any:
-			for alg, val := range hashObj {
-				linkHashes[alg] = val.(string)
-			}
-		case map[string]string:
-			for alg, val := range hashObj {
-				linkHashes[alg] = val
-			}
+		linkHashes := HashObj{}
+		for alg, val := range link.Products[name] {
+			linkHashes[alg] = val
 		}
 
-		artifactHashes := map[string]string{}
-		switch hashObj := artifacts[name].(type) {
-		case map[string]any:
-			for alg, val := range hashObj {
-				artifactHashes[alg] = val.(string)
-			}
-		case map[string]string:
-			for alg, val := range hashObj {
-				artifactHashes[alg] = val
-			}
+		artifactHashes := HashObj{}
+		for alg, val := range artifacts[name] {
+			artifactHashes[alg] = val
 		}
 
 		if !reflect.DeepEqual(linkHashes, artifactHashes) {
