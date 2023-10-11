@@ -3,7 +3,7 @@ module github.com/in-toto/in-toto-golang
 go 1.20
 
 require (
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/in-toto/attestation v0.1.1-0.20230828220013-11b7a1a4ca51
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0
 	github.com/shibumi/go-pathspec v1.3.0
