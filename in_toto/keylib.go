@@ -4,7 +4,6 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
@@ -440,112 +439,6 @@ func (k *Key) loadKey(keyObj interface{}, pemData *pem.Block, scheme string, key
 	}
 
 	return nil
-}
-
-/*
-GenerateSignature will automatically detect the key type and sign the signable data
-with the provided key. If everything goes right GenerateSignature will return
-a for the key valid signature and err=nil. If something goes wrong it will
-return a not initialized signature and an error. Possible errors are:
-
-  - ErrNoPEMBlock
-  - ErrUnsupportedKeyType
-
-Currently supported is only one scheme per key.
-
-Note that in-toto-golang has different requirements to an ecdsa key.
-In in-toto-golang we use the string 'ecdsa' as string for the key type.
-In the key scheme we use: ecdsa-sha2-nistp256.
-*/
-func GenerateSignature(signable []byte, key Key) (Signature, error) {
-	err := validateKey(key)
-	if err != nil {
-		return Signature{}, err
-	}
-	var signature Signature
-	var signatureBuffer []byte
-	hashMapping := getHashMapping()
-	// The following switch block is needed for keeping interoperability
-	// with the securesystemslib and the python implementation
-	// in which we are storing RSA keys in PEM format, but ed25519 keys hex encoded.
-	switch key.KeyType {
-	case rsaKeyType:
-		// We do not need the pemData here, so we can throw it away via '_'
-		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
-		if err != nil {
-			return Signature{}, err
-		}
-		parsedKey, ok := parsedKey.(*rsa.PrivateKey)
-		if !ok {
-			return Signature{}, ErrKeyKeyTypeMismatch
-		}
-		switch key.Scheme {
-		case rsassapsssha256Scheme:
-			hashed := hashToHex(hashMapping["sha256"](), signable)
-			// We use rand.Reader as secure random source for rsa.SignPSS()
-			signatureBuffer, err = rsa.SignPSS(rand.Reader, parsedKey.(*rsa.PrivateKey), crypto.SHA256, hashed,
-				&rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
-			if err != nil {
-				return signature, err
-			}
-		default:
-			// supported key schemes will get checked in validateKey
-			panic("unexpected Error in GenerateSignature function")
-		}
-	case ecdsaKeyType:
-		// We do not need the pemData here, so we can throw it away via '_'
-		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Private))
-		if err != nil {
-			return Signature{}, err
-		}
-		parsedKey, ok := parsedKey.(*ecdsa.PrivateKey)
-		if !ok {
-			return Signature{}, ErrKeyKeyTypeMismatch
-		}
-		curveSize := parsedKey.(*ecdsa.PrivateKey).Curve.Params().BitSize
-		var hashed []byte
-		if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
-			return Signature{}, ErrCurveSizeSchemeMismatch
-		}
-		// implement https://tools.ietf.org/html/rfc5656#section-6.2.1
-		// We determine the curve size and choose the correct hashing
-		// method based on the curveSize
-		switch {
-		case curveSize <= 256:
-			hashed = hashToHex(hashMapping["sha256"](), signable)
-		case 256 < curveSize && curveSize <= 384:
-			hashed = hashToHex(hashMapping["sha384"](), signable)
-		case curveSize > 384:
-			hashed = hashToHex(hashMapping["sha512"](), signable)
-		default:
-			panic("unexpected Error in GenerateSignature function")
-		}
-		// Generate the ecdsa signature on the same way, as we do in the securesystemslib
-		// We are marshalling the ecdsaSignature struct as ASN.1 INTEGER SEQUENCES
-		// into an ASN.1 Object.
-		signatureBuffer, err = ecdsa.SignASN1(rand.Reader, parsedKey.(*ecdsa.PrivateKey), hashed[:])
-		if err != nil {
-			return signature, err
-		}
-	case ed25519KeyType:
-		// We do not need a scheme switch here, because ed25519
-		// only consist of sha256 and curve25519.
-		privateHex, err := hex.DecodeString(key.KeyVal.Private)
-		if err != nil {
-			return signature, ErrInvalidHexString
-		}
-		// Note: We can directly use the key for signing and do not
-		// need to use ed25519.NewKeyFromSeed().
-		signatureBuffer = ed25519.Sign(privateHex, signable)
-	default:
-		// We should never get here, because we call validateKey in the first
-		// line of the function.
-		panic("unexpected Error in GenerateSignature function")
-	}
-	signature.Sig = hex.EncodeToString(signatureBuffer)
-	signature.KeyID = key.KeyID
-	signature.Certificate = key.KeyVal.Certificate
-	return signature, nil
 }
 
 /*
