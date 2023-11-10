@@ -1,7 +1,6 @@
 package in_toto
 
 import (
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
@@ -438,108 +437,6 @@ func (k *Key) loadKey(keyObj interface{}, pemData *pem.Block, scheme string, key
 		return errors.New("unexpected Error in LoadKey function")
 	}
 
-	return nil
-}
-
-/*
-VerifySignature will verify unverified byte data via a passed key and signature.
-Supported key types are:
-
-  - rsa
-  - ed25519
-  - ecdsa
-
-When encountering an RSA key, VerifySignature will decode the PEM block in the key
-and will call rsa.VerifyPSS() for verifying the RSA signature.
-When encountering an ed25519 key, VerifySignature will decode the hex string encoded
-public key and will use ed25519.Verify() for verifying the ed25519 signature.
-When the given key is an ecdsa key, VerifySignature will unmarshall the ASN1 object
-and will use the retrieved ecdsa components 'r' and 's' for verifying the signature.
-On success it will return nil. In case of an unsupported key type or any other error
-it will return an error.
-
-Note that in-toto-golang has different requirements to an ecdsa key.
-In in-toto-golang we use the string 'ecdsa' as string for the key type.
-In the key scheme we use: ecdsa-sha2-nistp256.
-*/
-func VerifySignature(key Key, sig Signature, unverified []byte) error {
-	err := validateKey(key)
-	if err != nil {
-		return err
-	}
-	sigBytes, err := hex.DecodeString(sig.Sig)
-	if err != nil {
-		return err
-	}
-	hashMapping := getHashMapping()
-	switch key.KeyType {
-	case rsaKeyType:
-		// We do not need the pemData here, so we can throw it away via '_'
-		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
-		if err != nil {
-			return err
-		}
-		parsedKey, ok := parsedKey.(*rsa.PublicKey)
-		if !ok {
-			return ErrKeyKeyTypeMismatch
-		}
-		switch key.Scheme {
-		case rsassapsssha256Scheme:
-			hashed := hashToHex(hashMapping["sha256"](), unverified)
-			err = rsa.VerifyPSS(parsedKey.(*rsa.PublicKey), crypto.SHA256, hashed, sigBytes, &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
-			if err != nil {
-				return fmt.Errorf("%w: %s", ErrInvalidSignature, err)
-			}
-		default:
-			// supported key schemes will get checked in validateKey
-			panic("unexpected Error in VerifySignature function")
-		}
-	case ecdsaKeyType:
-		// We do not need the pemData here, so we can throw it away via '_'
-		_, parsedKey, err := decodeAndParse([]byte(key.KeyVal.Public))
-		if err != nil {
-			return err
-		}
-		parsedKey, ok := parsedKey.(*ecdsa.PublicKey)
-		if !ok {
-			return ErrKeyKeyTypeMismatch
-		}
-		curveSize := parsedKey.(*ecdsa.PublicKey).Curve.Params().BitSize
-		var hashed []byte
-		if err := matchEcdsaScheme(curveSize, key.Scheme); err != nil {
-			return ErrCurveSizeSchemeMismatch
-		}
-		// implement https://tools.ietf.org/html/rfc5656#section-6.2.1
-		// We determine the curve size and choose the correct hashing
-		// method based on the curveSize
-		switch {
-		case curveSize <= 256:
-			hashed = hashToHex(hashMapping["sha256"](), unverified)
-		case 256 < curveSize && curveSize <= 384:
-			hashed = hashToHex(hashMapping["sha384"](), unverified)
-		case curveSize > 384:
-			hashed = hashToHex(hashMapping["sha512"](), unverified)
-		default:
-			panic("unexpected Error in VerifySignature function")
-		}
-		if ok := ecdsa.VerifyASN1(parsedKey.(*ecdsa.PublicKey), hashed[:], sigBytes); !ok {
-			return ErrInvalidSignature
-		}
-	case ed25519KeyType:
-		// We do not need a scheme switch here, because ed25519
-		// only consist of sha256 and curve25519.
-		pubHex, err := hex.DecodeString(key.KeyVal.Public)
-		if err != nil {
-			return ErrInvalidHexString
-		}
-		if ok := ed25519.Verify(pubHex, unverified, sigBytes); !ok {
-			return fmt.Errorf("%w: ed25519", ErrInvalidSignature)
-		}
-	default:
-		// We should never get here, because we call validateKey in the first
-		// line of the function.
-		panic("unexpected Error in VerifySignature function")
-	}
 	return nil
 }
 
