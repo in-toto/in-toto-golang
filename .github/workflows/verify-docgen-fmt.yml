@@ -3,7 +3,7 @@ name: Docgen and go fmt
 on:
   workflow_dispatch:
   push:
-    branches: ['main', 'release-*']
+    branches: ['master']
   pull_request:
 
 jobs:
