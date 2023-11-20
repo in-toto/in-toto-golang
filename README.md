@@ -1,6 +1,6 @@
 # Go implementation of in-toto
 [![build](https://github.com/in-toto/in-toto-golang/workflows/build/badge.svg)](https://github.com/in-toto/in-toto-golang/actions?query=workflow%3Abuild) [![Coverage Status](https://coveralls.io/repos/github/in-toto/in-toto-golang/badge.svg)](https://coveralls.io/github/in-toto/in-toto-golang) [![PkgGoDev](https://pkg.go.dev/badge/github.com/in-toto/in-toto-golang)](https://pkg.go.dev/github.com/in-toto/in-toto-golang) [![Go Report Card](https://goreportcard.com/badge/github.com/in-toto/in-toto-golang)](https://goreportcard.com/report/github.com/in-toto/in-toto-golang)
-
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/in-toto/in-toto-golang/badge)](https://api.securityscorecards.dev/projects/github.com/in-toto/in-toto-golang)
 
 Go implementation of the
 [in-toto specification](https://github.com/in-toto/docs/blob/master/in-toto-spec.md).
