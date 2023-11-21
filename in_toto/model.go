@@ -910,12 +910,12 @@ func (mb *Metablock) VerifySignature(key Key) error {
 		return err
 	}
 
-	sig_bytes, err := hex.DecodeString(sig.Sig)
+	sigBytes, err := hex.DecodeString(sig.Sig)
 	if err != nil {
 		return err
 	}
 
-	err = verifier.Verify(context.Background(), payload, sig_bytes)
+	err = verifier.Verify(context.Background(), payload, sigBytes)
 	if err != nil {
 		return err
 	}
