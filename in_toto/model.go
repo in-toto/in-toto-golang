@@ -1,9 +1,11 @@
 package in_toto
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -898,14 +900,26 @@ func (mb *Metablock) VerifySignature(key Key) error {
 		return err
 	}
 
-	dataCanonical, err := mb.GetSignableRepresentation()
+	verifier, err := getSignerVerifierFromKey(key)
 	if err != nil {
 		return err
 	}
 
-	if err := VerifySignature(key, sig, dataCanonical); err != nil {
+	payload, err := mb.GetSignableRepresentation()
+	if err != nil {
 		return err
 	}
+
+	sigBytes, err := hex.DecodeString(sig.Sig)
+	if err != nil {
+		return err
+	}
+
+	err = verifier.Verify(context.Background(), payload, sigBytes)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -953,17 +967,26 @@ field as provided. It returns an error if the Signed object cannot be
 canonicalized, or if the key is invalid or not supported.
 */
 func (mb *Metablock) Sign(key Key) error {
-
-	dataCanonical, err := mb.GetSignableRepresentation()
+	signer, err := getSignerVerifierFromKey(key)
 	if err != nil {
 		return err
 	}
 
-	newSignature, err := GenerateSignature(dataCanonical, key)
+	payload, err := mb.GetSignableRepresentation()
 	if err != nil {
 		return err
 	}
 
-	mb.Signatures = append(mb.Signatures, newSignature)
+	signature, err := signer.Sign(context.Background(), payload)
+	if err != nil {
+		return err
+	}
+
+	mb.Signatures = append(mb.Signatures, Signature{
+		KeyID:       key.KeyID,
+		Sig:         hex.EncodeToString(signature),
+		Certificate: key.KeyVal.Certificate,
+	})
+
 	return nil
 }
