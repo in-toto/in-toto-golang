@@ -343,6 +343,15 @@ func InTotoRun(name string, runDir string, materialPaths []string, productPaths 
 	var link Link
 	if attest {
 		// FIXME
+
+		/* Pseudocode:
+
+		   provenance = provV1.GenerateValidPredicate()
+		   provStruct = common.PredicatePbToStruct(provenance)
+
+		   subject = v1.RDListFromRecord(products)
+		   statement = v1.GenerateValidStatement(subject, "https://slsa.dev/provenance/v1", provStruct)
+		*/
 		return nil, errors.New("in-toto attestation support not implemented yet")
 	} else {
 		link = Link{
