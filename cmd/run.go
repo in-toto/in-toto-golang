@@ -174,7 +174,8 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no command arguments passed, please specify or use --no-command option")
 	}
 
-	metadata, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization, followSymlinkDirs, useDSSE)
+	// FIXME: The `attest` parameter is always false until full Attestation Framework support is added
+	metadata, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization, followSymlinkDirs, useDSSE, false)
 	if err != nil {
 		return fmt.Errorf("failed to create link metadata: %w", err)
 	}

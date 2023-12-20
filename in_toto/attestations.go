@@ -15,6 +15,10 @@ const (
 
 	// StatementInTotoV1 is the type URI for ITE-6 v1 Statements.
 	// This is constant for all predicate types.
+	//
+	// Deprecated: This constant exists for historical compatibility and should
+	// not be used. This constant has been superseded by the constant provided
+	// in https://github.com/in-toto/attestation/tree/main/go/v1/statement.go
 	StatementInTotoV1 = ita1.StatementTypeUri
 
 	// PredicateSPDX represents a SBOM using the SPDX standard.

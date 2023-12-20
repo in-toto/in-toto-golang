@@ -52,8 +52,9 @@ func RunInspections(layout Layout, runDir string, lineNormalization bool, useDSS
 			paths = []string{runDir}
 		}
 
+		// FIXME: The `attest` parameter is always false until full Attestation Framework support is added
 		linkEnv, err := InTotoRun(inspection.Name, runDir, paths, paths,
-			inspection.Run, Key{}, []string{"sha256"}, nil, nil, lineNormalization, false, useDSSE)
+			inspection.Run, Key{}, []string{"sha256"}, nil, nil, lineNormalization, false, useDSSE, false)
 
 		if err != nil {
 			return nil, err
