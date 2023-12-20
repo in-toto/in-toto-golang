@@ -6,9 +6,6 @@ import (
 
 	prov1 "github.com/in-toto/attestation/go/predicates/provenance/v1"
 	ita1 "github.com/in-toto/attestation/go/v1"
-	acommon "github.com/in-toto/in-toto-golang/in_toto/attestation/common"
-	alib1 "github.com/in-toto/in-toto-golang/in_toto/attestation/v1"
-	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -42,9 +39,9 @@ Validation is handled in GenProvenance().
 */
 func GenRunDetails(builder *prov1.Builder, metadata *prov1.BuildMetadata, byproducts []*ita1.ResourceDescriptor) *prov1.RunDetails {
 	runDetails := &prov1.RunDetails{
-		Builder:       builder,
-		BuildMetadata: metadata,
-		Byproducts:    byproducts,
+		Builder:    builder,
+		Metadata:   metadata,
+		Byproducts: byproducts,
 	}
 
 	return runDetails

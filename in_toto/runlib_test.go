@@ -477,7 +477,8 @@ func TestInTotoRun(t *testing.T) {
 	}
 
 	for _, table := range tablesCorrect {
-		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false, table.useDSSE)
+		// FIXME: The `attest` parameter is always false until full Attestation Framework support is added
+		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false, table.useDSSE, false)
 		if table.useDSSE {
 			assert.Equal(t, table.result.(*Envelope).envelope, result.(*Envelope).envelope, fmt.Sprintf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result))
 		} else {
@@ -526,7 +527,8 @@ func TestInTotoRun(t *testing.T) {
 	}
 
 	for _, table := range tablesInvalid {
-		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false, false)
+		// FIXME: The `attest` parameter is always false until full Attestation Framework support is added
+		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false, false, false)
 		if err == nil {
 			t.Errorf("InTotoRun returned '(%s, %s)', expected error",
 				result, err)

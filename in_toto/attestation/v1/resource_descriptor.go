@@ -40,7 +40,7 @@ func RDListFromRecord(evalArtifacts map[string]map[string]string) ([]*ita1.Resou
 	var rds []*ita1.ResourceDescriptor
 	for name, digestSet := range evalArtifacts {
 
-		rd, err := GenResourceDescriptor(name, "", digestSet, nil, "", "", nil)
+		rd, err := GenerateValidResourceDescriptor(name, "", digestSet, nil, "", "", nil)
 
 		if err != nil {
 			return nil, err

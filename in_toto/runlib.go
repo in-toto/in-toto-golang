@@ -339,12 +339,13 @@ func InTotoRun(name string, runDir string, materialPaths []string, productPaths 
 		return nil, err
 	}
 
-	var dssePayload any
+	// FIXME: replace when Attestation Framework support is fully implemented
+	var link Link
 	if attest {
 		// FIXME
 		return nil, errors.New("in-toto attestation support not implemented yet")
 	} else {
-		link := Link{
+		link = Link{
 			Type:        "link",
 			Name:        name,
 			Materials:   materials,
@@ -353,13 +354,11 @@ func InTotoRun(name string, runDir string, materialPaths []string, productPaths 
 			Command:     cmdArgs,
 			Environment: map[string]interface{}{},
 		}
-
-		dssePayload = link
 	}
 
 	if useDSSE {
 		env := &Envelope{}
-		if err := env.SetPayload(dssePayload); err != nil {
+		if err := env.SetPayload(link); err != nil {
 			return nil, err
 		}
 		if !reflect.ValueOf(key).IsZero() {
