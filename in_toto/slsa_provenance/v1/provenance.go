@@ -1,17 +1,9 @@
 package v1
 
 import (
-	"fmt"
 	"time"
 
-	prov1 "github.com/in-toto/attestation/go/predicates/provenance/v1"
-	ita1 "github.com/in-toto/attestation/go/v1"
-	acommon "github.com/in-toto/in-toto-golang/in_toto/attestation/common"
-	alib1 "github.com/in-toto/in-toto-golang/in_toto/attestation/v1"
 	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
-
-	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -188,93 +180,4 @@ type BuildMetadata struct {
 
 	// The timestamp of when the build completed.
 	FinishedOn *time.Time `json:"finishedOn,omitempty"`
-}
-
-/*
-GenBuildDefinition constructs a SLSA v1 BuildDefinition struct.
-Validation is handled in GenProvenance().
-*/
-func GenBuildDefinition(buildType string, externalParams *structpb.Struct, internalParams *structpb.Struct, resolvedDependencies []*ita1.ResourceDescriptor) *prov1.BuildDefinition {
-	buildDef := &prov1.BuildDefinition{
-		BuildType:            buildType,
-		ExternalParameters:   externalParams,
-		InternalParameters:   internalParams,
-		ResolvedDependencies: resolvedDependencies,
-	}
-
-	return buildDef
-}
-
-/*
-GenRunDetails constructs a SLSA v1 RunDetails struct.
-Validation is handled in GenProvenance().
-*/
-func GenRunDetails(builder *prov1.Builder, metadata *prov1.BuildMetadata, byproducts []*ita1.ResourceDescriptor) *prov1.RunDetails {
-	runDetails := &prov1.RunDetails{
-		Builder:       builder,
-		BuildMetadata: metadata,
-		Byproducts:    byproducts,
-	}
-
-	return runDetails
-}
-
-/*
-GenBuilder constructs a SLSA v1 Builder struct.
-Validation is handled in GenProvenance().
-*/
-func GenBuilder(id string, version map[string]string, builderDependencies []*ita1.ResourceDescriptor) *prov1.Builder {
-	builder := &prov1.Builder{
-		Id:                 id,
-		Version:            version,
-		BuildeDependencies: builderDependencies,
-	}
-
-	return builder
-}
-
-/*
-GenBuildMetadata constructs a SLSA v1 BuildMetadata struct.
-Because none of the fields of the object are required, this
-constructor does not validate the contents of the struct
-and always succeeds.
-*/
-func GenBuildMetadata(invocationID string, startedOn time.Time, finishedOn time.Time) *prov1.BuildMetadata {
-	buildMetadata := &prov1.BuildMetadata{
-		InvocationId: invocationID,
-		StartedOn:    timestamppb.New(startedOn),
-		FinishedOn:   timestamppb.New(finishedOn),
-	}
-
-	return buildMetadata
-}
-
-func GenProvenance(buildDefinition *prov1.BuildDefinition, runDetails *prov1.RunDetails) (*prov1.Provenance, error) {
-	provenance := &prov1.Provenance{
-		BuildDefinition: buildDefinition,
-		RunDetails:      runDetails,
-	}
-
-	/* TODO: uncomment after https://github.com/in-toto/attestation/pull/287 is merged
-	if err := provenance.Validate(); err != nil {
-		return nil, fmt.Errorf("Invalid Provenance format: %w", err)
-	}
-	*/
-
-	return provenance, nil
-}
-
-func GenProvenanceStatementV1(subject []*ita1.ResourceDescriptor, provenance *prov1.Provenance) (*ita1.Statement, error) {
-
-	provStruct, err := acommon.PredicatePbToStruct(provenance)
-	if err != nil {
-		return nil, fmt.Errorf("Error converting Provenance to Struct: %w", err)
-	}
-
-	st, err := alib1.GenStatement(subject, PredicateSLSAProvenance, provStruct)
-	if err != nil {
-		return nil, err
-	}
-
-	return st, nil
 }

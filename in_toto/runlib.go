@@ -319,7 +319,7 @@ and materials at the passed materialPaths.  The returned link is wrapped in a
 Metablock object.  If command execution or artifact recording fails the first
 return value is an empty Metablock and the second return value is the error.
 */
-func InTotoRun(name string, runDir string, materialPaths []string, productPaths []string, cmdArgs []string, key Key, hashAlgorithms []string, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool, useDSSE bool) (Metadata, error) {
+func InTotoRun(name string, runDir string, materialPaths []string, productPaths []string, cmdArgs []string, key Key, hashAlgorithms []string, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool, useDSSE bool, attest bool) (Metadata, error) {
 	materials, err := RecordArtifacts(materialPaths, hashAlgorithms, gitignorePatterns, lStripPaths, lineNormalization, followSymlinkDirs)
 	if err != nil {
 		return nil, err
@@ -339,22 +339,29 @@ func InTotoRun(name string, runDir string, materialPaths []string, productPaths 
 		return nil, err
 	}
 
-	link := Link{
-		Type:        "link",
-		Name:        name,
-		Materials:   materials,
-		Products:    products,
-		ByProducts:  byProducts,
-		Command:     cmdArgs,
-		Environment: map[string]interface{}{},
+	var dssePayload any
+	if attest {
+		// FIXME
+		return nil, errors.New("in-toto attestation support not implemented yet")
+	} else {
+		link := Link{
+			Type:        "link",
+			Name:        name,
+			Materials:   materials,
+			Products:    products,
+			ByProducts:  byProducts,
+			Command:     cmdArgs,
+			Environment: map[string]interface{}{},
+		}
+
+		dssePayload = link
 	}
 
 	if useDSSE {
 		env := &Envelope{}
-		if err := env.SetPayload(link); err != nil {
+		if err := env.SetPayload(dssePayload); err != nil {
 			return nil, err
 		}
-
 		if !reflect.ValueOf(key).IsZero() {
 			if err := env.Sign(key); err != nil {
 				return nil, err

@@ -7,18 +7,14 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// StatementInTotoV1 is the type URI for ITE-6 v1 Statements.
-// This is constant for all predicate types.
-const StatementInTotoV1 = ita1.StatementTypeUri
-
 /*
-GenStatement constructs an in-toto Attestation Framework v1
+GenerateValidStatement constructs an in-toto Attestation Framework v1
 Statement struct. If the created object does not represent a
 compliant Statement, this function returns an error.
 */
-func GenStatement(subject []*ita1.ResourceDescriptor, predicateType string, predicate *structpb.Struct) (*ita1.Statement, error) {
+func GenerateValidStatement(subject []*ita1.ResourceDescriptor, predicateType string, predicate *structpb.Struct) (*ita1.Statement, error) {
 	st := &ita1.Statement{
-		Type:          StatementInTotoV1,
+		Type:          ita1.StatementTypeUri,
 		Subject:       subject,
 		PredicateType: predicateType,
 		Predicate:     predicate,

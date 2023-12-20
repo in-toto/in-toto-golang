@@ -8,11 +8,11 @@ import (
 )
 
 /*
-GenResourceDescriptor constructs an in-toto Attestation Framework v1
+GenerateValidResourceDescriptor constructs an in-toto Attestation Framework v1
 ResourceDescriptor struct. If the created object does not represent a
-compliant ResourceDescriptor, this function returns an error.
+valid ResourceDescriptor, this function returns an error.
 */
-func GenResourceDescriptor(name string, uri string, digestSet map[string]string, content []byte, downloadLocation string, mediaType string, annotations *structpb.Struct) (*ita1.ResourceDescriptor, error) {
+func GenerateValidResourceDescriptor(name string, uri string, digestSet map[string]string, content []byte, downloadLocation string, mediaType string, annotations *structpb.Struct) (*ita1.ResourceDescriptor, error) {
 	rd := &ita1.ResourceDescriptor{
 		Name:             name,
 		Uri:              uri,
