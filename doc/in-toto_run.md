@@ -17,6 +17,9 @@ in-toto run [flags]
 ### Options
 
 ```
+  -a, --attestations stringArray          Create metadata using Attestation Framework.
+                                          Attestation accepts a list of supported predicate types.
+                                          Note: Currently only 'link' is supported.
   -c, --cert string                       Path to a PEM formatted certificate that corresponds with
                                           the provided key.
   -e, --exclude stringArray               Path patterns to match paths that should not be recorded as 0

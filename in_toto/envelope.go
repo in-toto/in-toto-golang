@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"os"
 
+	v1 "github.com/in-toto/attestation/go/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/cjson"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/secure-systems-lab/go-securesystemslib/signerverifier"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // PayloadType is the payload type used for links and layouts.
@@ -43,6 +45,21 @@ func loadEnvelope(env *dsse.Envelope) (*Envelope, error) {
 
 func (e *Envelope) SetPayload(payload any) error {
 	encodedBytes, err := cjson.EncodeCanonical(payload)
+	if err != nil {
+		return err
+	}
+
+	e.payload = payload
+	e.envelope = &dsse.Envelope{
+		Payload:     base64.StdEncoding.EncodeToString(encodedBytes),
+		PayloadType: PayloadType,
+	}
+
+	return nil
+}
+
+func (e *Envelope) SetPayloadProtobuf(payload *v1.Statement) error {
+	encodedBytes, err := protojson.Marshal(payload)
 	if err != nil {
 		return err
 	}
