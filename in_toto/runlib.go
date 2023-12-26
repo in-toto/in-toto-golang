@@ -365,7 +365,7 @@ func InTotoRun(name string, runDir string, materialPaths []string, productPaths 
 		}
 	}
 
-	if useDSSE {
+	if useDSSE || attest {
 		env := &Envelope{}
 		if err := env.SetPayload(link); err != nil {
 			return nil, err

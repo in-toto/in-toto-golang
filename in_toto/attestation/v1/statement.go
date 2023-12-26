@@ -22,7 +22,7 @@ func GenerateValidStatement(subject []*ita1.ResourceDescriptor, predicateType st
 
 	err := st.Validate()
 	if err != nil {
-		return nil, fmt.Errorf("Invalid in-toto Statement: %w", err)
+		return nil, fmt.Errorf("invalid in-toto Statement: %w", err)
 	}
 
 	return st, nil

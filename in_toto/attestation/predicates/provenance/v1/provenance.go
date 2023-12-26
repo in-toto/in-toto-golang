@@ -91,7 +91,7 @@ func GenerateValidPredicate(buildDefinition *prov1.BuildDefinition, runDetails *
 	}
 
 	if err := provenance.Validate(); err != nil {
-		return nil, fmt.Errorf("Invalid Provenance format: %w", err)
+		return nil, fmt.Errorf("invalid Provenance format: %w", err)
 	}
 
 	return provenance, nil

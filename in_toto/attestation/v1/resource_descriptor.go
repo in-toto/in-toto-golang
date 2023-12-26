@@ -25,7 +25,7 @@ func GenerateValidResourceDescriptor(name string, uri string, digestSet map[stri
 
 	err := rd.Validate()
 	if err != nil {
-		return nil, fmt.Errorf("Invalid resource descriptor: %w", err)
+		return nil, fmt.Errorf("invalid resource descriptor: %w", err)
 	}
 
 	return rd, nil
