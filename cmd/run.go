@@ -14,6 +14,7 @@ var (
 	materialsPaths []string
 	productsPaths  []string
 	noCommand      bool
+	attestations   []string
 )
 
 var runCmd = &cobra.Command{
@@ -163,6 +164,16 @@ recorded independently of this parameter.`,
 		"UDS path for SPIFFE workload API",
 	)
 
+	runCmd.Flags().StringArrayVarP(
+		&attestations,
+		"attestations",
+		"a",
+		[]string{},
+		`Create metadata using Attestation Framework.
+Attestation accepts a list of supported predicate types.
+Note: Currently only 'link' is supported.`,
+	)
+
 }
 
 func run(cmd *cobra.Command, args []string) error {
@@ -174,12 +185,37 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no command arguments passed, please specify or use --no-command option")
 	}
 
-	metadata, err := intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths, args, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization, followSymlinkDirs, useDSSE)
-	if err != nil {
-		return fmt.Errorf("failed to create link metadata: %w", err)
+	var metadata intoto.Metadata
+	var err error
+	if len(attestations) > 0 {
+		// For now any value passed to attestations will run the link attestor
+		attestor := intoto.LinkAttestor{
+			MaterialPaths:     materialsPaths,
+			ProductPaths:      productsPaths,
+			HashAlgorithms:    []string{"sha256"},
+			GitignorePatterns: exclude,
+			LStripPaths:       lStripPaths,
+			CmdArgs:           args,
+			RunDir:            runDir,
+			StepName:          stepName,
+			LineNormalization: lineNormalization,
+			FollowSymlinkDirs: followSymlinkDirs,
+			Key:               key,
+		}
+
+		metadata, err = attestor.Attest()
+		if err != nil {
+			return fmt.Errorf("failed to create attestation: %w", err)
+		}
+	} else {
+		metadata, err = intoto.InTotoRun(stepName, runDir, materialsPaths, productsPaths,
+			args, key, []string{"sha256"}, exclude, lStripPaths, lineNormalization, followSymlinkDirs, useDSSE)
+		if err != nil {
+			return fmt.Errorf("failed to create link metadata: %w", err)
+		}
 	}
 
-	linkName := fmt.Sprintf(intoto.LinkNameFormat, metadata.GetPayload().(intoto.Link).Name, key.KeyID)
+	linkName := fmt.Sprintf(intoto.LinkNameFormat, stepName, key.KeyID)
 
 	linkPath := filepath.Join(outDir, linkName)
 	err = metadata.Dump(linkPath)
