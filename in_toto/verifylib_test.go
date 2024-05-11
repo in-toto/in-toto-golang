@@ -114,42 +114,53 @@ func TestGetSummaryLink(t *testing.T) {
 	demoLink["write-code"] = codeLink
 	demoLink["package"] = packageLink
 
+	demoPayloadLayout, ok := demoLayout.GetPayload().(Layout)
+	assert.True(t, ok, "invalid metadata")
+
 	var summaryLink Metadata
-	if summaryLink, err = GetSummaryLink(demoLayout.GetPayload().(Layout),
+	if summaryLink, err = GetSummaryLink(demoPayloadLayout,
 		demoLink, "", false); err != nil {
 		t.Error(err)
 	}
-	if summaryLink.GetPayload().(Link).Type != codeLink.GetPayload().(Link).Type {
+
+	summaryPayloadLink, ok := summaryLink.GetPayload().(Link)
+	assert.True(t, ok, "invalid metadata")
+	codePayloadLink, ok := codeLink.GetPayload().(Link)
+	assert.True(t, ok, "invalid metadata")
+
+	if summaryPayloadLink.Type != codePayloadLink.Type {
 		t.Errorf("summary Link isn't of type Link")
 	}
-	if summaryLink.GetPayload().(Link).Name != "" {
+	if summaryPayloadLink.Name != "" {
 		t.Errorf("summary Link name doesn't match. Expected '%s', returned "+
-			"'%s", codeLink.GetPayload().(Link).Name, summaryLink.GetPayload().(Link).Name)
+			"'%s", codePayloadLink.Name, summaryPayloadLink.Name)
 	}
-	if !reflect.DeepEqual(summaryLink.GetPayload().(Link).Materials,
-		codeLink.GetPayload().(Link).Materials) {
+	if !reflect.DeepEqual(summaryPayloadLink.Materials,
+		codePayloadLink.Materials) {
 		t.Errorf("summary Link materials don't match. Expected '%s', "+
-			"returned '%s", codeLink.GetPayload().(Link).Materials,
-			summaryLink.GetPayload().(Link).Materials)
+			"returned '%s", codePayloadLink.Materials,
+			summaryPayloadLink.Materials)
 	}
 
-	if !reflect.DeepEqual(summaryLink.GetPayload().(Link).Products,
-		packageLink.GetPayload().(Link).Products) {
+	packagePayloadLink, ok := packageLink.GetPayload().(Link)
+	assert.True(t, ok, "invalid metadata")
+	if !reflect.DeepEqual(summaryPayloadLink.Products,
+		packagePayloadLink.Products) {
 		t.Errorf("summary Link products don't match. Expected '%s', "+
-			"returned '%s", packageLink.GetPayload().(Link).Products,
-			summaryLink.GetPayload().(Link).Products)
+			"returned '%s", packagePayloadLink.Products,
+			summaryPayloadLink.Products)
 	}
-	if !reflect.DeepEqual(summaryLink.GetPayload().(Link).Command,
-		packageLink.GetPayload().(Link).Command) {
+	if !reflect.DeepEqual(summaryPayloadLink.Command,
+		packagePayloadLink.Command) {
 		t.Errorf("summary Link command doesn't match. Expected '%s', "+
-			"returned '%s", packageLink.GetPayload().(Link).Command,
-			summaryLink.GetPayload().(Link).Command)
+			"returned '%s", packagePayloadLink.Command,
+			summaryPayloadLink.Command)
 	}
-	if !reflect.DeepEqual(summaryLink.GetPayload().(Link).ByProducts,
-		packageLink.GetPayload().(Link).ByProducts) {
+	if !reflect.DeepEqual(summaryPayloadLink.ByProducts,
+		packagePayloadLink.ByProducts) {
 		t.Errorf("summary Link by-products don't match. Expected '%s', "+
-			"returned '%s", packageLink.GetPayload().(Link).ByProducts,
-			summaryLink.GetPayload().(Link).ByProducts)
+			"returned '%s", packagePayloadLink.ByProducts,
+			summaryPayloadLink.ByProducts)
 	}
 }
 
@@ -184,23 +195,27 @@ func TestVerifySublayouts(t *testing.T) {
 		t.Errorf("unable to load super layout")
 	}
 
-	stepsMetadata, err := LoadLinksForLayout(superLayoutMb.GetPayload().(Layout), ".")
+	superMbPayloadLayout, ok := superLayoutMb.GetPayload().(Layout)
+	if !ok {
+		t.Errorf("invalid metadata")
+	}
+	stepsMetadata, err := LoadLinksForLayout(superMbPayloadLayout, ".")
 	if err != nil {
 		t.Errorf("unable to load link metadata for super layout")
 	}
 
-	rootCertPool, intermediateCertPool, err := LoadLayoutCertificates(superLayoutMb.GetPayload().(Layout), [][]byte{})
+	rootCertPool, intermediateCertPool, err := LoadLayoutCertificates(superMbPayloadLayout, [][]byte{})
 	if err != nil {
 		t.Errorf("unable to load layout certificates")
 	}
 
 	stepsMetadataVerified, err := VerifyLinkSignatureThesholds(
-		superLayoutMb.GetPayload().(Layout), stepsMetadata, rootCertPool, intermediateCertPool)
+		superMbPayloadLayout, stepsMetadata, rootCertPool, intermediateCertPool)
 	if err != nil {
 		t.Errorf("unable to verify link threshold values: %v", err)
 	}
 
-	result, err := VerifySublayouts(superLayoutMb.GetPayload().(Layout),
+	result, err := VerifySublayouts(superMbPayloadLayout,
 		stepsMetadataVerified, ".", [][]byte{}, testOSisWindows())
 	if err != nil {
 		t.Errorf("unable to verify sublayouts: %v", err)
@@ -221,7 +236,10 @@ func TestRunInspections(t *testing.T) {
 	if err != nil {
 		t.Errorf("unable to parse template file: %s", err)
 	}
-	layout := mb.GetPayload().(Layout)
+	layout, ok := mb.GetPayload().(Layout)
+	if !ok {
+		t.Errorf("invalid metadata")
+	}
 
 	// Test 1
 	// Successfully run two inspections foo and bar, testing that each generates
@@ -254,8 +272,12 @@ func TestRunInspections(t *testing.T) {
 		sort.Strings(availableFiles)
 		// Compare material and products (only file names) to files that were
 		// in the directory before calling RunInspections
-		materialNames := artifactsDictKeyStrings(result[inspectionName].GetPayload().(Link).Materials)
-		productNames := artifactsDictKeyStrings(result[inspectionName].GetPayload().(Link).Products)
+		link, ok := result[inspectionName].GetPayload().(Link)
+		if !ok {
+			t.Errorf("invalid metadata")
+		}
+		materialNames := artifactsDictKeyStrings(link.Materials)
+		productNames := artifactsDictKeyStrings(link.Products)
 		sort.Strings(materialNames)
 		sort.Strings(productNames)
 		if !reflect.DeepEqual(materialNames, availableFiles) ||
@@ -663,7 +685,10 @@ func TestReduceStepsMetadata(t *testing.T) {
 	if err != nil {
 		t.Errorf("unable to parse template file: %s", err)
 	}
-	layout := mb.GetPayload().(Layout)
+	layout, ok := mb.GetPayload().(Layout)
+	if !ok {
+		t.Errorf("invalid metadata")
+	}
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{Name: "foo"}}}
 
 	// Test 1: Successful reduction of multiple links for one step (foo)
@@ -742,7 +767,10 @@ func TestVerifyStepCommandAlignment(t *testing.T) {
 	if err != nil {
 		t.Errorf("unable to load template file: %s", err)
 	}
-	layout := mb.GetPayload().(Layout)
+	layout, ok := mb.GetPayload().(Layout)
+	if !ok {
+		t.Errorf("invalid metadata")
+	}
 	layout.Steps = []Step{
 		{
 			SupplyChainItem: SupplyChainItem{Name: "foo"},
@@ -780,8 +808,10 @@ func TestVerifyLinkSignatureThesholds(t *testing.T) {
 	if err != nil {
 		t.Errorf("unable to load template file: %s", err)
 	}
-	layout := mb.GetPayload().(Layout)
-
+	layout, ok := mb.GetPayload().(Layout)
+	if !ok {
+		t.Errorf("invalid metadata")
+	}
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{
 		Name: "foo"},
 		Threshold: 2,
@@ -846,8 +876,10 @@ func TestLoadLinksForLayout(t *testing.T) {
 	if err != nil {
 		t.Errorf("unable to load template file: %s", err)
 	}
-	layout := mb.GetPayload().(Layout)
-
+	layout, ok := mb.GetPayload().(Layout)
+	if !ok {
+		t.Errorf("invalid metadata")
+	}
 	layout.Steps = []Step{{SupplyChainItem: SupplyChainItem{
 		Name: "foo"},
 		Threshold: 2,
@@ -879,7 +911,10 @@ func TestVerifyLayoutExpiration(t *testing.T) {
 	if err != nil {
 		t.Errorf("unable to load template file: %s", err)
 	}
-	layout := mb.GetPayload().(Layout)
+	layout, ok := mb.GetPayload().(Layout)
+	if !ok {
+		t.Errorf("invalid metadata")
+	}
 
 	// Test layout expiration check failure:
 	// - invalid date

@@ -300,7 +300,11 @@ func TestValidateLink(t *testing.T) {
 	if err := mb.Load("package.d3ffd108.link"); err != nil {
 		t.Errorf("Metablock.Load returned '%s'", err)
 	}
-	if err := validateLink(mb.Signed.(Link)); err != nil {
+	link, ok := mb.Signed.(Link)
+	if !ok {
+		t.Errorf("invalid link metablock")
+	}
+	if err := validateLink(link); err != nil {
 		t.Errorf("link metadata validation failed, returned '%s'", err)
 	}
 
@@ -333,7 +337,11 @@ func TestValidateLink(t *testing.T) {
 		},
 	}
 
-	err := validateLink(testMb.Signed.(Link))
+	testLink, ok := testMb.Signed.(Link)
+	if !ok {
+		t.Errorf("invalid link metablock")
+	}
+	err := validateLink(testLink)
 	if err.Error() != "invalid type for link 'test_type': should be 'link'" {
 		t.Error("validateLink error - incorrect type not detected")
 	}
@@ -368,7 +376,11 @@ func TestValidateLink(t *testing.T) {
 		},
 	}
 
-	err = validateLink(testMb.Signed.(Link))
+	testLink, ok = testMb.Signed.(Link)
+	if !ok {
+		t.Errorf("invalid link metablock")
+	}
+	err = validateLink(testLink)
 	if err.Error() != "in materials of link 'test_material_hash': in artifact"+
 		" 'foo.py', sha256 hash value: invalid hex string: !@#$%" {
 		t.Error("validateLink error - invalid hashes not detected")
@@ -403,7 +415,11 @@ func TestValidateLink(t *testing.T) {
 		},
 	}
 
-	err = validateLink(testMb.Signed.(Link))
+	testLink, ok = testMb.Signed.(Link)
+	if !ok {
+		t.Errorf("invalid link metablock")
+	}
+	err = validateLink(testLink)
 	if err.Error() != "in products of link 'test_product_hash': in artifact "+
 		"'foo.tar.gz', sha256 hash value: invalid hex string: !@#$%" {
 		t.Error("validateLink error - invalid hashes not detected")
@@ -415,7 +431,11 @@ func TestValidateLayout(t *testing.T) {
 	if err := mb.Load("demo.layout"); err != nil {
 		t.Errorf("Metablock.Load returned '%s'", err)
 	}
-	if err := validateLayout(mb.Signed.(Layout)); err != nil {
+	layout, ok := mb.Signed.(Layout)
+	if !ok {
+		t.Errorf("invalid layout metablock")
+	}
+	if err := validateLayout(layout); err != nil {
 		t.Errorf("layout metadata validation failed, returned '%s'", err)
 	}
 
@@ -430,7 +450,11 @@ func TestValidateLayout(t *testing.T) {
 		},
 	}
 
-	err := validateLayout(testMb.Signed.(Layout))
+	layout, ok = testMb.Signed.(Layout)
+	if !ok {
+		t.Errorf("invalid layout metablock")
+	}
+	err := validateLayout(layout)
 	if err.Error() != "invalid Type value for layout: should be 'layout'" {
 		t.Error("validateLayout error - invalid type not detected")
 	}
@@ -446,7 +470,11 @@ func TestValidateLayout(t *testing.T) {
 		},
 	}
 
-	err = validateLayout(testMb.Signed.(Layout))
+	layout, ok = testMb.Signed.(Layout)
+	if !ok {
+		t.Errorf("invalid layout metablock")
+	}
+	err = validateLayout(layout)
 	if err.Error() != "expiry time parsed incorrectly - date either invalid "+
 		"or of incorrect format" {
 		t.Error("validateLayout error - invalid date not detected")
@@ -463,7 +491,11 @@ func TestValidateLayout(t *testing.T) {
 		},
 	}
 
-	err = validateLayout(testMb.Signed.(Layout))
+	layout, ok = testMb.Signed.(Layout)
+	if !ok {
+		t.Errorf("invalid layout metablock")
+	}
+	err = validateLayout(layout)
 	if err.Error() != "expiry time parsed incorrectly - date either invalid "+
 		"or of incorrect format" {
 		t.Error("validateLayout error - invalid date not detected")
@@ -493,7 +525,11 @@ func TestValidateLayout(t *testing.T) {
 		},
 	}
 
-	err = validateLayout(testMb.Signed.(Layout))
+	layout, ok = testMb.Signed.(Layout)
+	if !ok {
+		t.Errorf("invalid layout metablock")
+	}
+	err = validateLayout(layout)
 	if err.Error() != "non unique step or inspection name found" {
 		t.Error("validateLayout error - duplicate step/inspection name not " +
 			"detected")
@@ -524,7 +560,11 @@ func TestValidateLayout(t *testing.T) {
 		},
 	}
 
-	err = validateLayout(testMb.Signed.(Layout))
+	layout, ok = testMb.Signed.(Layout)
+	if !ok {
+		t.Errorf("invalid layout metablock")
+	}
+	err = validateLayout(layout)
 	if err.Error() != "non unique step or inspection name found" {
 		t.Error("validateLayout error - duplicate step/inspection name not " +
 			"detected")
@@ -554,7 +594,11 @@ func TestValidateLayout(t *testing.T) {
 		},
 	}
 
-	err = validateLayout(testMb.Signed.(Layout))
+	layout, ok = testMb.Signed.(Layout)
+	if !ok {
+		t.Errorf("invalid layout metablock")
+	}
+	err = validateLayout(layout)
 	if err.Error() != "non unique step or inspection name found" {
 		t.Error("validateLayout error - duplicate step/inspection name not " +
 			"detected")
@@ -578,7 +622,11 @@ func TestValidateLayout(t *testing.T) {
 		},
 	}
 
-	err = validateLayout(testMb.Signed.(Layout))
+	layout, ok = testMb.Signed.(Layout)
+	if !ok {
+		t.Errorf("invalid layout metablock")
+	}
+	err = validateLayout(layout)
 	if err.Error() != "invalid Type value for step 'foo': should be 'step'" {
 		t.Error("validateLayout - validateStep error - invalid step type not " +
 			"detected")

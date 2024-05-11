@@ -479,9 +479,17 @@ func TestInTotoRun(t *testing.T) {
 	for _, table := range tablesCorrect {
 		result, err := InTotoRun(linkName, "", table.materialPaths, table.productPaths, table.cmdArgs, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false, table.useDSSE)
 		if table.useDSSE {
-			assert.Equal(t, table.result.(*Envelope).envelope, result.(*Envelope).envelope, fmt.Sprintf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result))
+			tableResultEnvelope, ok := table.result.(*Envelope)
+			assert.True(t, ok, "table result must be Envelope")
+			resultEnvelope, ok := result.(*Envelope)
+			assert.True(t, ok, "result must be Envelope")
+			assert.Equal(t, tableResultEnvelope.envelope, resultEnvelope.envelope, fmt.Sprintf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result))
 		} else {
-			assert.True(t, reflect.DeepEqual(result.(*Metablock), table.result.(*Metablock)), fmt.Sprintf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result))
+			tableResultMb, ok := table.result.(*Metablock)
+			assert.True(t, ok, "table result must be metablock")
+			resultMb, ok := result.(*Metablock)
+			assert.True(t, ok, "result must be metablock")
+			assert.True(t, reflect.DeepEqual(resultMb, tableResultMb), fmt.Sprintf("InTotoRun returned '(%s, %s)', expected '(%s, nil)'", result, err, table.result))
 		}
 
 		if result != nil {
@@ -493,7 +501,11 @@ func TestInTotoRun(t *testing.T) {
 				t.Errorf("error while loading link metablock from file")
 			}
 			if table.useDSSE {
-				assert.Equal(t, result.(*Envelope).envelope, loadedResult.(*Envelope).envelope, fmt.Sprintf("dump and loading of signed Link failed. Loaded result: '%s', dumped result '%s'", loadedResult, result))
+				loadedResultEnvelope, ok := loadedResult.(*Envelope)
+				assert.True(t, ok, "loaded result must be envelope")
+				resultEnvelope, ok := result.(*Envelope)
+				assert.True(t, ok, "result must be envelope")
+				assert.Equal(t, resultEnvelope.envelope, loadedResultEnvelope.envelope, fmt.Sprintf("dump and loading of signed Link failed. Loaded result: '%s', dumped result '%s'", loadedResult, result))
 			} else {
 				assert.True(t, reflect.DeepEqual(loadedResult, result), fmt.Sprintf("dump and loading of signed Link failed. Loaded result: '%s', dumped result '%s'", loadedResult, result))
 			}
@@ -620,16 +632,32 @@ func TestInTotoRecord(t *testing.T) {
 		result, err := InTotoRecordStart(linkName, table.materialPaths, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false, table.useDSSE)
 		assert.Nil(t, err, "unexpected error while running record start")
 		if table.useDSSE {
-			assert.Equal(t, table.startResult.(*Envelope).envelope, result.(*Envelope).envelope, "result from record start did not match expected result")
+			tableStartResultEnvelope, ok := table.startResult.(*Envelope)
+			assert.True(t, ok, "table startResult must be Envelope")
+			resultEnvelope, ok := result.(*Envelope)
+			assert.True(t, ok, "result must be Envelope")
+			assert.Equal(t, tableStartResultEnvelope.envelope, resultEnvelope.envelope, "result from record start did not match expected result")
 		} else {
-			assert.Equal(t, table.startResult.(*Metablock), result.(*Metablock), "result from record start did not match expected result")
+			tableStartResultMb, ok := table.startResult.(*Metablock)
+			assert.True(t, ok, "table startResult must be metablock")
+			resultMb, ok := result.(*Metablock)
+			assert.True(t, ok, "result must be metablock")
+			assert.Equal(t, tableStartResultMb, resultMb, "result from record start did not match expected result")
 		}
 		stopResult, err := InTotoRecordStop(result, table.productPaths, table.key, table.hashAlgorithms, nil, nil, testOSisWindows(), false, table.useDSSE)
 		assert.Nil(t, err, "unexpected error while running record stop")
 		if table.useDSSE {
-			assert.Equal(t, table.stopResult.(*Envelope).envelope, stopResult.(*Envelope).envelope, "result from record stop did not match expected result")
+			tableStopResultEnvelope, ok := table.stopResult.(*Envelope)
+			assert.True(t, ok, "table stopResult must be Envelope")
+			stopResultEnvelope, ok := stopResult.(*Envelope)
+			assert.True(t, ok, "stopResult result must be Envelope")
+			assert.Equal(t, tableStopResultEnvelope.envelope, stopResultEnvelope.envelope, "result from record stop did not match expected result")
 		} else {
-			assert.Equal(t, table.stopResult.(*Metablock), stopResult.(*Metablock), "result from record stop did not match expected result")
+			tableStopResultMb, ok := table.stopResult.(*Metablock)
+			assert.True(t, ok, "table stopResult must be metablock")
+			stopResultMb, ok := stopResult.(*Metablock)
+			assert.True(t, ok, "stopResult must be metablock")
+			assert.Equal(t, tableStopResultMb, stopResultMb, "result from record stop did not match expected result")
 		}
 	}
 }
