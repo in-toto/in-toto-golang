@@ -173,7 +173,7 @@ type BuildMetadata struct {
 	// finding associated logs or other ad-hoc analysis. The exact meaning and
 	// format is defined by builder.id; by default it is treated as opaque and
 	// case-sensitive. The value SHOULD be globally unique.
-	InvocationID string `json:"invocationID,omitempty"`
+	InvocationID string `json:"invocationId,omitempty"`
 
 	// The timestamp of when the build started.
 	StartedOn *time.Time `json:"startedOn,omitempty"`
