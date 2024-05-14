@@ -127,7 +127,7 @@ func TestMetadataNoTime(t *testing.T) {
 	var md = BuildMetadata{
 		InvocationID: "123456-12-1",
 	}
-	var want = `{"invocationID":"123456-12-1"}`
+	var want = `{"invocationId":"123456-12-1"}`
 	var got BuildMetadata
 	b, err := json.Marshal(&md)
 
