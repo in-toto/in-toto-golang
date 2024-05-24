@@ -2,13 +2,16 @@ package in_toto
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
+	v1 "github.com/in-toto/attestation/go/v1"
 	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 	slsa01 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
 	slsa02 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func TestDecodeProvenanceStatementSLSA02(t *testing.T) {
@@ -482,4 +485,133 @@ func TestLinkStatement(t *testing.T) {
 	}
 
 	assert.Equal(t, want, got, "Unexpexted object after decoding")
+}
+
+func TestLinkAttestorAttest(t *testing.T) {
+	linkName := "test"
+
+	var validKey Key
+	if err := validKey.LoadKey("carol", "ed25519", []string{"sha256", "sha512"}); err != nil {
+		t.Error(err)
+	}
+
+	tablesCorrect := []struct {
+		materialPaths  []string
+		productPaths   []string
+		cmdArgs        []string
+		key            Key
+		hashAlgorithms []string
+		result         string
+	}{
+		{
+			[]string{}, []string{"emptyfile"}, []string{"touch", "emptyfile"}, validKey, []string{"sha256"},
+			`{
+				"_type": "https://in-toto.io/Statement/v1",
+				"subject": [
+					{
+						"name": "emptyfile",
+						"digest": {
+							"sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+						}
+					}
+				],
+				"predicateType": "https://in-toto.io/attestation/link/v0.3",
+				"predicate": {
+					"byproducts": {
+						"return-value": 0,
+						"stderr": "",
+						"stdout": ""
+					},
+					"command": [
+						"touch",
+						"emptyfile"
+					],
+					"name": "test"
+				}
+			}`,
+		},
+	}
+
+	for _, table := range tablesCorrect {
+		attestor := LinkAttestor{
+			MaterialPaths:     table.materialPaths,
+			ProductPaths:      table.productPaths,
+			StepName:          linkName,
+			RunDir:            "",
+			CmdArgs:           table.cmdArgs,
+			Key:               table.key,
+			HashAlgorithms:    table.hashAlgorithms,
+			GitignorePatterns: []string{},
+			LStripPaths:       []string{},
+			LineNormalization: false,
+			FollowSymlinkDirs: false,
+		}
+
+		envelope, err := attestor.Attest()
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+
+		actualDecodedPayload, err := envelope.envelope.DecodeB64Payload()
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+
+		var actualStatement v1.Statement
+		err = protojson.Unmarshal(actualDecodedPayload, &actualStatement)
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+
+		var expectedStatement v1.Statement
+		err = protojson.Unmarshal([]byte(table.result), &expectedStatement)
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+
+		assert.Equal(t, &expectedStatement, &actualStatement,
+			fmt.Sprintf("LinkAttestor Attest returned '(%s, %s)', expected '(%s, nil)'", &actualStatement, err, &expectedStatement))
+	}
+
+	// Run LinkAttestor with errors
+	tablesInvalid := []struct {
+		materialPaths  []string
+		productPaths   []string
+		cmdArgs        []string
+		key            Key
+		hashAlgorithms []string
+	}{
+		{[]string{"material-does-not-exist"}, []string{""}, []string{"sh", "-c", "printf test"}, Key{}, []string{"sha256"}},
+		{[]string{"demo.layout"}, []string{"product-does-not-exist"}, []string{"sh", "-c", "printf test"}, Key{}, []string{"sha256"}},
+		{[]string{""}, []string{"/invalid-path/"}, []string{"sh", "-c", "printf test"}, Key{}, []string{"sha256"}},
+		{[]string{}, []string{}, []string{"command-does-not-exist"}, Key{}, []string{"sha256"}},
+		{[]string{"demo.layout"}, []string{"foo.tar.gz"}, []string{"sh", "-c", "printf out; printf err >&2"}, Key{
+			KeyID:               "this-is-invalid",
+			KeyIDHashAlgorithms: nil,
+			KeyType:             "",
+			KeyVal:              KeyVal{},
+			Scheme:              "",
+		}, []string{"sha256"}},
+	}
+
+	for _, table := range tablesInvalid {
+		attestor := LinkAttestor{
+			MaterialPaths:     table.materialPaths,
+			ProductPaths:      table.productPaths,
+			StepName:          linkName,
+			RunDir:            "",
+			CmdArgs:           table.cmdArgs,
+			Key:               table.key,
+			HashAlgorithms:    table.hashAlgorithms,
+			GitignorePatterns: nil,
+			LStripPaths:       nil,
+			LineNormalization: testOSisWindows(),
+			FollowSymlinkDirs: false,
+		}
+
+		envelope, err := attestor.Attest()
+		if err == nil {
+			t.Errorf("LinkAttestor Attest returned '(%s, %s)', expected error", envelope.envelope, err)
+		}
+	}
 }
