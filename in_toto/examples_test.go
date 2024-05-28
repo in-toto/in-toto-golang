@@ -37,7 +37,12 @@ func ExampleInTotoVerify() {
 	if err != nil {
 		fmt.Printf("Unable to load layout metadata: %s", err)
 	}
-	if err := validateLayout(layoutMb.GetPayload().(Layout)); err != nil {
+	layout, ok := layoutMb.GetPayload().(Layout)
+	if !ok {
+		fmt.Printf("metadata must be layout")
+		return
+	}
+	if err := validateLayout(layout); err != nil {
 		fmt.Printf("Invalid metadata found: %s", err)
 	}
 	if _, err := InTotoVerify(layoutMb, layoutKeys, LinkDirectory, "",

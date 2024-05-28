@@ -179,7 +179,11 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create link metadata: %w", err)
 	}
 
-	linkName := fmt.Sprintf(intoto.LinkNameFormat, metadata.GetPayload().(intoto.Link).Name, key.KeyID)
+	link, ok := metadata.GetPayload().(intoto.Link)
+	if !ok {
+		return fmt.Errorf("metadata must be link")
+	}
+	linkName := fmt.Sprintf(intoto.LinkNameFormat, link.Name, key.KeyID)
 
 	linkPath := filepath.Join(outDir, linkName)
 	err = metadata.Dump(linkPath)

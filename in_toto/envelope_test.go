@@ -58,7 +58,9 @@ func TestEnvelopeGetPayload(t *testing.T) {
 		assert.Nil(t, err)
 
 		storedPayload := env.GetPayload()
-		assert.Equal(t, payload, storedPayload.(Layout))
+		layout, ok := storedPayload.(Layout)
+		assert.True(t, ok, "payload must be layout")
+		assert.Equal(t, payload, layout)
 	})
 
 	t.Run("get link payload", func(t *testing.T) {
@@ -77,7 +79,9 @@ func TestEnvelopeGetPayload(t *testing.T) {
 		assert.Nil(t, err)
 
 		storedPayload := env.GetPayload()
-		assert.Equal(t, payload, storedPayload.(Link))
+		link, ok := storedPayload.(Link)
+		assert.True(t, ok, "payload must be link")
+		assert.Equal(t, payload, link)
 	})
 
 	t.Run("get overwritten payload", func(t *testing.T) {
@@ -96,7 +100,9 @@ func TestEnvelopeGetPayload(t *testing.T) {
 		assert.Nil(t, err)
 
 		storedPayload := env.GetPayload()
-		assert.Equal(t, payload, storedPayload.(Link))
+		link, ok := storedPayload.(Link)
+		assert.True(t, ok, "payload must be link")
+		assert.Equal(t, payload, link)
 
 		newPayload := Layout{
 			Type:    "layout",
@@ -111,7 +117,9 @@ func TestEnvelopeGetPayload(t *testing.T) {
 		assert.Nil(t, err)
 
 		storedPayload = env.GetPayload()
-		assert.Equal(t, newPayload, storedPayload.(Layout))
+		layout, ok := storedPayload.(Layout)
+		assert.True(t, ok, "payload must be layout")
+		assert.Equal(t, newPayload, layout)
 	})
 }
 
@@ -141,14 +149,18 @@ func TestEnvelopeDump(t *testing.T) {
 		t.Error(err)
 	}
 
-	assert.Equal(t, env.envelope, savedMetadata.(*Envelope).envelope)
+	envelope, ok := savedMetadata.(*Envelope)
+	assert.True(t, ok, "saved metadata must be envelope")
+	assert.Equal(t, env.envelope, envelope.envelope)
 
 	tmpMetadata, err := LoadMetadata(tmp)
 	if err != nil {
 		t.Error(err)
 	}
 
-	assert.Equal(t, env.envelope, tmpMetadata.(*Envelope).envelope)
+	envelope, ok = tmpMetadata.(*Envelope)
+	assert.True(t, ok, "tmp metadata must be envelope")
+	assert.Equal(t, env.envelope, envelope.envelope)
 }
 
 func TestEnvelopeVerifySignature(t *testing.T) {
