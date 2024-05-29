@@ -20,7 +20,7 @@ jobs:
     - name: Test
       run: go test -covermode atomic -coverprofile='${{ matrix.os }}-${{ matrix.go-version }}.cov' ./...
     - name: Coveralls Parallel
-      uses: coverallsapp/github-action@3dfc5567390f6fa9267c0ee9c251e4c8c3f18949
+      uses: coverallsapp/github-action@643bc377ffa44ace6394b2b5d0d3950076de9f63
       with:
         file: '${{ matrix.os }}-${{ matrix.go-version }}.cov'
         parallel: true
@@ -29,6 +29,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
-      uses: coverallsapp/github-action@3dfc5567390f6fa9267c0ee9c251e4c8c3f18949
+      uses: coverallsapp/github-action@643bc377ffa44ace6394b2b5d0d3950076de9f63
       with:
         parallel-finished: true
