@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/google/go-cmp v0.6.0
-	github.com/in-toto/attestation v1.0.2
+	github.com/in-toto/attestation v1.1.0
 	github.com/secure-systems-lab/go-securesystemslib v0.8.0
 	github.com/shibumi/go-pathspec v1.3.0
 	github.com/spf13/cobra v1.8.0
@@ -31,6 +31,6 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
-	google.golang.org/protobuf v1.33.0 // indirect
+	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
