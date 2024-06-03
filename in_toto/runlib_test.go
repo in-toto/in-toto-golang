@@ -200,6 +200,24 @@ func TestIndirectSymlinkCycles(t *testing.T) {
 	// Provoke "symlink cycle detected" error
 	_, err = RecordArtifacts([]string{"symTestA/linkToB.sym", "symTestB/linkToA.sym", "foo.tar.gz"}, []string{"sha256"}, nil, nil, testOSisWindows(), true)
 	if !errors.Is(err, ErrSymCycle) {
+		t.Errorf("we expected: %s, we got: %s", ErrSymCycle, err)
+	}
+
+	// make sure to clean up everything
+	if err := os.Remove("symTestA/linkToB.sym"); err != nil {
+		t.Errorf("could not remove path: %s", err)
+	}
+
+	if err := os.Remove("symTestB/linkToA.sym"); err != nil {
+		t.Errorf("could not remove path: %s", err)
+	}
+
+	if err := os.Remove("symTestA"); err != nil {
+		t.Errorf("could not remove path: %s", err)
+	}
+
+	if err := os.Remove("symTestB"); err != nil {
+		t.Errorf("could not remove path: %s", err)
 		t.Errorf("expected error: %s, got: %s", ErrSymCycle, err)
 	}
 }
@@ -243,6 +261,22 @@ func TestSymlinkToFolder(t *testing.T) {
 		t.Errorf("RecordArtifacts returned '(%v, %s)', expected '(%v, nil)'",
 			result, err, expected)
 	}
+	// make sure to clean up everything
+	if err := os.Remove("symTest/symTest2/symTmpfile"); err != nil {
+		t.Errorf("could not remove path symTest/symTest2/symTmpfile: %s", err)
+	}
+
+	if err := os.Remove("symTmpfile.sym"); err != nil {
+		t.Errorf("could not remove path symTest/symTest2/symTmpfile.sym: %s", err)
+	}
+
+	if err := os.Remove("symTest/symTest2"); err != nil {
+		t.Errorf("could not remove path symTest/symTest2: %s", err)
+	}
+
+	if err := os.Remove("symTest/"); err != nil {
+		t.Errorf("could not remove path symTest: %s", err)
+	}
 }
 
 // This test provokes a symlink cycle
@@ -273,6 +307,13 @@ func TestSymlinkCycle(t *testing.T) {
 	_, err = RecordArtifacts([]string{symlinkPath, "foo.tar.gz"}, []string{"sha256"}, nil, nil, testOSisWindows(), true)
 	if !errors.Is(err, ErrSymCycle) {
 		t.Errorf("we expected: %s, we got: %s", ErrSymCycle, err)
+	}
+	if err := os.Remove("symlinkCycle/symCycle.sym"); err != nil {
+		t.Errorf("could not remove path symlinkCycle/symCycle.sym: %s", err)
+	}
+
+	if err := os.Remove("symlinkCycle"); err != nil {
+		t.Errorf("could not remove path symlinkCycle: %s", err)
 	}
 }
 
