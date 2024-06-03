@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -125,9 +124,22 @@ func TestGitPathSpec(t *testing.T) {
 // We will only calculate the hash for for.tar.gz
 // The symlink will not be added to the list right now, nor will we calculate a checksum for it.
 func TestSymlinkToFile(t *testing.T) {
-	if err := os.Symlink("foo.tar.gz", "foo.tar.gz.sym"); err != nil {
-		t.Errorf("could not create a symlink: %s", err)
+	// Create a dummy file to link to
+	if _, err := os.Create("foo.tar.gz"); err != nil {
+		t.Fatalf("could not create dummy file: %s", err)
 	}
+	defer os.Remove("foo.tar.gz")
+
+	// Attempt to create a symlink
+	err := os.Symlink("foo.tar.gz", "foo.tar.gz.sym")
+	if err != nil {
+		if testOSisWindows() {
+			t.Skip("skipping test; requires symlink creation privilege on Windows")
+		} else {
+			t.Fatalf("could not create a symlink: %s", err)
+		}
+	}
+	defer os.Remove("foo.tar.gz.sym")
 
 	expected := map[string]HashObj{
 		"foo.tar.gz.sym": {
@@ -149,136 +161,118 @@ func TestSymlinkToFile(t *testing.T) {
 // symTestA/linkToB -> symTestB and symTestB/linkToA -> symTestA
 func TestIndirectSymlinkCycles(t *testing.T) {
 	if err := os.Mkdir("symTestA", 0700); err != nil {
-		t.Errorf("could not create tmpdir: %s", err)
+		t.Fatalf("could not create tmpdir: %s", err)
 	}
-	if err := os.Mkdir("symTestB", 0700); err != nil {
-		t.Errorf("could not create tmpdir: %s", err)
-	}
+	defer os.RemoveAll("symTestA")
 
-	// we need to get the current working directory here, otherwise
-	// os.Symlink() will create a wrong symlink
+	if err := os.Mkdir("symTestB", 0700); err != nil {
+		t.Fatalf("could not create tmpdir: %s", err)
+	}
+	defer os.RemoveAll("symTestB")
+
+	// Get the current working directory
 	dir, err := os.Getwd()
 	if err != nil {
-		t.Error(err)
+		t.Fatalf("could not get current working directory: %s", err)
 	}
 
 	linkB := filepath.FromSlash("symTestA/linkToB.sym")
 	linkA := filepath.FromSlash("symTestB/linkToA.sym")
 
-	if err := os.Symlink(dir+"/symTestA", linkA); err != nil {
-		t.Errorf("could not create a symlink: %s", err)
+	if err := os.Symlink(filepath.Join(dir, "symTestA"), linkA); err != nil {
+		if testOSisWindows() {
+			t.Skip("skipping test; requires symlink creation privilege on Windows")
+		} else {
+			t.Fatalf("could not create a symlink: %s", err)
+		}
 	}
-	if err := os.Symlink(dir+"/symTestB", linkB); err != nil {
-		t.Errorf("could not create a symlink: %s", err)
-	}
+	defer os.Remove(linkA)
 
-	// provoke "symlink cycle detected" error
+	if err := os.Symlink(filepath.Join(dir, "symTestB"), linkB); err != nil {
+		if testOSisWindows() {
+			t.Skip("skipping test; requires symlink creation privilege on Windows")
+		} else {
+			t.Fatalf("could not create a symlink: %s", err)
+		}
+	}
+	defer os.Remove(linkB)
+
+	// Provoke "symlink cycle detected" error
 	_, err = RecordArtifacts([]string{"symTestA/linkToB.sym", "symTestB/linkToA.sym", "foo.tar.gz"}, []string{"sha256"}, nil, nil, testOSisWindows(), true)
 	if !errors.Is(err, ErrSymCycle) {
-		t.Errorf("we expected: %s, we got: %s", ErrSymCycle, err)
+		t.Errorf("expected error: %s, got: %s", ErrSymCycle, err)
 	}
-
-	// make sure to clean up everything
-	if err := os.Remove("symTestA/linkToB.sym"); err != nil {
-		t.Errorf("could not remove path: %s", err)
-	}
-
-	if err := os.Remove("symTestB/linkToA.sym"); err != nil {
-		t.Errorf("could not remove path: %s", err)
-	}
-
-	if err := os.Remove("symTestA"); err != nil {
-		t.Errorf("could not remove path: %s", err)
-	}
-
-	if err := os.Remove("symTestB"); err != nil {
-		t.Errorf("could not remove path: %s", err)
-	}
-
 }
 
 // TestSymlinkToFolder checks if we are successfully following symlinks to folders
 func TestSymlinkToFolder(t *testing.T) {
 	if err := os.MkdirAll("symTest/symTest2", 0700); err != nil {
-		t.Errorf("could not create tmpdir: %s", err)
+		t.Fatalf("could not create tmpdir: %s", err)
 	}
+	defer os.RemoveAll("symTest")
 
 	if err := os.Symlink("symTest/symTest2", "symTmpfile.sym"); err != nil {
-		t.Errorf("could not create a symlink: %s", err)
+		if testOSisWindows() {
+			t.Skip("skipping test; requires symlink creation privilege on Windows")
+		} else {
+			t.Fatalf("could not create a symlink: %s", err)
+		}
 	}
+	defer os.Remove("symTmpfile.sym")
 
-	// create a filepath from slash, because otherwise
-	// our tests are going to fail, because the path matching will
-	// not work correctly on Windows
+	// Create a filepath from slash for Windows compatibility
 	p := filepath.FromSlash("symTest/symTest2/symTmpfile")
 
 	if err := os.WriteFile(p, []byte("abc"), 0400); err != nil {
-		t.Errorf("could not write symTmpfile: %s", err)
+		t.Fatalf("could not write symTmpfile: %s", err)
 	}
+	defer os.Remove(p)
 
 	result, err := RecordArtifacts([]string{"symTmpfile.sym"}, []string{"sha256"}, nil, nil, testOSisWindows(), true)
 	if err != nil {
-		t.Error(err)
+		t.Fatalf("RecordArtifacts error: %s", err)
 	}
 
 	expected := map[string]HashObj{
-		path.Join("symTmpfile.sym", "symTmpfile"): {
+		filepath.Join("symTmpfile.sym", "symTmpfile"): {
 			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
 		},
 	}
 
 	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("RecordArtifacts returned '(%s, %s)', expected '(%s, nil)'",
+		t.Errorf("RecordArtifacts returned '(%v, %s)', expected '(%v, nil)'",
 			result, err, expected)
-	}
-
-	// make sure to clean up everything
-	if err := os.Remove("symTest/symTest2/symTmpfile"); err != nil {
-		t.Errorf("could not remove path symTest/symTest2/symTmpfile: %s", err)
-	}
-
-	if err := os.Remove("symTmpfile.sym"); err != nil {
-		t.Errorf("could not remove path symTest/symTest2/symTmpfile.sym: %s", err)
-	}
-
-	if err := os.Remove("symTest/symTest2"); err != nil {
-		t.Errorf("could not remove path symTest/symTest2: %s", err)
-	}
-
-	if err := os.Remove("symTest/"); err != nil {
-		t.Errorf("could not remove path symTest: %s", err)
 	}
 }
 
 // This test provokes a symlink cycle
 func TestSymlinkCycle(t *testing.T) {
-	if err := os.Mkdir("symlinkCycle/", 0700); err != nil {
-		t.Errorf("could not create tmpdir: %s", err)
+	if err := os.Mkdir("symlinkCycle", 0700); err != nil {
+		t.Fatalf("could not create tmpdir: %s", err)
 	}
+	defer os.RemoveAll("symlinkCycle")
 
-	// we need to get the current working directory here, otherwise
-	// os.Symlink() will create a wrong symlink
+	// get the current working directory
 	dir, err := os.Getwd()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
+
 	// create a cycle ./symlinkCycle/symCycle.sym -> ./symlinkCycle/
-	if err := os.Symlink(dir+"/symlinkCycle", "symlinkCycle/symCycle.sym"); err != nil {
-		t.Errorf("could not create a symlink: %s", err)
+	symlinkPath := filepath.Join("symlinkCycle", "symCycle.sym")
+	if err := os.Symlink(filepath.Join(dir, "symlinkCycle"), symlinkPath); err != nil {
+		if testOSisWindows() {
+			t.Skip("skipping test; requires symlink creation privilege on Windows")
+		} else {
+			t.Fatalf("could not create a symlink: %s", err)
+		}
 	}
+	defer os.Remove(symlinkPath)
 
 	// provoke "symlink cycle detected" error
-	_, err = RecordArtifacts([]string{"symlinkCycle/symCycle.sym", "foo.tar.gz"}, []string{"sha256"}, nil, nil, testOSisWindows(), true)
+	_, err = RecordArtifacts([]string{symlinkPath, "foo.tar.gz"}, []string{"sha256"}, nil, nil, testOSisWindows(), true)
 	if !errors.Is(err, ErrSymCycle) {
 		t.Errorf("we expected: %s, we got: %s", ErrSymCycle, err)
-	}
-
-	if err := os.Remove("symlinkCycle/symCycle.sym"); err != nil {
-		t.Errorf("could not remove path symlinkCycle/symCycle.sym: %s", err)
-	}
-
-	if err := os.Remove("symlinkCycle"); err != nil {
-		t.Errorf("could not remove path symlinkCycle: %s", err)
 	}
 }
 
