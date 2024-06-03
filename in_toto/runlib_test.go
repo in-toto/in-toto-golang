@@ -170,7 +170,8 @@ func TestIndirectSymlinkCycles(t *testing.T) {
 	}
 	defer os.RemoveAll("symTestB")
 
-	// Get the current working directory
+	// we need to get the current working directory here, otherwise
+	// os.Symlink() will create a wrong symlink
 	dir, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("could not get current working directory: %s", err)
@@ -238,7 +239,9 @@ func TestSymlinkToFolder(t *testing.T) {
 	}
 	defer os.Remove("symTmpfile.sym")
 
-	// Create a filepath from slash for Windows compatibility
+	// create a filepath from slash, because otherwise
+	// our tests are going to fail, because the path matching will
+	// not work correctly on Windows
 	p := filepath.FromSlash("symTest/symTest2/symTmpfile")
 
 	if err := os.WriteFile(p, []byte("abc"), 0400); err != nil {
