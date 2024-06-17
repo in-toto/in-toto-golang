@@ -7,7 +7,7 @@ require (
 	github.com/in-toto/attestation v1.1.0
 	github.com/secure-systems-lab/go-securesystemslib v0.8.0
 	github.com/shibumi/go-pathspec v1.3.0
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/spiffe/go-spiffe/v2 v2.2.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/sys v0.20.0
@@ -16,7 +16,7 @@ require (
 
 require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
