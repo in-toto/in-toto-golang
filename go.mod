@@ -11,7 +11,7 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.3.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/sys v0.24.0
-	google.golang.org/grpc v1.64.0
+	google.golang.org/grpc v1.65.0
 )
 
 require (
@@ -25,10 +25,10 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/zeebo/errs v1.3.0 // indirect
-	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/net v0.23.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
+	golang.org/x/crypto v0.23.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
