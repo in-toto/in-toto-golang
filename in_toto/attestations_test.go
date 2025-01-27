@@ -122,7 +122,9 @@ func TestDecodeProvenanceStatementSLSA02(t *testing.T) {
 }
 
 func TestEncodeProvenanceStatementSLSA02(t *testing.T) {
-	var testTime = time.Unix(1597826280, 0)
+	// Ensure the time is in UTC
+	var testTime = time.Unix(1597826280, 0).UTC()
+
 	var p = ProvenanceStatement{
 		StatementHeader: StatementHeader{
 			Type:          StatementInTotoV01,
@@ -181,6 +183,7 @@ func TestEncodeProvenanceStatementSLSA02(t *testing.T) {
 			},
 		},
 	}
+
 	var want = `{"_type":"https://in-toto.io/Statement/v0.1","predicateType":"https://slsa.dev/provenance/v0.2","subject":[{"name":"curl-7.72.0.tar.bz2","digest":{"sha256":"ad91970864102a59765e20ce16216efc9d6ad381471f7accceceab7d905703ef"}},{"name":"curl-7.72.0.tar.gz","digest":{"sha256":"d4d5899a3868fbb6ae1856c3e55a32ce35913de3956d1973caccd37bd0174fa2"}}],"predicate":{"builder":{"id":"https://github.com/Attestations/GitHubHostedActions@v1"},"buildType":"https://github.com/Attestations/GitHubActionsWorkflow@v1","invocation":{"configSource":{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"},"entryPoint":"build.yaml:maketgz"}},"metadata":{"buildStartedOn":"2020-08-19T08:38:00Z","buildFinishedOn":"2020-08-19T08:38:00Z","completeness":{"parameters":true,"environment":false,"materials":true},"reproducible":false},"materials":[{"uri":"git+https://github.com/curl/curl-docker@master","digest":{"sha1":"d6525c840a62b398424a78d792f457477135d0cf"}},{"uri":"github_hosted_vm:ubuntu-18.04:20210123.1"},{"uri":"git+https://github.com/curl/"}]}}`
 
 	b, err := json.Marshal(&p)
@@ -291,7 +294,7 @@ func TestDecodeProvenanceStatementSLSA01(t *testing.T) {
 }
 
 func TestEncodeProvenanceStatementSLSA01(t *testing.T) {
-	var testTime = time.Unix(1597826280, 0)
+	var testTime = time.Unix(1597826280, 0).UTC()
 	var p = ProvenanceStatementSLSA01{
 		StatementHeader: StatementHeader{
 			Type:          StatementInTotoV01,
