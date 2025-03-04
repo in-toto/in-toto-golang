@@ -1,6 +1,6 @@
 module github.com/in-toto/in-toto-golang
 
-go 1.22.7
+go 1.22.11
 
 require (
 	github.com/google/go-cmp v0.7.0
@@ -8,7 +8,7 @@ require (
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0
 	github.com/shibumi/go-pathspec v1.3.0
 	github.com/spf13/cobra v1.9.1
-	github.com/spiffe/go-spiffe/v2 v2.4.0
+	github.com/spiffe/go-spiffe/v2 v2.5.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/sys v0.30.0
 	google.golang.org/grpc v1.70.0
