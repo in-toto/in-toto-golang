@@ -885,7 +885,7 @@ the in-toto specification.  It requires the metadata of the root layout, a map
 that contains public keys to verify the root layout signatures, a path to a
 directory from where it can load link metadata files, which are treated as
 signed evidence for the steps defined in the layout, a step name, and a
-paramater dictionary used for parameter substitution. The step name only
+parameter dictionary used for parameter substitution. The step name only
 matters for sublayouts, where it's important to associate the summary of that
 step with a unique name. The verification routine is as follows:
 
