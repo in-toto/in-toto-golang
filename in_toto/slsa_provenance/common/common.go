@@ -1,3 +1,4 @@
+// Deprecated: This package has been deprecated in favor of https://github.com/in-toto/go-witness
 package common
 
 // DigestSet contains a set of digests. It is represented as a map from
