@@ -285,6 +285,8 @@ On success it will return nil. The following errors can happen:
   - no valid PKCS8/PKCS1 private key or PKIX public key
   - errors while marshalling
   - unsupported key types
+
+Deprecated: This method has been deprecated.
 */
 func (k *Key) LoadKey(path string, scheme string, KeyIDHashAlgorithms []string) error {
 	pemFile, err := os.Open(path)
@@ -301,6 +303,9 @@ func (k *Key) LoadKey(path string, scheme string, KeyIDHashAlgorithms []string) 
 	return pemFile.Close()
 }
 
+// LoadKeyDefaults has been deprecated.
+//
+// Deprecated: This method has been deprecated.
 func (k *Key) LoadKeyDefaults(path string) error {
 	pemFile, err := os.Open(path)
 	if err != nil {
@@ -317,6 +322,8 @@ func (k *Key) LoadKeyDefaults(path string) error {
 }
 
 // LoadKeyReader loads the key from a supplied reader. The logic matches LoadKey otherwise.
+//
+// Deprecated: This method has been deprecated.
 func (k *Key) LoadKeyReader(r io.Reader, scheme string, KeyIDHashAlgorithms []string) error {
 	if r == nil {
 		return ErrNoPEMBlock
@@ -336,6 +343,9 @@ func (k *Key) LoadKeyReader(r io.Reader, scheme string, KeyIDHashAlgorithms []st
 	return k.loadKey(key, pemData, scheme, KeyIDHashAlgorithms)
 }
 
+// LoadKeyReaderDefaults has been deprecated.
+//
+// Deprecated: This method has been deprecated.
 func (k *Key) LoadKeyReaderDefaults(r io.Reader) error {
 	if r == nil {
 		return ErrNoPEMBlock
@@ -447,7 +457,9 @@ func (k *Key) loadKey(keyObj interface{}, pemData *pem.Block, scheme string, key
 /*
 VerifyCertificateTrust verifies that the certificate has a chain of trust
 to a root in rootCertPool, possibly using any intermediates in
-intermediateCertPool
+intermediateCertPool.
+
+Deprecated: This method has been deprecated.
 */
 func VerifyCertificateTrust(cert *x509.Certificate, rootCertPool, intermediateCertPool *x509.CertPool) ([][]*x509.Certificate, error) {
 	verifyOptions := x509.VerifyOptions{

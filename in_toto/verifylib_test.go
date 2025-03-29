@@ -579,7 +579,7 @@ func TestVerifyArtifact(t *testing.T) {
 		{
 			name:      "Consuming filename material in inspection",
 			item:      []interface{}{Inspection{SupplyChainItem: SupplyChainItem{Name: "foo", ExpectedMaterials: [][]string{{"ALLOW", "foo.py"}, {"DISALLOW", "*"}}}}},
-			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"./bar/..//foo.py": HashObj{"sha265": "abc"}}}}},
+			metadata:  map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"./bar/..//foo.py": {"sha265": "abc"}}}}},
 			expectErr: "",
 		},
 		{
@@ -636,14 +636,14 @@ func TestVerifyMatchRule(t *testing.T) {
 			name:        "Match material foo.py with foo.d/foo.py",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials", "dstPrefix": "foo.d"},
 			srcArtifact: map[string]HashObj{"foo.py": {"sha265": "abc"}},
-			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"foo.d/foo.py": HashObj{"sha265": "abc"}}}}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"foo.d/foo.py": {"sha265": "abc"}}}}},
 			expectSet:   NewSet("foo.py"),
 		},
 		{
 			name:        "Match material foo.d/foo.py with foo.py",
 			rule:        map[string]string{"pattern": "*", "dstName": "foo", "dstType": "materials", "srcPrefix": "foo.d"},
 			srcArtifact: map[string]HashObj{"foo.d/foo.py": {"sha265": "abc"}},
-			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"foo.py": HashObj{"sha265": "abc"}}}}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"foo.py": {"sha265": "abc"}}}}},
 			expectSet:   NewSet("foo.d/foo.py"),
 		},
 		{
