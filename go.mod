@@ -2,6 +2,8 @@ module github.com/in-toto/in-toto-golang
 
 go 1.22.11
 
+toolchain go1.24.1
+
 require (
 	github.com/google/go-cmp v0.7.0
 	github.com/in-toto/attestation v1.1.1
@@ -11,7 +13,7 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.5.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/sys v0.30.0
-	google.golang.org/grpc v1.71.0
+	google.golang.org/grpc v1.71.1
 )
 
 require (
