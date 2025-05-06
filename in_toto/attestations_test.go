@@ -118,7 +118,7 @@ func TestDecodeProvenanceStatementSLSA02(t *testing.T) {
 	tmp := got.Predicate.Metadata.BuildStartedOn.In(loc)
 	got.Predicate.Metadata.BuildStartedOn = &tmp
 
-	assert.Equal(t, want, got, "Unexpexted object after decoding")
+	assert.Equal(t, want, got, "Unexpected object after decoding")
 }
 
 func TestEncodeProvenanceStatementSLSA02(t *testing.T) {
@@ -287,7 +287,7 @@ func TestDecodeProvenanceStatementSLSA01(t *testing.T) {
 	tmp := got.Predicate.Metadata.BuildStartedOn.In(loc)
 	got.Predicate.Metadata.BuildStartedOn = &tmp
 
-	assert.Equal(t, want, got, "Unexpexted object after decoding")
+	assert.Equal(t, want, got, "Unexpected object after decoding")
 }
 
 func TestEncodeProvenanceStatementSLSA01(t *testing.T) {
@@ -481,5 +481,5 @@ func TestLinkStatement(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, want, got, "Unexpexted object after decoding")
+	assert.Equal(t, want, got, "Unexpected object after decoding")
 }
