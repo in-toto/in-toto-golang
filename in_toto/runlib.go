@@ -40,6 +40,8 @@ If reading the file fails, the first return value is nil and the second return
 value is the error.
 NOTE: For cross-platform consistency Windows-style line separators (CRLF) are
 normalized to Unix-style line separators (LF) before hashing file contents.
+
+Deprecated: This method has been deprecated.
 */
 func RecordArtifact(path string, hashAlgorithms []string, lineNormalization bool) (HashObj, error) {
 	supportedHashMappings := getHashMapping()
@@ -91,6 +93,8 @@ the following format:
 
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
+
+Deprecated: This method has been deprecated.
 */
 func RecordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool) (evalArtifacts map[string]HashObj, err error) {
 	// Make sure to initialize a fresh hashset for every RecordArtifacts call
@@ -273,6 +277,8 @@ If the command cannot be executed or no pipes for stdout or stderr can be
 created the first return value is nil and the second return value is the error.
 NOTE: Since stdout and stderr are captured, they cannot be seen during the
 command execution.
+
+Deprecated: This method has been deprecated.
 */
 func RunCommand(cmdArgs []string, runDir string) (map[string]interface{}, error) {
 	if len(cmdArgs) == 0 {
@@ -318,6 +324,8 @@ metadata.  Link metadata contains recorded products at the passed productPaths
 and materials at the passed materialPaths.  The returned link is wrapped in a
 Metablock object.  If command execution or artifact recording fails the first
 return value is an empty Metablock and the second return value is the error.
+
+Deprecated: This method has been deprecated.
 */
 func InTotoRun(name string, runDir string, materialPaths []string, productPaths []string, cmdArgs []string, key Key, hashAlgorithms []string, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool, useDSSE bool) (Metadata, error) {
 	materials, err := RecordArtifacts(materialPaths, hashAlgorithms, gitignorePatterns, lStripPaths, lineNormalization, followSymlinkDirs)
@@ -379,6 +387,8 @@ InTotoRecordStart begins the creation of a link metablock file in two steps,
 in order to provide evidence for supply chain steps that cannot be carries out
 by a single command.  InTotoRecordStart collects the hashes of the materials
 before any commands are run, signs the unfinished link, and returns the link.
+
+Deprecated: This method has been deprecated.
 */
 func InTotoRecordStart(name string, materialPaths []string, key Key, hashAlgorithms, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool, useDSSE bool) (Metadata, error) {
 	materials, err := RecordArtifacts(materialPaths, hashAlgorithms, gitignorePatterns, lStripPaths, lineNormalization, followSymlinkDirs)
@@ -428,6 +438,8 @@ InTotoRecordStart. InTotoRecordStop takes in a signed unfinished link metablock
 created by InTotoRecordStart and records the hashes of any products created by
 commands run between InTotoRecordStart and InTotoRecordStop.  The resultant
 finished link metablock is then signed by the provided key and returned.
+
+Deprecated: This method has been deprecated.
 */
 func InTotoRecordStop(prelimLinkEnv Metadata, productPaths []string, key Key, hashAlgorithms, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool, useDSSE bool) (Metadata, error) {
 	if err := prelimLinkEnv.VerifySignature(key); err != nil {
@@ -475,6 +487,8 @@ func InTotoRecordStop(prelimLinkEnv Metadata, productPaths []string, key Key, ha
 InTotoMatchProducts checks if local artifacts match products in passed link.
 
 NOTE: Does not check integrity or authenticity of passed link!
+
+Deprecated: This method has been deprecated.
 */
 func InTotoMatchProducts(link *Link, paths []string, hashAlgorithms []string, excludePatterns []string, lstripPaths []string) ([]string, []string, []string, error) {
 	if len(paths) == 0 {
