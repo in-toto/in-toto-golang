@@ -6,7 +6,7 @@ toolchain go1.24.2
 
 require (
 	github.com/google/go-cmp v0.7.0
-	github.com/in-toto/attestation v1.1.1
+	github.com/in-toto/attestation v1.1.2
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0
 	github.com/shibumi/go-pathspec v1.3.0
 	github.com/spf13/cobra v1.9.1
