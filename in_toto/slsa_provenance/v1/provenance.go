@@ -1,3 +1,4 @@
+// Deprecated: This package has been deprecated in favor of https://github.com/in-toto/go-witness
 package v1
 
 import (
