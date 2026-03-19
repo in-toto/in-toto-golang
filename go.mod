@@ -1,18 +1,16 @@
 module github.com/in-toto/in-toto-golang
 
-go 1.24.0
-
-toolchain go1.24.2
+go 1.25.0
 
 require (
 	github.com/google/go-cmp v0.7.0
-	github.com/in-toto/attestation v1.1.2
+	github.com/in-toto/attestation v1.2.0
 	github.com/secure-systems-lab/go-securesystemslib v0.10.0
 	github.com/shibumi/go-pathspec v1.3.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spiffe/go-spiffe/v2 v2.6.0
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/sys v0.41.0
+	golang.org/x/sys v0.42.0
 	google.golang.org/grpc v1.79.3
 )
 
