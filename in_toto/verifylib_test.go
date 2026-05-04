@@ -667,6 +667,27 @@ func TestVerifyMatchRule(t *testing.T) {
 			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"bar/foo.py": {"sha265": "abc"}}}}},
 			expectSet:   NewSet("bar/foo.py"),
 		},
+		{
+			name:        "Match non-lowercase with [!a-z] (should match X.py)",
+			rule:        map[string]string{"pattern": "[!a-z].py", "dstName": "foo", "dstType": "materials"},
+			srcArtifact: map[string]HashObj{"X.py": {"sha265": "abc"}, "a.py": {"sha265": "abc"}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"X.py": {"sha265": "abc"}, "a.py": {"sha265": "abc"}}}}},
+			expectSet:   NewSet("X.py"),
+		},
+		{
+			name:        "Negation with [^a-z] (should NOT match X.py, since ^ is not supported)",
+			rule:        map[string]string{"pattern": "[^a-z].py", "dstName": "foo", "dstType": "materials"},
+			srcArtifact: map[string]HashObj{"X.py": {"sha265": "abc"}, "a.py": {"sha265": "abc"}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"X.py": {"sha265": "abc"}, "a.py": {"sha265": "abc"}}}}},
+			expectSet:   NewSet("a.py"),
+		},
+		{
+			name:        "Negation with [^a-z] (should match ^.py since ^ is treated as a regular character)",
+			rule:        map[string]string{"pattern": "[^a-z].py", "dstName": "foo", "dstType": "materials"},
+			srcArtifact: map[string]HashObj{"^.py": {"sha265": "abc"}, "r.py": {"sha265": "abc"}},
+			item:        map[string]Metadata{"foo": &Metablock{Signed: Link{Name: "foo", Materials: map[string]HashObj{"^.py": {"sha265": "abc"}, "r.py": {"sha265": "abc"}}}}},
+			expectSet:   NewSet("^.py", "r.py"),
+		},
 	}
 
 	for _, tt := range testCases {
