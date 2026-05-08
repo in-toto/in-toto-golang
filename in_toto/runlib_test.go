@@ -450,7 +450,7 @@ func TestInTotoRun(t *testing.T) {
 					},
 				},
 				Products: map[string]HashObj{
-					"foo.tar.gz": HashObj{
+					"foo.tar.gz": {
 						"sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
 					},
 				},
