@@ -775,7 +775,14 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metadata,
 /*
 VerifySublayouts checks if any step in the supply chain is a sublayout, and if
 so, recursively resolves it and replaces it with a summary link summarizing the
-steps carried out in the sublayout.
+steps carried out in the sublayout. A sublayout whose verification fails does
+not abort the overall verification routine. Instead, its link is dropped and
+verification continues with the remaining functionaries for that step, so
+that the signature threshold can still be reached by the surviving links,
+consistent with how signature verification failures are already handled by
+VerifyLinkSignatureThesholds. If, after dropping the failed sublayout(s), a
+step no longer has enough valid links to meet its threshold, an error is
+returned.
 */
 func VerifySublayouts(layout Layout,
 	stepsMetadataVerified map[string]map[string]Metadata,
@@ -793,11 +800,25 @@ func VerifySublayouts(layout Layout,
 				summaryLink, err := InTotoVerify(metadata, layoutKeys,
 					sublayoutLinkPath, stepName, make(map[string]string), intermediatePems, lineNormalization)
 				if err != nil {
-					return nil, err
+					delete(linkData, keyID)
+					continue
 				}
 				linkData[keyID] = summaryLink
 			}
 
+		}
+
+		for _, step := range layout.Steps {
+			if step.Name != stepName {
+				continue
+			}
+			if len(linkData) < step.Threshold {
+				return nil, fmt.Errorf("step '%s' requires '%d' link metadata"+
+					" file(s), only '%d' link(s) verified successfully after"+
+					" resolving sublayouts", stepName, step.Threshold,
+					len(linkData))
+			}
+			break
 		}
 	}
 	return stepsMetadataVerified, nil

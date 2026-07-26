@@ -230,6 +230,88 @@ func TestVerifySublayouts(t *testing.T) {
 	}
 }
 
+// TestVerifySublayoutsPartialFailure asserts that a sublayout, which fails to
+// verify for one functionary, does not abort verification for the whole
+// step. Instead, its link is dropped and verification continues, relying on
+// the threshold check to catch a resulting shortfall further down the line
+// (see https://github.com/in-toto/in-toto-golang/issues/23).
+func TestVerifySublayoutsPartialFailure(t *testing.T) {
+	sublayoutName := "sub_layout"
+	var aliceKey Key
+	if err := aliceKey.LoadKey("alice.pub", "rsassa-pss-sha256", []string{"sha256", "sha512"}); err != nil {
+		t.Errorf("unable to load Alice's public key")
+	}
+	sublayoutDirectory := fmt.Sprintf(SublayoutLinkDirFormat, sublayoutName,
+		aliceKey.KeyID)
+	defer func(sublayoutDirectory string) {
+		if err := os.RemoveAll(sublayoutDirectory); err != nil {
+			t.Errorf("unable to remove directory %s: %s", sublayoutDirectory, err)
+		}
+	}(sublayoutDirectory)
+
+	if err := os.Mkdir(sublayoutDirectory, 0700); err != nil {
+		t.Errorf("unable to create sublayout directory")
+	}
+	writeCodePath := path.Join(sublayoutDirectory, "write-code.b7d643de.link")
+	if err := os.Link("write-code.b7d643de.link", writeCodePath); err != nil {
+		t.Errorf("unable to link write-code metadata.")
+	}
+	packagePath := path.Join(sublayoutDirectory, "package.d3ffd108.link")
+	if err := os.Link("package.d3ffd108.link", packagePath); err != nil {
+		t.Errorf("unable to link package metadata")
+	}
+
+	superLayoutMb, err := LoadMetadata("super.layout")
+	if err != nil {
+		t.Errorf("unable to load super layout")
+	}
+
+	superMbPayloadLayout, ok := superLayoutMb.GetPayload().(Layout)
+	if !ok {
+		t.Errorf("invalid metadata")
+	}
+	stepsMetadata, err := LoadLinksForLayout(superMbPayloadLayout, ".")
+	if err != nil {
+		t.Errorf("unable to load link metadata for super layout")
+	}
+
+	rootCertPool, intermediateCertPool, err := LoadLayoutCertificates(superMbPayloadLayout, [][]byte{})
+	if err != nil {
+		t.Errorf("unable to load layout certificates")
+	}
+
+	stepsMetadataVerified, err := VerifyLinkSignatureThesholds(
+		superMbPayloadLayout, stepsMetadata, rootCertPool, intermediateCertPool)
+	if err != nil {
+		t.Errorf("unable to verify link threshold values: %v", err)
+	}
+
+	// Inject a second, bogus functionary link for the sublayout step. Its
+	// keyID isn't in the super layout's keys and its sublayout link
+	// directory doesn't exist, so its verification is guaranteed to fail.
+	badKeyID := "deadbeef"
+	stepsMetadataVerified[sublayoutName][badKeyID] =
+		stepsMetadataVerified[sublayoutName][aliceKey.KeyID]
+
+	result, err := VerifySublayouts(superMbPayloadLayout,
+		stepsMetadataVerified, ".", [][]byte{}, testOSisWindows())
+	if err != nil {
+		t.Errorf("expected verification to succeed on the surviving link, "+
+			"despite one failing sublayout functionary: %v", err)
+	}
+
+	linkData, ok := result[sublayoutName]
+	if !ok {
+		t.Fatalf("missing step data for step '%s'", sublayoutName)
+	}
+	if _, ok := linkData[badKeyID]; ok {
+		t.Errorf("expected failed sublayout link to be dropped")
+	}
+	if _, ok := linkData[aliceKey.KeyID].GetPayload().(Link); !ok {
+		t.Errorf("expected successful sublayout link to be retained and resolved")
+	}
+}
+
 func TestRunInspections(t *testing.T) {
 	// Load layout template used as basis for all tests
 	mb, err := LoadMetadata("demo.layout")
