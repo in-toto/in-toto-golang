@@ -48,6 +48,12 @@ func UnpackRule(rule []string) (map[string]string, error) {
 	// Cache rule len
 	ruleLen := len(rule)
 
+	// A rule has to name its type before anything else can be parsed out of it,
+	// so an empty rule cannot be indexed below.
+	if ruleLen == 0 {
+		return nil, fmt.Errorf("%s Got:\n\t %s", errorMsg, rule)
+	}
+
 	// Create all lower rule copy to case-insensitively parse out tokens whose
 	// position we don't know yet. We keep the original rule to retain the
 	// non-token elements' case.

@@ -65,6 +65,8 @@ func TestUnpackValidRules(t *testing.T) {
 
 func TestUnpackInvalidRules(t *testing.T) {
 	rules := [][]string{
+		// an empty rule has no type to switch on, and used to be indexed anyway
+		{},
 		{"CREATE", "foo", "too-long"},
 		{"SUBVERT", "foo"},
 		{"MODIFY"},

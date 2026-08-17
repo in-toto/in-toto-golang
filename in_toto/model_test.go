@@ -678,6 +678,20 @@ func TestValidateStep(t *testing.T) {
 		t.Error("validateStep error - invalid type not detected")
 	}
 
+	// An empty artifact rule reaches UnpackRule, which has no type token to
+	// switch on, so it used to index an empty slice.
+	testStep = Step{
+		Type: "step",
+		SupplyChainItem: SupplyChainItem{
+			Name:              "foo",
+			ExpectedMaterials: [][]string{{}},
+		},
+	}
+	err = validateStep(testStep)
+	if err == nil {
+		t.Error("validateStep error - empty artifact rule not detected")
+	}
+
 	testStep = Step{
 		Type: "step",
 		PubKeys: []string{"776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f4Z" +
