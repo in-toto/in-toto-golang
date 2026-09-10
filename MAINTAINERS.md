@@ -15,11 +15,6 @@ a GPG signature from one of these people.
     * GitHub username: @adityasaky
     * PGP fingerprint: E329 4129 9CB8 C0D9 3DCF 27AC B831 10D0 1254 5604
 
-* Lukas Puehringer
-    * Email: lukas.puehringer@nyu.edu
-    * GitHub username: @lukpueh
-    * PGP fingerprint: 8BA6 9B87 D43B E294 F23E  8120 89A2 AD3C 07D9 62E8
-
 * Christian Rebischke
     * Email: chris@shibumi.dev
     * Github username: @shibumi
