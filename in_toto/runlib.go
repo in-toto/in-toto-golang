@@ -23,9 +23,6 @@ var ErrUnsupportedHashAlgorithm = errors.New("unsupported hash algorithm detecte
 
 var ErrEmptyCommandArgs = errors.New("the command args are empty")
 
-// visitedSymlinks is a hashset that contains all paths that we have visited.
-var visitedSymlinks Set
-
 /*
 RecordArtifact reads and hashes the contents of the file at the passed path
 using sha256 and returns a map in the following format:
@@ -93,9 +90,12 @@ If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
 func RecordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool) (evalArtifacts map[string]HashObj, err error) {
-	// Make sure to initialize a fresh hashset for every RecordArtifacts call
-	visitedSymlinks = NewSet()
-	evalArtifactsUnnormalized, err := recordArtifacts(paths, hashAlgorithms, gitignorePatterns, lStripPaths, lineNormalization, followSymlinkDirs)
+	// Use a fresh hashset per RecordArtifacts call to track visited symlinks.
+	// It is passed through the recursion instead of being a package-level
+	// variable so that concurrent RecordArtifacts calls do not race on shared
+	// state.
+	visitedSymlinks := NewSet()
+	evalArtifactsUnnormalized, err := recordArtifacts(paths, hashAlgorithms, gitignorePatterns, lStripPaths, lineNormalization, followSymlinkDirs, visitedSymlinks)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ the following format:
 If recording an artifact fails the first return value is nil and the second
 return value is the error.
 */
-func recordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool) (map[string]HashObj, error) {
+func recordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns []string, lStripPaths []string, lineNormalization bool, followSymlinkDirs bool, visitedSymlinks Set) (map[string]HashObj, error) {
 	artifacts := make(map[string]HashObj)
 	for _, path := range paths {
 		err := filepath.Walk(path,
@@ -188,7 +188,7 @@ func recordArtifacts(paths []string, hashAlgorithms []string, gitignorePatterns 
 					visitedSymlinks.Add(path)
 					// We recursively call recordArtifacts() to follow
 					// the new path.
-					evalArtifacts, evalErr := recordArtifacts([]string{evalSym}, hashAlgorithms, gitignorePatterns, lStripPaths, lineNormalization, followSymlinkDirs)
+					evalArtifacts, evalErr := recordArtifacts([]string{evalSym}, hashAlgorithms, gitignorePatterns, lStripPaths, lineNormalization, followSymlinkDirs, visitedSymlinks)
 					if evalErr != nil {
 						return evalErr
 					}

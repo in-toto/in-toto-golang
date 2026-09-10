@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"runtime"
 	"sort"
+	"sync"
 	"testing"
 
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -248,6 +249,50 @@ func TestSymlinkToFolder(t *testing.T) {
 	if err := os.Remove("symTest/"); err != nil {
 		t.Errorf("could not remove path symTest: %s", err)
 	}
+}
+
+// TestRecordArtifactsConcurrent makes sure RecordArtifacts can be called from
+// several goroutines at once. The symlink bookkeeping used to live in a
+// package-level variable, so concurrent calls raced on it (and could trip the
+// runtime "concurrent map read and map write" fatal error). Run this with -race
+// to catch a regression.
+func TestRecordArtifactsConcurrent(t *testing.T) {
+	dir := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(dir, "file"), []byte("abc"), 0400); err != nil {
+		t.Fatalf("could not write file: %s", err)
+	}
+	// a symlink inside the recorded tree so recordArtifacts touches the
+	// visited-symlink bookkeeping
+	if err := os.Symlink(filepath.Join(dir, "file"), filepath.Join(dir, "link.sym")); err != nil {
+		t.Fatalf("could not create a symlink: %s", err)
+	}
+
+	expected := map[string]HashObj{
+		filepath.ToSlash(filepath.Join(dir, "file")): {
+			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+		},
+		filepath.ToSlash(filepath.Join(dir, "link.sym")): {
+			"sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+		},
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			result, err := RecordArtifacts([]string{dir}, []string{"sha256"}, nil, nil, false, true)
+			if err != nil {
+				t.Errorf("RecordArtifacts returned error: %s", err)
+				return
+			}
+			if !reflect.DeepEqual(result, expected) {
+				t.Errorf("RecordArtifacts returned '%s', expected '%s'", result, expected)
+			}
+		}()
+	}
+	wg.Wait()
 }
 
 // This test provokes a symlink cycle
