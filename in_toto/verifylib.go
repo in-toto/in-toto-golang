@@ -2,6 +2,8 @@
 Package in_toto implements types and routines to verify a software supply chain
 according to the in-toto specification.
 See https://github.com/in-toto/docs/blob/master/in-toto-spec.md
+
+Deprecated: This package has been deprecated in favor of https://github.com/in-toto/go-witness
 */
 package in_toto
 
@@ -41,6 +43,8 @@ returned.  The format is:
 If executing the inspection command fails, or if the executed command has a
 non-zero exit code, the first return value is an empty Metablock map and the
 second return value is the error.
+
+Deprecated: This method has been deprecated.
 */
 func RunInspections(layout Layout, runDir string, lineNormalization bool, useDSSE bool) (map[string]Metadata, error) {
 	inspectionMetadata := make(map[string]Metadata)
@@ -189,6 +193,8 @@ All rules except for DISALLOW consume queued artifacts on success, and
 leave the queue unchanged on failure.  Hence, it is left to a terminal
 DISALLOW rule to fail overall verification, if artifacts are left in the queue
 that should have been consumed by preceding rules.
+
+Deprecated: This method has been deprecated.
 */
 func VerifyArtifacts(items []interface{},
 	itemsMetadata map[string]Metadata) error {
@@ -384,6 +390,8 @@ step.  The function returns a map with one Metablock (link) per step:
 If links corresponding to the same step report different Materials or different
 Products, the first return value is an empty Metablock map and the second
 return value is the error.
+
+Deprecated: This method has been deprecated.
 */
 func ReduceStepsMetadata(layout Layout,
 	stepsMetadata map[string]map[string]Metadata) (map[string]Metadata,
@@ -447,6 +455,8 @@ VerifyStepCommandAlignment (soft) verifies that for each step of the passed
 layout the command executed, as per the passed link, matches the expected
 command, as per the layout.  Soft verification means that, in case a command
 does not align, a warning is issued.
+
+Deprecated: This method has been deprecated.
 */
 func VerifyStepCommandAlignment(layout Layout,
 	stepsMetadata map[string]map[string]Metadata) {
@@ -482,6 +492,8 @@ LoadLayoutCertificates loads the root and intermediate CAs from the layout if in
 This will be used to check signatures that were used to sign links but not configured
 in the PubKeys section of the step.  No configured CAs means we don't want to allow this.
 Returned CertPools will be empty in this case.
+
+Deprecated: This method has been deprecated.
 */
 func LoadLayoutCertificates(layout Layout, intermediatePems [][]byte) (*x509.CertPool, *x509.CertPool, error) {
 	rootPool := x509.NewCertPool()
@@ -533,6 +545,8 @@ links with valid signatures from distinct functionaries and has the format:
 If for any step of the layout there are not enough links available, the first
 return value is an empty map of Metablock maps and the second return value is
 the error.
+
+Deprecated: This method has been deprecated.
 */
 func VerifyLinkSignatureThesholds(layout Layout,
 	stepsMetadata map[string]map[string]Metadata, rootCertPool, intermediateCertPool *x509.CertPool) (
@@ -646,6 +660,8 @@ If a link cannot be loaded at a constructed link name or is invalid, it is
 ignored. Only a preliminary threshold check is performed, that is, if there
 aren't at least Threshold links for any given step, the first return value
 is an empty map of Metablock maps and the second return value is the error.
+
+Deprecated: This method has been deprecated.
 */
 func LoadLinksForLayout(layout Layout, linkDir string) (map[string]map[string]Metadata, error) {
 	stepsMetadata := make(map[string]map[string]Metadata)
@@ -690,6 +706,8 @@ func LoadLinksForLayout(layout Layout, linkDir string) (map[string]map[string]Me
 /*
 VerifyLayoutExpiration verifies that the passed Layout has not expired.  It
 returns an error if the (zulu) date in the Expires field is in the past.
+
+Deprecated: This method has been deprecated.
 */
 func VerifyLayoutExpiration(layout Layout) error {
 	expires, err := time.Parse(ISO8601DateSchema, layout.Expires)
@@ -709,6 +727,8 @@ corresponding signature of the Layout in the passed Metablock's Signed field.
 Signatures and keys are associated by key id.  If the key map is empty, or the
 Metablock's Signature field does not have a signature for one or more of the
 passed keys, or a matching signature is invalid, an error is returned.
+
+Deprecated: This method has been deprecated.
 */
 func VerifyLayoutSignatures(layoutEnv Metadata,
 	layoutKeys map[string]Key) error {
@@ -732,6 +752,8 @@ chain.
 NOTE: The assumption is that the steps mentioned in the layout are to be
 performed sequentially. So, the first step mentioned in the layout denotes what
 comes into the supply chain and the last step denotes what goes out.
+
+Deprecated: This method has been deprecated.
 */
 func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metadata,
 	stepName string, useDSSE bool) (Metadata, error) {
@@ -776,6 +798,8 @@ func GetSummaryLink(layout Layout, stepsMetadataReduced map[string]Metadata,
 VerifySublayouts checks if any step in the supply chain is a sublayout, and if
 so, recursively resolves it and replaces it with a summary link summarizing the
 steps carried out in the sublayout.
+
+Deprecated: This method has been deprecated.
 */
 func VerifySublayouts(layout Layout,
 	stepsMetadataVerified map[string]map[string]Metadata,
@@ -832,6 +856,8 @@ in the following fields:
 The substitution marker is '{}' and the keyword within the braces is replaced
 by a value found in the substitution map passed, parameterDictionary. The
 layout with parameters substituted is returned to the calling function.
+
+Deprecated: This method has been deprecated.
 */
 func SubstituteParameters(layout Layout,
 	parameterDictionary map[string]string) (Layout, error) {
@@ -907,6 +933,8 @@ Metablock object.
 
 NOTE: Artifact rules of type "create", "modify"
 and "delete" are currently not supported.
+
+Deprecated: This method has been deprecated.
 */
 func InTotoVerify(layoutEnv Metadata, layoutKeys map[string]Key,
 	linkDir string, stepName string, parameterDictionary map[string]string, intermediatePems [][]byte, lineNormalization bool) (
@@ -1010,6 +1038,8 @@ func InTotoVerify(layoutEnv Metadata, layoutKeys map[string]Key,
 /*
 InTotoVerifyWithDirectory provides the same functionality as InTotoVerify, but
 adds the possibility to select a local directory from where the inspections are run.
+
+Deprecated: This method has been deprecated.
 */
 func InTotoVerifyWithDirectory(layoutEnv Metadata, layoutKeys map[string]Key,
 	linkDir string, runDir string, stepName string, parameterDictionary map[string]string, intermediatePems [][]byte, lineNormalization bool) (

@@ -816,6 +816,8 @@ a valid JSON formatted Metablock that contains a Link or Layout.
 
 Deprecated: Use LoadMetadata for a signature wrapper agnostic way to load an
 envelope.
+
+Deprecated: This method has been deprecated.
 */
 func (mb *Metablock) Load(path string) error {
 	// Read entire file
@@ -858,6 +860,8 @@ func (mb *Metablock) Load(path string) error {
 /*
 Dump JSON serializes and writes the Metablock on which it was called to the
 passed path.  It returns an error if JSON serialization or writing fails.
+
+Deprecated: This method has been deprecated.
 */
 func (mb *Metablock) Dump(path string) error {
 	// JSON encode Metablock formatted with newlines and indentation
@@ -880,6 +884,8 @@ func (mb *Metablock) Dump(path string) error {
 GetSignableRepresentation returns the canonical JSON representation of the
 Signed field of the Metablock on which it was called.  If canonicalization
 fails the first return value is nil and the second return value is the error.
+
+Deprecated: This method has been deprecated.
 */
 func (mb *Metablock) GetSignableRepresentation() ([]byte, error) {
 	return cjson.EncodeCanonical(mb.Signed)
@@ -899,6 +905,8 @@ that it finds in the Signatures field of the Metablock on which it was called.
 It returns an error if Signatures does not contain a Signature corresponding to
 the passed Key, the object in Signed cannot be canonicalized, or the Signature
 is invalid.
+
+Deprecated: This method has been deprecated.
 */
 func (mb *Metablock) VerifySignature(key Key) error {
 	sig, err := mb.GetSignatureForKeyID(key.KeyID)
@@ -930,6 +938,8 @@ func (mb *Metablock) VerifySignature(key Key) error {
 }
 
 // GetSignatureForKeyID returns the signature that was created by the provided keyID, if it exists.
+//
+// Deprecated: This method has been deprecated.
 func (mb *Metablock) GetSignatureForKeyID(keyID string) (Signature, error) {
 	for _, s := range mb.Signatures {
 		if s.KeyID == keyID {
@@ -943,6 +953,8 @@ func (mb *Metablock) GetSignatureForKeyID(keyID string) (Signature, error) {
 /*
 ValidateMetablock ensures that a passed Metablock object is valid. It indirectly
 validates the Link or Layout that the Metablock object contains.
+
+Deprecated: This method has been deprecated.
 */
 func ValidateMetablock(mb Metablock) error {
 	switch mbSignedType := mb.Signed.(type) {
@@ -971,6 +983,8 @@ Sign creates a signature over the signed portion of the metablock using the Key
 object provided. It then appends the resulting signature to the signatures
 field as provided. It returns an error if the Signed object cannot be
 canonicalized, or if the key is invalid or not supported.
+
+Deprecated: This method has been deprecated.
 */
 func (mb *Metablock) Sign(key Key) error {
 	signer, err := getSignerVerifierFromKey(key)
