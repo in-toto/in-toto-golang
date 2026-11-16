@@ -1,3 +1,5 @@
+//go:build !unix
+
 package in_toto
 
 import (
@@ -5,6 +7,9 @@ import (
 	"os"
 )
 
+// isWritable checks that path is a writable directory on the platforms
+// that have no access(2) such as Windows or js/wasm: it reads the owner
+// write bit of the file mode instead.
 func isWritable(path string) error {
 	// get fileInfo
 	info, err := os.Stat(path)
